@@ -35,7 +35,7 @@ jobs:
           run: apt update && apt install -y build-essential
      
         -
-          name: run architecture tests
+          name: run waveform tests
           if: steps.filter.outputs.waveforms == 'true'
           env:
             test_dir: /github/workspace/libs/waveforms
