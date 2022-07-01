@@ -19,7 +19,7 @@ jobs:
         password: ${{ secrets.github_token }}
       volumes:
         - ${{ github.workspace }}:/github/workspace
-  steps:
+   steps:
       - 
         uses: actions/checkout@v2
         with:
