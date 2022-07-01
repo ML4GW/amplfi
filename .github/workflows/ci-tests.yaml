@@ -8,36 +8,36 @@ on:
 
 jobs:
   ci-tests:
-  # set up Pinto container permissions
-  runs-on: ubuntu-latest
-  permissions:
-    packages: read
-  container:
-    image: ghcr.io/ml4gw/pinto:main
-    credentials:
-      username: ${{ github.actor }}
-      password: ${{ secrets.github_token }}
-    volumes:
-      - ${{ github.workspace }}:/github/workspace
-  steps:
-    - uses: actions/checkout@v2
-      with:
-       submodules: recursive
-    - 
-      uses: dorny/paths-filter@v2.10.1
-      id: filter
-      with:
-        filters: |
-          waveforms:
-            - 'libs/waveforms/**'
-    -    
-      name: install gcc
-      run: apt update && apt install -y build-essential
- 
-    -
-      name: run architecture tests
-      if: steps.filter.outputs.waveforms == 'true'
-      env:
-        test_dir: /github/workspace/libs/waveforms
-      run: | 
-          pinto -p $test_dir run pytest $test_dir/tests 
+      # set up Pinto container permissions
+      runs-on: ubuntu-latest
+      permissions:
+        packages: read
+      container:
+        image: ghcr.io/ml4gw/pinto:main
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.github_token }}
+        volumes:
+          - ${{ github.workspace }}:/github/workspace
+      steps:
+        - uses: actions/checkout@v2
+          with:
+           submodules: recursive
+        - 
+          uses: dorny/paths-filter@v2.10.1
+          id: filter
+          with:
+            filters: |
+              waveforms:
+                - 'libs/waveforms/**'
+        -    
+          name: install gcc
+          run: apt update && apt install -y build-essential
+     
+        -
+          name: run architecture tests
+          if: steps.filter.outputs.waveforms == 'true'
+          env:
+            test_dir: /github/workspace/libs/waveforms
+          run: | 
+              pinto -p $test_dir run pytest $test_dir/tests 
