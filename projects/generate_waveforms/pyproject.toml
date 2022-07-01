@@ -9,7 +9,18 @@ packages = [{include = "generate_waveforms"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+"mlpe.waveforms" = {path = "../../libs/waveforms", develop = true}
 
+
+[tool.typeo]
+waveform = "mlpe.waveforms.sine_gaussian_frequency"
+prior = "./priors/sine_gaussian.prior"  
+sample_rate = 2048 
+domain = "frequency"
+n_samples = 100 
+waveform_duration = 4
+datadir = "./data/"
+logdir = "./log/"
 
 [build-system]
 requires = ["poetry-core"]
