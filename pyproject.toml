@@ -33,4 +33,3 @@ include_trailing_comma = true
 [build-system]
 requires = ["poetry>=1.2"]
 build-backend = "poetry.masonry.api"
-
