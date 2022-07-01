@@ -11,3 +11,4 @@ dependencies:
   - pytorch
   - torchvision
   - cudatoolkit=11.3
+  - lalinference
