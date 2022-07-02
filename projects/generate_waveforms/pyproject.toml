@@ -8,8 +8,8 @@ readme = "README.md"
 packages = [{include = "generate_waveforms"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-"mlpe.waveforms" = {path = "../../libs/waveforms", develop = true}
+python = ">=3.8,<3.11"
+"mlpe.injection" = {path = "../../libs/injection", develop = true}
 
 
 [tool.typeo]
