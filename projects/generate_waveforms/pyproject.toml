@@ -4,13 +4,13 @@ version = "0.1.0"
 description = "Project for generating a waveform dataset of arbitrary morphology"
 authors = ["ethan.marx <ethan.marx@ligo.org>"]
 license = "MIT"
-readme = "README.md"
-packages = [{include = "generate_waveforms"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 "mlpe.injection" = {path = "../../libs/injection", develop = true}
 
+[tool.poetry.scripts]
+generate-waveforms = "generate_waveforms:main"
 
 [tool.typeo]
 waveform = "mlpe.waveforms.sine_gaussian_frequency"

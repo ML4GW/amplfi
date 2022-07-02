@@ -78,9 +78,7 @@ def main(
     # generate signals
     # TODO: implement the ability to
     # specify domain of data in injection library
-    signals = injection.generate_gw(
-        sample_params, waveform_generator=waveform_generator, domain=domain
-    )
+    signals = injection.generate_gw(sample_params, domain, waveform_generator)
 
     # sanity check for nan values
     if np.isnan(signals).any():
