@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "mlpe-base"
+name = "mlpe.base"
 version = "0.1.0"
 description = "Base environment for forcing version constraints"
 authors = ["ethan.marx <ethan.marx@ligo.org>"]
