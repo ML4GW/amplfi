@@ -3,7 +3,7 @@ from pathlib import Path
 import bilby
 import numpy as np
 import pytest
-from mlpe.waveforms import sine_gaussian_frequency
+from mlpe.injection.waveforms import sine_gaussian_frequency
 
 
 @pytest.fixture(params=["priors/sine_gaussian.prior"])
