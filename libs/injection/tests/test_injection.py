@@ -126,3 +126,6 @@ def test_generate_gw_sg(sg_prior_file, domain, sg_generator):
 
     expected_signal_shape = (10, 2, waveform_size)
     assert signals.shape == expected_signal_shape
+
+
+# TODO: projection tests
