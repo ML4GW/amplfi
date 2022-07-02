@@ -2,7 +2,6 @@ from typing import Dict
 
 import bilby
 import numpy as np
-from mlpe.injection.utils import calc_snr
 
 
 def generate_gw(
@@ -13,9 +12,11 @@ def generate_gw(
     """Generate raw gravitational-wave signals, pre-interferometer projection.
 
     Args:
-        sample_params: dictionary of GW parameters
+        sample_params: dictionary of GW parameters produced by
+            the bilby.PriorDict sample function
         domain: domain in which to generate data ("time" or "frequency")
-        waveform_generator: a fully initialized bilby.gw.WaveformGenerator
+        waveform_generator:
+            a fully initialized bilby.gw.waveform_generator.WaveformGenerator
 
     Returns:
         An (n_samples, 2, waveform_size) array, containing both polarizations
@@ -33,6 +34,8 @@ def generate_gw(
     sample_rate = waveform_generator.sampling_frequency
     waveform_duration = waveform_generator.duration
 
+    # infer waveform size depending on
+    # domain
     if domain == "time":
         waveform_size = int(sample_rate * waveform_duration)
 
@@ -41,6 +44,7 @@ def generate_gw(
         df = 1 / waveform_duration
         waveform_size = int(fmax / df) + 1
 
+    # create signal output array
     num_pols = 2
     signals = np.zeros((n_samples, num_pols, waveform_size))
 
@@ -66,20 +70,19 @@ def generate_gw(
 def project_raw_gw(
     raw_waveforms: np.ndarray,
     sample_params: Dict[str, np.ndarray],
-    sample_rate: float,
+    duration: float,
     ifo: str,
-    get_snr: bool = False,
-    noise_psd=None,
+    domain: str,
 ):
-    """Project a raw gravitational wave onto an intterferometer
+    """Project a raw gravitational wave onto an interferometer
 
     Args:
-        raw_waveforms: the plus and cross polarizations of a list of GWs
-        sample_params: dictionary of GW parameters
-        waveform_generator: the waveform generator that made the raw GWs
-        ifo: interferometer
-        get_snr: return the SNR of each sample
-        noise_psd: background noise PSD used to calculate SNR the sample
+        raw_waveforms: an array of size (n_samples, 2, waveform_size)
+        sample_params: parameters produced by bilby prior sample function.
+            must include ra, dec geocen_time and psi
+        duration: length of the waveform
+        ifo: which ifo projecting data onto to
+        domain: domain of raw_waveform data (time or frequency)
 
     Returns:
         An (n_samples, waveform_size) array containing the GW signals as they
@@ -88,50 +91,59 @@ def project_raw_gw(
         with each signal
     """
 
+    # format polarizations
     polarizations = {
         "plus": raw_waveforms[:, 0, :],
         "cross": raw_waveforms[:, 1, :],
     }
 
+    # format sample params
     sample_params = [
         dict(zip(sample_params, col)) for col in zip(*sample_params.values())
     ]
     n_sample = len(sample_params)
 
-    waveform_duration = raw_waveforms.shape[-1] / sample_rate
-    waveform_size = int(sample_rate * waveform_duration)
+    # infer waveform parameters from passed array
+    waveform_size = raw_waveforms.shape[-1]
 
+    # initiate signal array
     signals = np.zeros((n_sample, waveform_size))
-    snr = np.zeros(n_sample)
 
     ifo = bilby.gw.detector.get_empty_interferometer(ifo)
     for i, p in enumerate(sample_params):
 
-        # For less ugly function calls later on
+        # unpack sky loc params
         ra = p["ra"]
         dec = p["dec"]
         geocent_time = p["geocent_time"]
         psi = p["psi"]
 
-        # Generate signal in IFO
+        # calculate dt shift for this ifo;
+        # first shift signal to center,
+        # then apply shift from geocenter
+        dt = duration / 2.0
+        dt += ifo.time_delay_from_geocenter(ra, dec, geocent_time)
+
+        # generate signal in ifo
         signal = np.zeros(waveform_size)
         for mode, polarization in polarizations.items():
-            # Get ifo response
+
+            # get ifo response
             response = ifo.antenna_response(ra, dec, geocent_time, psi, mode)
             signal += response * polarization[i]
 
-        # Total shift = shift to trigger time + geometric shift
-        dt = waveform_duration / 2.0
-        dt += ifo.time_delay_from_geocenter(ra, dec, geocent_time)
-        signal = np.roll(signal, int(np.round(dt * sample_rate)))
+        # apply shift
+        if domain == "time":
+            sample_rate = waveform_size / duration
+            signal = np.roll(signal, int(np.round(dt * sample_rate)))
 
-        # Calculate SNR
-        if noise_psd is not None:
-            if get_snr:
-                snr[i] = calc_snr(signal, noise_psd, sample_rate)
+        elif domain == "frequency":
+            df = 1 / duration
+            fmax = waveform_size * df
+            frequencies = np.linspace(0, fmax, df)
+            # shift in frequency domain is phase shift
+            signal = signal * np.exp(-1j * 2 * np.pi * dt * frequencies)
 
         signals[i] = signal
 
-    if get_snr:
-        return signals, snr
     return signals
