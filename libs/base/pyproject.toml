@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "mlpe.base"
+version = "0.1.0"
+description = "Base environment for forcing version constraints"
+authors = ["ethan.marx <ethan.marx@ligo.org>"]
+license = "MIT"
+packages = [{include = "mlpe"}]
+
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+
+# see https://github.com/python-poetry/poetry/issues/4264
+packaging = "<21.0"
+
+# gwpy contraints
+scipy = {version = "<1.8", optional = true}
+astropy = {version = "<5.0", optional = true}
+
+# numpy constraint
+numpy = {version = ">=1.22.0,<1.22.4", optional = true}
+
+[tool.poetry.extras]
+gwpy = ["scipy", "astropy"]
+numpy = ["numpy"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
