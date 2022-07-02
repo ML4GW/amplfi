@@ -39,14 +39,13 @@ def generate_gw(
     if domain == "time":
         waveform_size = int(sample_rate * waveform_duration)
 
+        signals = np.zeros((n_samples, 2, waveform_size))
+
     elif domain == "frequency":
         fmax = sample_rate / 2
         df = 1 / waveform_duration
         waveform_size = int(fmax / df) + 1
-
-    # create signal output array
-    num_pols = 2
-    signals = np.zeros((n_samples, num_pols, waveform_size))
+        signals = np.zeros((n_samples, 2, waveform_size), dtype=np.complex)
 
     for i, p in enumerate(sample_params):
 
