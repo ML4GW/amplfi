@@ -66,7 +66,9 @@ def main(
 
     # if inference params are not passed
     # initalize them to all params in prior
-    inference_params = inference_params or list(priors.keys())
+    # that are not constraints
+
+    inference_params = inference_params or priors.keys()
 
     # validate the inference params
     for param in inference_params:
