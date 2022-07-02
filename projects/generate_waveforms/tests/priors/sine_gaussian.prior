@@ -1,0 +1,8 @@
+quality = Uniform(name='quality', minimum=2, maximum=100)
+frequency = Uniform(name='frequency', minimum=32, maximum=1024)
+hrss = LogUniform(name='hrss', minimum =1e-23, maximum=1e-21)
+time = Uniform(name='time', minimum=-0.1, maximum=0.1)
+ra = Uniform(name='ra', minimum=0, maximum=2 * np.pi, boundary='periodic')
+dec = Cosine(name='dec')
+phase = 100
+eccentricity = Uniform(name='eccentricity', minimum = 0, maximum=1)
