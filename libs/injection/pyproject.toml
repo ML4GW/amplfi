@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "mlpe.injection"
+version = "0.0.1"
+description = "Utilities for generating gravitational wave signals"
+authors = ["Ethan Marx <ethan.marxligo.org>",]
+license = "MIT"
+packages = [
+    {include = "mlpe"}
+]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+bilby = "^1.1.5"
+lalsuite = "^7.4"
+
+"mlpe.base" = {path = "../base", extras = ["gwpy", "numpy"], develop = true}
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2"
+
+[build-system]
+requires = ["poetry>=1.2"]
+build-backend = "poetry.masonry.api"
