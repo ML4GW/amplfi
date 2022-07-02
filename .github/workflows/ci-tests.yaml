@@ -28,8 +28,10 @@ jobs:
           id: filter
           with:
             filters: |
-              waveforms:
+              injection:
                 - 'libs/injection/**'
+              generate_waveforms:
+                - 'projects/generate_waveforms/**'
         -    
           name: install gcc
           run: apt update && apt install -y build-essential
@@ -41,3 +43,12 @@ jobs:
             test_dir: /github/workspace/libs/injection
           run: | 
               pinto -p $test_dir run pytest $test_dir/tests 
+        -
+          name: run generate waveforms tests
+          if: |
+            (steps.filter.outputs.injection == 'true')
+            || (steps.filter.outputs.generate_waveforms == 'true')
+          env:
+            test_dir: /github/workspace/projects/generate_waveforms
+          run: | 
+              pinto -p $test_dir run pytest $test_dir/tests
