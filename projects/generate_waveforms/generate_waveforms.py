@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import bilby
 import h5py
@@ -10,8 +10,8 @@ from hermes.typeo import typeo
 
 @typeo
 def main(
-    waveform: Callable,
     prior_file: str,
+    waveform: Callable,
     sample_rate: float,
     domain: str,
     n_samples: int,
@@ -19,7 +19,7 @@ def main(
     datadir: Path,
     logdir: Path,
     inference_params: Optional[List[str]] = None,
-    **waveform_arguments,
+    waveform_arguments: Optional[Dict] = None,
 ):
     """Generates a dataset of raw waveforms. The goal was to make this
     project waveform agnositic
@@ -40,7 +40,7 @@ def main(
             to fix some of the parameters,
             or not use some of the parameters in inference.
 
-        **waveform_arguments:
+        waveform_arguments:
             Additional arguments to pass to waveform generator,
             that will ultimately get passed
             to the waveform callable specified. For example,
@@ -50,7 +50,7 @@ def main(
 
     # make data dir
     datadir.mkdir(exist_ok=True, parents=True)
-    signal_file = datadir / "signals"
+    signal_file = datadir / "signals.h5"
 
     # define a bilby waveform generator
     waveform_generator = bilby.gw.WaveformGenerator(
@@ -111,3 +111,8 @@ def main(
                 "waveform_duration": waveform_duration,
             }
         )
+    return signal_file
+
+
+if __name__ == "__main__":
+    main()

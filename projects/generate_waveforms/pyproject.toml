@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "generate-waveforms"
+name = "generate_waveforms"
 version = "0.1.0"
 description = "Project for generating a waveform dataset of arbitrary morphology"
 authors = ["ethan.marx <ethan.marx@ligo.org>"]
@@ -8,12 +8,14 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 "mlpe.injection" = {path = "../../libs/injection", develop = true}
+"hermes.typeo" = "^0.1.5"
 
 [tool.poetry.scripts]
 generate-waveforms = "generate_waveforms:main"
 
+
 [tool.typeo]
-waveform = "mlpe.waveforms.sine_gaussian_frequency"
+waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 prior = "./priors/sine_gaussian.prior"  
 sample_rate = 2048 
 domain = "frequency"
