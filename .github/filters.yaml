@@ -1,0 +1,19 @@
+# define filters for file changes
+# to trigger unit tests
+
+# filter for changes
+# to workflow
+workflow: &workflow
+  - '.github/filters.yaml'
+  - '.github/workflows/ci-tests.yaml'
+
+# libraries
+libs/injection/:
+  - *workflow
+  - 'libs/injection/**'
+
+# projects
+projects/sandbox/generate_waveforms/:
+  - *workflow
+  - 'projects/sandbox/generate_waveforms/**'
+  - 'libs/injection/**'

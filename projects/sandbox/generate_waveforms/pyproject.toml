@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-"mlpe.injection" = {path = "../../libs/injection", develop = true}
+"mlpe.injection" = {path = "../../../libs/injection", develop = true}
 "hermes.typeo" = "^0.1.5"
 
 [tool.poetry.scripts]
