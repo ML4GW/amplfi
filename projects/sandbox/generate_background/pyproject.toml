@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "generate_background"
+version = "0.1.0"
+description = "MIT"
+authors = ["ethan.marx <ethan.marx@ligo.org>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+"hermes.typeo" = "^0.1.5"
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
+
+[tool.typeo]
+start = 1263588390 
+stop = 1263698390 
+ifos = ['H1', 'L1']
+outdir = "${OUT_DIR}"
+sample_rate = 2048
+channel = "DCS-CALIB_STRAIN_CLEAN_C01"
+segment_name = "DCS-ANALYSIS_READY_C01:1"
+frame_type = "HOFT_C01"
+minimum_length = 8000
+
+[tool.poetry.scripts]
+generate-background = "generate_background:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
