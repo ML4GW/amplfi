@@ -17,6 +17,7 @@ repos:
     rev: v2.3.0
     hooks:
     - id: end-of-file-fixer
+    - id: check-yaml
 -   repo: https://github.com/pycqa/flake8
     rev: 3.9.2
     hooks:
