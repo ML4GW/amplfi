@@ -10,7 +10,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-bilby = "^1.1.5"
+bilby = "<1.2"
 lalsuite = "^7.4"
 
 "mlpe.base" = {path = "../base", extras = ["gwpy", "numpy"], develop = true}

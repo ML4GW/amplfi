@@ -3,6 +3,7 @@ from pathlib import Path
 import h5py
 import mlpe.injection.waveforms as waveforms
 import pytest
+from bilby.gw.conversion import convert_to_lal_binary_black_hole_parameters
 from bilby.gw.source import lal_binary_black_hole
 from generate_waveforms import main
 
@@ -91,6 +92,7 @@ def test_generate_waveforms_cbc_model(
             "reference_frequency": 50,
             "minimum_frequency": 20,
         },
+        parameter_conversion=convert_to_lal_binary_black_hole_parameters,
     )
 
     waveform_size = sample_rate * waveform_duration
