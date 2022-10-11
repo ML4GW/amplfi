@@ -5,22 +5,33 @@ import torch
 from nflows import distributions, flows, transforms, utils
 
 
-def coupling_flow(
+def create_flow(
     param_dim: int,
     context_dim: int,
-    hidden_dim: int = 512,
-    num_transform_blocks: int = 2,
-    activation: Callable = torch.nn.functional.relu,
-    dropout_probability: float = 0.0,
-    batch_norm: bool = False,
-    num_bins: int = 8,
-    tail_bound: float = 1.0,
-    apply_unconditional_transform: bool = False,
-    num_flow_steps: int = 4,
+    num_flow_steps: int,
     embedding_net: Optional[torch.nn.Module] = None,
+    **base_transform_kwargs
 ):
 
-    """ """
+    """
+    A normalizing flow model utilizing nflows
+
+    Args:
+        param_dim:
+            Number of parameters on
+            which inference is being performed
+        context_dim:
+            Dimension of the context on which
+            the parameters are conditioned
+        num_flow_steps:
+            Number of flow steps
+        embedding_net:
+            A torch.nn.Module that will embed the context
+            in a lower dimensional space before conditioning. Trained
+            alongside the flow
+        **base_transform_kwargs:
+            kwargs passed to the base transform
+    """
 
     # base distribution to learn transform for
     distribution = distributions.StandardNormal((param_dim,))
@@ -34,14 +45,7 @@ def coupling_flow(
                         i,
                         param_dim,
                         context_dim,
-                        hidden_dim,
-                        num_transform_blocks,
-                        activation,
-                        dropout_probability,
-                        batch_norm,
-                        num_bins,
-                        tail_bound,
-                        apply_unconditional_transform,
+                        **base_transform_kwargs,
                     ),
                 ]
             )
@@ -68,14 +72,14 @@ def create_base_transform(
     idx: int,
     param_dim: int,
     context_dim: int,
-    hidden_dim: int,
-    num_transform_blocks: int,
-    activation: Callable,
-    dropout_probability: float,
-    batch_norm: bool,
-    num_bins: int,
-    tail_bound: float,
-    apply_unconditional_transform: bool,
+    hidden_dim: int = 512,
+    num_transform_blocks: int = 2,
+    activation: Callable = torch.nn.functional.relu,
+    dropout_probability: float = 0.0,
+    batch_norm: bool = False,
+    num_bins: int = 8,
+    tail_bound: float = 1.0,
+    apply_unconditional_transform: bool = False,
 ):
     transform = transforms.PiecewiseRationalQuadraticCouplingTransform(
         mask=utils.create_alternating_binary_mask(

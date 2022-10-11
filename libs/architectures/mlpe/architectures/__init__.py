@@ -1,1 +1,1 @@
-from .normalizing_flow import coupling_flow
+from .normalizing_flow import create_flow
