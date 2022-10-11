@@ -14,7 +14,8 @@ def create_flow(
 ):
 
     """
-    A normalizing flow model utilizing nflows
+    Creates a normalizing flow with nflows that
+    uses a piecewise rational quadratic coupling transform.
 
     Args:
         param_dim:
@@ -57,8 +58,6 @@ def create_flow(
     # create flow transform
     flow = flows.Flow(transform, distribution, embedding_net=embedding_net)
 
-    # Store hyperparameters. This is for reconstructing model when loading from
-    # saved file.
     flow.model_hyperparams = {
         "param_dim": param_dim,
         "num_flow_steps": num_flow_steps,
@@ -78,6 +77,7 @@ def create_base_transform(
     dropout_probability: float = 0.0,
     batch_norm: bool = False,
     num_bins: int = 8,
+    tails: str = "linear",
     tail_bound: float = 1.0,
     apply_unconditional_transform: bool = False,
 ):
@@ -98,7 +98,7 @@ def create_base_transform(
             )
         ),
         num_bins=num_bins,
-        tails="linear",
+        tails=tails,
         tail_bound=tail_bound,
         apply_unconditional_transform=apply_unconditional_transform,
     )
