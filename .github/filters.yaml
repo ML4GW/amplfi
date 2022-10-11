@@ -12,6 +12,10 @@ libs/injection/:
   - *workflow
   - 'libs/injection/**'
 
+libs/architectures/:
+  - *workflow
+  - 'libs/architectures/**'
+
 # projects
 projects/sandbox/generate_waveforms/:
   - *workflow
