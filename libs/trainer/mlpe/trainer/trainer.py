@@ -3,7 +3,6 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple
 
-import h5py
 import numpy as np
 import torch
 
@@ -28,15 +27,16 @@ def train_for_one_epoch(
     flow.train()
     device = next(flow.parameters()).device
 
-    for data, context in train_dataset:
+    for parameters, context in train_dataset:
+
         optimizer.zero_grad(set_to_none=True)  # reset gradient
 
         with torch.autocast("cuda", enabled=scaler is not None):
-            loss = -flow.log_prob(data, context=context)
+            loss = -flow.log_prob(parameters, context=context)
 
         train_loss += loss.detach().sum()
         loss = loss.mean()
-        samples_seen += len(data)
+        samples_seen += len(parameters)
 
         if scaler is not None:
             scaler.scale(loss).backward()
@@ -77,13 +77,13 @@ def train_for_one_epoch(
         # since no gradient calculation that requires
         # higher precision?
         with torch.no_grad():
-            for data, context in valid_dataset:
-                data, context = data.to(device), context.to(device)
-                loss = -flow.log_prob(data, context=context)
+            for parameters, context in valid_dataset:
+                parameters, context = parameters.to(device), context.to(device)
+                loss = -flow.log_prob(parameters, context=context)
 
                 valid_loss += loss.detach().sum()
                 loss = loss.mean()
-                samples_seen += len(data)
+                samples_seen += len(parameters)
 
         valid_loss /= samples_seen
         msg += f", Valid Loss: {valid_loss:.4e}"
@@ -100,7 +100,6 @@ def train(
     # data params
     train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
     valid_dataset: Iterable[Tuple[np.ndarray, np.ndarray]] = None,
-    preprocessor: Optional[torch.nn.Module] = None,
     # optimization params
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
@@ -114,12 +113,12 @@ def train(
     use_amp: bool = False,
     profile: bool = False,
 ) -> float:
-    """Train BBHnet model on in-memory data
+    """Train Flow model on in-memory data
     Args:
         architecture:
             A callable which takes as its only input the number
-            of ifos, and returns an initialized torch
-            Module
+            of parameters, and dimension of the context and returns
+            a nflows.Flow object
         outdir:
             Location to save training artifacts like optimized
             weights, preprocessing objects, and visualizations
@@ -164,30 +163,18 @@ def train(
     device = device or "cpu"
     outdir.mkdir(exist_ok=True)
 
-    X, y = next(iter(train_dataset))
-    if preprocessor is not None:
-        X = preprocessor(X)
-    with h5py.File(outdir / "batch.h5", "w") as f:
-        f["X"] = X.cpu().numpy()
-        f["y"] = y.cpu().numpy()
+    # infer the dimension of the parameters
+    # and the context from the batch
+    parameters, context = next(iter(train_dataset))
+    param_dim = len(parameters)
+    context_dim = len(context)
 
     logging.info(f"Device: {device}")
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
-    # hard coded since we haven't generalized to multiple ifos
-    # pull request to generalize dataloader is a WIP
-    num_ifos = 2
-
-    model = architecture(num_ifos)
-    model.to(device)
-
-    # if we passed a module for preprocessing,
-    # include it in the model so that the weights
-    # get exported along with everything else
-    if preprocessor is not None:
-        preprocessor.to(device)
-        model = torch.nn.Sequential(preprocessor, model)
+    flow = architecture(param_dim, context_dim)
+    flow.to(device)
 
     if init_weights is not None:
         # allow us to easily point to the best weights
@@ -198,13 +185,13 @@ def train(
         logging.debug(
             f"Initializing model weights from checkpoint '{init_weights}'"
         )
-        model.load_state_dict(torch.load(init_weights))
+        flow.load_state_dict(torch.load(init_weights))
 
-    logging.info(model)
+    logging.info(flow)
     logging.info("Initializing loss and optimizer")
 
     optimizer = torch.optim.Adam(
-        model.parameters(), lr=lr, weight_decay=weight_decay
+        flow.parameters(), lr=lr, weight_decay=weight_decay
     )
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=decay_steps, eta_min=min_lr
@@ -239,7 +226,7 @@ def train(
 
         logging.info(f"=== Epoch {epoch + 1}/{max_epochs} ===")
         train_loss, valid_loss, duration, throughput = train_for_one_epoch(
-            model,
+            flow,
             optimizer,
             train_dataset,
             valid_dataset,
@@ -272,7 +259,7 @@ def train(
                 best_valid_loss = valid_loss
 
                 weights_path = outdir / "weights.pt"
-                torch.save(model.state_dict(), weights_path)
+                torch.save(flow.state_dict(), weights_path)
                 since_last_improvement = 0
             else:
                 since_last_improvement += 1
