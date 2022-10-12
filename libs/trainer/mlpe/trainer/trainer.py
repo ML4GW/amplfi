@@ -1,7 +1,9 @@
 import logging
 import time
+from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple
 
+import h5py
 import numpy as np
 import torch
 
@@ -90,3 +92,196 @@ def train_for_one_epoch(
 
     logging.info(msg)
     return train_loss, valid_loss, duration, throughput
+
+
+def train(
+    architecture: Callable,
+    outdir: str,
+    # data params
+    train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
+    valid_dataset: Iterable[Tuple[np.ndarray, np.ndarray]] = None,
+    preprocessor: Optional[torch.nn.Module] = None,
+    # optimization params
+    max_epochs: int = 40,
+    init_weights: Optional[Path] = None,
+    lr: float = 1e-3,
+    min_lr: float = 1e-5,
+    decay_steps: int = 10000,
+    weight_decay: float = 0.0,
+    early_stop: int = 20,
+    # misc params
+    device: Optional[str] = None,
+    use_amp: bool = False,
+    profile: bool = False,
+) -> float:
+    """Train BBHnet model on in-memory data
+    Args:
+        architecture:
+            A callable which takes as its only input the number
+            of ifos, and returns an initialized torch
+            Module
+        outdir:
+            Location to save training artifacts like optimized
+            weights, preprocessing objects, and visualizations
+        train_dataset:
+            An Iterable of (X, y) pairs where X is a batch of training
+            data and y is the corresponding targets
+        valid_dataset:
+            An Iterable of (X, y) pairs where X is a batch of training
+            data and y is the corresponding targets
+        max_epochs:
+            Maximum number of epochs over which to train.
+        init_weights:
+            Path to weights with which to initialize network. If
+            left as `None`, network will be randomly initialized.
+            If `init_weights` is a directory, it will be assumed
+            that this directory contains a file called `weights.pt`.
+        lr:
+            Learning rate to use during training.
+        min_lr:
+            Minimum learning rate to decay to throughout training.
+        decay_steps:
+            The number of steps over which to decay from lr to min_lr.
+        weight_decay:
+            Amount of regularization to apply during training.
+        early_stop:
+            Number of epochs without improvement in validation
+            loss before training terminates altogether. Ignored
+            if `valid_data is None`.
+        device:
+            Indicating which device (i.e. cpu or gpu) to run on. Use
+            `"cuda"` to use the default GPU available, or `"cuda:{i}`"`,
+            where `i` is a valid GPU index on your machine, to specify
+            a specific GPU (alternatively, consider setting the environment
+            variable `CUDA_VISIBLE_DEVICES=${i}` and using just `"cuda"`
+            here).
+        profile:
+            Whether to generate a tensorboard profile of the
+            training step on the first epoch. This will make
+            this first epoch slower.
+    """
+
+    device = device or "cpu"
+    outdir.mkdir(exist_ok=True)
+
+    X, y = next(iter(train_dataset))
+    if preprocessor is not None:
+        X = preprocessor(X)
+    with h5py.File(outdir / "batch.h5", "w") as f:
+        f["X"] = X.cpu().numpy()
+        f["y"] = y.cpu().numpy()
+
+    logging.info(f"Device: {device}")
+    # Creating model, loss function, optimizer and lr scheduler
+    logging.info("Building and initializing model")
+
+    # hard coded since we haven't generalized to multiple ifos
+    # pull request to generalize dataloader is a WIP
+    num_ifos = 2
+
+    model = architecture(num_ifos)
+    model.to(device)
+
+    # if we passed a module for preprocessing,
+    # include it in the model so that the weights
+    # get exported along with everything else
+    if preprocessor is not None:
+        preprocessor.to(device)
+        model = torch.nn.Sequential(preprocessor, model)
+
+    if init_weights is not None:
+        # allow us to easily point to the best weights
+        # from another run of this same function
+        if init_weights.is_dir():
+            init_weights = init_weights / "weights.pt"
+
+        logging.debug(
+            f"Initializing model weights from checkpoint '{init_weights}'"
+        )
+        model.load_state_dict(torch.load(init_weights))
+
+    logging.info(model)
+    logging.info("Initializing loss and optimizer")
+
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=lr, weight_decay=weight_decay
+    )
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=decay_steps, eta_min=min_lr
+    )
+
+    # start training
+    torch.backends.cudnn.benchmark = True
+
+    # start training
+    scaler = None
+    if use_amp and device.startswith("cuda"):
+        scaler = torch.cuda.amp.GradScaler()
+    elif use_amp:
+        logging.warning("'use_amp' flag set but no cuda device, ignoring")
+
+    best_valid_loss = np.inf
+    since_last_improvement = 0
+    history = {"train_loss": [], "valid_loss": []}
+
+    logging.info("Beginning training loop")
+    for epoch in range(max_epochs):
+        if epoch == 0 and profile:
+            profiler = torch.profiler.profile(
+                schedule=torch.profiler.schedule(wait=0, warmup=1, active=10),
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    outdir / "profile"
+                ),
+            )
+            profiler.start()
+        else:
+            profiler = None
+
+        logging.info(f"=== Epoch {epoch + 1}/{max_epochs} ===")
+        train_loss, valid_loss, duration, throughput = train_for_one_epoch(
+            model,
+            optimizer,
+            train_dataset,
+            valid_dataset,
+            profiler,
+            scaler,
+            lr_scheduler,
+        )
+
+        history["train_loss"].append(train_loss)
+
+        # do some house cleaning with our
+        # validation loss if we have one
+        if valid_loss is not None:
+            history["valid_loss"].append(valid_loss)
+
+            # update our learning rate scheduler if we
+            # indicated a schedule with `patience`
+            # if patience is not None:
+            #     lr_scheduler.step(valid_loss)
+
+            # save this version of the model weights if
+            # we achieved a new best loss, otherwise check
+            # to see if we need to early stop based on
+            # plateauing validation loss
+            if valid_loss < best_valid_loss:
+                logging.debug(
+                    "Achieved new lowest validation loss, "
+                    "saving model weights"
+                )
+                best_valid_loss = valid_loss
+
+                weights_path = outdir / "weights.pt"
+                torch.save(model.state_dict(), weights_path)
+                since_last_improvement = 0
+            else:
+                since_last_improvement += 1
+                if since_last_improvement >= early_stop:
+                    logging.info(
+                        "No improvement in validation loss in {} "
+                        "epochs, halting training early".format(early_stop)
+                    )
+                    break
+
+    # return the training results
+    return history
