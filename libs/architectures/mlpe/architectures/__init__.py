@@ -1,1 +1,1 @@
-from .normalizing_flow import create_flow
+from .wrapper import architecturize
