@@ -64,6 +64,9 @@ jobs:
         env:
           test_dir: /github/workspace/${{ matrix.library }}
         run: |
+            if [[ "${{matrix.library}}" == "libs/architectures/" ]]; then
+                pinto -p $test_dir build -E wrapper
+            fi
             pinto -p $test_dir run pytest $test_dir/tests ${{matrix.args}}
         shell: bash
         

@@ -16,6 +16,11 @@ libs/architectures/:
   - *workflow
   - 'libs/architectures/**'
 
+libs/trainer/:
+  - *workflow
+  - 'libs/trainer/**'
+
+
 # projects
 projects/sandbox/generate_waveforms/:
   - *workflow
