@@ -1,10 +1,10 @@
 import inspect
 
-from hermes.typeo import typeo
-from hermes.typeo.typeo import _parse_doc, _parse_help
 from mlpe.architectures import get_arch_fns
 
 from bbhnet.trainer.trainer import train
+from hermes.typeo import typeo
+from hermes.typeo.typeo import _parse_doc, _parse_help
 
 
 def _configure_wrapper(f, wrapper):
