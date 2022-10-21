@@ -1,3 +1,6 @@
 [submodule "projects/sandbox/generate_waveforms/ml4gw"]
 	path = projects/sandbox/generate_waveforms/ml4gw
 	url = https://github.com/ML4GW/ml4gw
+[submodule "projects/sandbox/generate_waveforms/hermes"]
+	path = projects/sandbox/generate_waveforms/hermes
+	url = https://github.com/ML4GW/hermes
