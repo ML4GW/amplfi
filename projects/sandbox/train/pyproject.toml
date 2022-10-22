@@ -4,11 +4,12 @@ version = "0.1.0"
 description = "Generate training data and launch trainer"
 authors = ["ethan.marx <ethan.marx@ligo.org>"]
 license = "MIT"
-readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-
+python = ">=3.8,<3.11"
+"mlpe.data" = {path = "../../../libs/data", develop  = true}
+"mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
 
 [build-system]
 requires = ["poetry-core"]
