@@ -9,7 +9,7 @@ packages = [{include = "mlpe"}]
 [tool.poetry.dependencies]
 python = " >=3.8,<3.11"
 "ml4gw" = {path = "../../ml4gw", develop = true}
-"mlpe.base" = {path = "../base", extras = ["gwpy"], develop = true}
+"mlpe.base" = {path = "../base", extras = ["gwpy", "numpy"], develop = true}
 
 
 [build-system]

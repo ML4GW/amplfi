@@ -3,6 +3,7 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple
 
+import h5py
 import numpy as np
 import torch
 
@@ -27,12 +28,12 @@ def train_for_one_epoch(
     flow.train()
     device = next(flow.parameters()).device
 
-    for parameters, context in train_dataset:
+    for strain, parameters in train_dataset:
 
         optimizer.zero_grad(set_to_none=True)  # reset gradient
 
         with torch.autocast("cuda", enabled=scaler is not None):
-            loss = -flow.log_prob(parameters, context=context)
+            loss = -flow.log_prob(parameters, context=strain)
 
         train_loss += loss.detach().sum()
         loss = loss.mean()
@@ -77,9 +78,9 @@ def train_for_one_epoch(
         # since no gradient calculation that requires
         # higher precision?
         with torch.no_grad():
-            for parameters, context in valid_dataset:
-                parameters, context = parameters.to(device), context.to(device)
-                loss = -flow.log_prob(parameters, context=context)
+            for strain, parameters in valid_dataset:
+                strain, parameters = strain.to(device), parameters.to(device)
+                loss = -flow.log_prob(parameters, context=strain)
 
                 valid_loss += loss.detach().sum()
                 loss = loss.mean()
@@ -96,10 +97,11 @@ def train_for_one_epoch(
 
 def train(
     architecture: Callable,
-    outdir: str,
+    outdir: Path,
     # data params
     train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
     valid_dataset: Iterable[Tuple[np.ndarray, np.ndarray]] = None,
+    preprocessor: Optional[torch.nn.Module] = None,
     # optimization params
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
@@ -165,15 +167,24 @@ def train(
 
     # infer the dimension of the parameters
     # and the context from the batch
-    parameters, context = next(iter(train_dataset))
-    param_dim = len(parameters)
-    context_dim = len(context)
+    strain, parameters = next(iter(train_dataset))
+    if preprocessor is not None:
+        strain, parameters = preprocessor(strain, parameters)
 
+    with h5py.File(outdir / "batch.h5", "w") as f:
+        f["strain"] = strain.cpu().numpy()
+        f["parameters"] = parameters.cpu().numpy()
+
+    param_dim = parameters.shape[-1]
+    context_dim = strain.shape[-1]
+    print(param_dim, context_dim)
     logging.info(f"Device: {device}")
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
-    flow = architecture(param_dim, context_dim)
+    # instantiate the architecture and
+    # grab the flow
+    flow = architecture((param_dim, context_dim)).flow
     flow.to(device)
 
     if init_weights is not None:

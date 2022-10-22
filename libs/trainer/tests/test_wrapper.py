@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 
 import pytest
 import torch
@@ -9,7 +10,7 @@ from mlpe.trainer.wrapper import trainify
 @pytest.fixture(scope="session")
 def outdir(tmpdir_factory):
     out_dir = tmpdir_factory.mktemp("out")
-    return out_dir
+    return Path(out_dir)
 
 
 @pytest.fixture(params=[True, False])
@@ -34,9 +35,10 @@ class dataset:
         if self.i == self.batches:
             raise StopIteration
         x = torch.randn(8, 2, 512).type(torch.float32)
-        y = torch.randint(0, 2, size=(8, 1)).type(torch.float32)
+        x = x.view(8, 1024)
+        params = torch.randn(8, 10).type(torch.float32)
         self.i += 1
-        return x, y
+        return x, params
 
     def to(self, device):
         return
@@ -46,10 +48,9 @@ class Preprocessor(Transform):
     def __init__(self):
         super().__init__()
         self.factor = self.add_parameter(10.0)
-        print(self.factor)
 
-    def forward(self, x):
-        return self.factor * x
+    def forward(self, x, params):
+        return self.factor * x, self.factor * params
 
     def to(self, device):
         super().to(device)
@@ -107,8 +108,8 @@ def test_wrapper(data_fn, preprocess, outdir, unique_args):
         4,
         outdir=outdir,
         max_epochs=1,
-        arch="resnet",
-        layers=[2, 2, 2],
+        arch="coupling",
+        num_flow_steps=10,
     )
     assert len(result["train_loss"]) == 1
 
@@ -120,9 +121,8 @@ def test_wrapper(data_fn, preprocess, outdir, unique_args):
         "4",
         "--max-epochs",
         "1",
-        "resnet",
-        "--layers",
-        "2",
+        "coupling",
+        "--num-flow-steps",
         "2",
     ]
 

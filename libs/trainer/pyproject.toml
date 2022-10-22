@@ -7,7 +7,7 @@ license = "MIT"
 packages = [{include = "mlpe"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.8,<3.11"
 h5py = "^3.7.0"
 nflows = "^0.14"
 "mlpe.data" = {path = "../data", develop = true}
