@@ -11,18 +11,36 @@ workflow: &workflow
 libs/injection/:
   - *workflow
   - 'libs/injection/**'
+  - 'libs/base/**'
 
 libs/architectures/:
   - *workflow
   - 'libs/architectures/**'
-
+  
 libs/trainer/:
   - *workflow
   - 'libs/trainer/**'
+  - 'libs/architectures/**'
+  - 'libs/data/**'
 
+libs/data/:
+  - *workflow
+  - 'libs/data/**'
+  - 'ml4gw/**'
+  - 'libs/base/**'
 
 # projects
 projects/sandbox/generate_waveforms/:
   - *workflow
   - 'projects/sandbox/generate_waveforms/**'
   - 'libs/injection/**'
+
+projects/sandbox/generate_background/:
+  - *workflow
+  - 'projects/sandbox/generate_background/**'
+
+projects/sandbox/train/:
+  - *workflow
+  - 'projects/sandbox/train/**'
+  - 'ml4gw/**'
+  - 'libs/data/**'
