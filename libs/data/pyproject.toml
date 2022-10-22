@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "mlpe.data"
+version = "0.1.0"
+description = "Dataloading tools"
+authors = ["ethan.marx <ethan.marx@ligo.org>"]
+license = "MIT"
+packages = [{include = "mlpe"}]
+
+[tool.poetry.dependencies]
+python = " >=3.8,<3.11"
+"ml4gw" = {path = "../../ml4gw", develop = true}
+"mlpe.base" = {path = "../base", extras = ["gwpy"], develop = true}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

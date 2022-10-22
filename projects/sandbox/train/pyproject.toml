@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "train"
+version = "0.1.0"
+description = "Generate training data and launch trainer"
+authors = ["ethan.marx <ethan.marx@ligo.org>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
