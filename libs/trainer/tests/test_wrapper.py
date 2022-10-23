@@ -35,7 +35,6 @@ class dataset:
         if self.i == self.batches:
             raise StopIteration
         x = torch.randn(8, 2, 512).type(torch.float32)
-        x = x.view(8, 1024)
         params = torch.randn(8, 10).type(torch.float32)
         self.i += 1
         return x, params
