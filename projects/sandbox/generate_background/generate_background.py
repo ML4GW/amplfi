@@ -39,21 +39,20 @@ def main(
     # make logdir dir
     logdir.mkdir(exist_ok=True, parents=True)
     datadir.mkdir(exist_ok=True, parents=True)
+
     # configure logging output file
     configure_logging(logdir / "generate_background.log", verbose)
 
     # check if paths already exist
     # TODO: maybe put all background in one path
-    paths_exist = [
-        Path(datadir / f"{ifo}_background.h5").exists() for ifo in ifos
-    ]
+    background_file = datadir / "background.h5"
 
-    if all(paths_exist) and not force_generation:
+    if background_file.exists() and not force_generation:
         logging.info(
             "Background data already exists"
             " and forced generation is off. Not generating background"
         )
-        return
+        return background_file
 
     # query segments for each ifo
     # I think a certificate is needed for this
@@ -117,3 +116,5 @@ def main(
 
             f.create_dataset(f"{ifo}", data=data)
             f.attrs.update({"t0": float(segment[0])})
+
+    return background_file

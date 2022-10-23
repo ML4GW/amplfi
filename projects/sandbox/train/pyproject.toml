@@ -12,7 +12,7 @@ python = ">=3.8,<3.11"
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 
 [tool.poetry.scripts]
-train = "train.train:main"
+train = "train:main"
 
 [build-system]
 requires = ["poetry-core"]

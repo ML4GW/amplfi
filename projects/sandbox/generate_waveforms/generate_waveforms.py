@@ -1,9 +1,11 @@
+import logging
 from pathlib import Path
 from typing import Callable, Dict, Optional
 
 import bilby
 import h5py
 import mlpe.injection as injection
+from mlpe.logging import configure_logging
 
 from hermes.typeo import typeo
 
@@ -19,6 +21,8 @@ def main(
     logdir: Path,
     waveform_arguments: Optional[Dict] = None,
     parameter_conversion: Optional[Callable] = None,
+    force_generation: bool = False,
+    verbose: bool = False,
 ):
     """Generates a dataset of raw waveforms. The goal was to make this
     project waveform agnositic
@@ -40,9 +44,22 @@ def main(
             waveform_approximant
     """
 
+    configure_logging(logdir / "generate_waveforms.log", verbose)
     # make data dir
     datadir.mkdir(exist_ok=True, parents=True)
     signal_file = datadir / "signals.h5"
+
+    if signal_file.exists() and not force_generation:
+        logging.info(
+            "Signal data already exists and forced generation is off. "
+            "Not generating signals."
+        )
+        return signal_file
+
+    # if prior file is a relative path,
+    # make it relative to this script
+    if not prior_file.is_absolute():
+        prior_file = Path(__file__).resolve().parent / prior_file
 
     # initiate prior and sample
     priors = bilby.gw.prior.PriorDict(str(prior_file))

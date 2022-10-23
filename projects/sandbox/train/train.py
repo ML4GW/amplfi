@@ -6,15 +6,16 @@ import h5py
 import numpy as np
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.distributions import Cosine, Uniform
-from mlpe.data.transforms import Preprocessor, StandardScalerTransform
+from mlpe.data.transforms import Preprocessor
+from mlpe.logging import configure_logging
 from mlpe.trainer import trainify
 
 from ml4gw.transforms import RandomWaveformInjection
 
 
-def load_background(background: Path, *ifos):
+def load_background(background_path: Path, ifos):
     background = []
-    with h5py.File(background) as f:
+    with h5py.File(background_path) as f:
         for ifo in ifos:
             hoft = f[ifo][:]
             background.append(hoft)
@@ -31,7 +32,8 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
         # of parameters throughout pipeline?
         data = []
         for param in parameter_names:
-            data.append(f[param][:])
+            if param not in ["ra", "dec", "psi"]:
+                data.append(f[param][:])
 
         parameters = np.column_stack(data)
 
@@ -54,10 +56,13 @@ def main(
     device: str,
     outdir: Path,
     logdir: Path,
+    verbose: bool = False,
+    **kwargs
 ):
 
+    configure_logging(logdir / "train.log", verbose)
     num_ifos = len(ifos)
-    num_params = len(inference_params)
+    # num_params = len(inference_params)
 
     # load in background
     background = load_background(background_path, ifos)
@@ -66,16 +71,18 @@ def main(
 
     # prepare injector
     injector = RandomWaveformInjection(
+        sample_rate,
+        ifos,
         dec=Cosine(),
         psi=Uniform(0, pi),
         phi=Uniform(-pi, pi),
-        sample_rate=sample_rate,
         intrinsic_parameters=parameters,
         trigger_offset=trigger_distance,
         plus=plus,
         cross=cross,
     )
 
+    injector.to(device)
     # create full training dataloader
     train_dataset = PEInMemoryDataset(
         background,
@@ -89,8 +96,9 @@ def main(
     )
 
     # fit standard scaler to parameters
-    standard_scaler = StandardScalerTransform(num_params)
-    standard_scaler.fit(parameters)
+    # print(num_params, parameters.shape)
+    # standard_scaler = StandardScalerTransform(num_params)
+    # standard_scaler.fit(parameters)
 
     # create preprocessor
     # out of whitening transform
@@ -101,10 +109,14 @@ def main(
         num_ifos,
         sample_rate,
         kernel_length,
-        normalizer=standard_scaler,
+        # normalizer=standard_scaler,
         fduration=fduration,
         highpass=highpass,
     )
 
+    preprocessor.whitener.fit(background)
+    preprocessor.whitener.to(device)
+
     # TODO: Validation
-    return train_dataset, preprocessor
+    valid_dataset = None
+    return train_dataset, valid_dataset, preprocessor

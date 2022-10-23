@@ -1,7 +1,7 @@
 [tool.pinto]
 steps = [
-    "generate_background:generate-background",
-    "generate_waveforms:generate-waveforms",
+    #"generate_background:generate-background",
+    #"generate_waveforms:generate-waveforms",
     "train:train:coupling"
 ]
 
@@ -18,16 +18,14 @@ test_stop = 1262751694
 channel = "DCS-CALIB_STRAIN_CLEAN_C01"
 frame_type = "HOFT_C01"
 state_flag = "DCS-ANALYSIS_READY_C01:1"
-resnet = {layers = [3, 3, 3]}
 repository_directory = "${BASE_DIR}/model_repo/" 
-force_generation = false
+force_generation = true
 kernel_length = 2
-inference_sampling_rate = 16
-minimum_frequency = 20 
-reference_frequency = 50
 highpass = 32
 fduration = 1
 prior_file = "priors/sine_gaussian.prior"
+coupling = {num_flow_steps = 10}
+
 
 [tool.typeo.scripts.generate-background]
 datadir = "${base.datadir}"
@@ -39,7 +37,7 @@ start = "${base.start}"
 stop = "${base.stop}" 
 ifos = "${base.ifos}"
 sample_rate = "${base.sample_rate}" 
-minimum_length = 8000
+minimum_length = 10000
 force_generation = "${base.force_generation}"
 
 [tool.typeo.scripts.generate-waveforms]
@@ -51,3 +49,34 @@ sample_rate = "${base.sample_rate}"
 waveform_duration = 8
 force_generation = "${base.force_generation}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
+
+[tool.typeo.scripts.train]
+waveform_dataset = "${base.datadir}/signals.h5"
+background_path = "${base.datadir}/background.h5" 
+logdir = "${base.logdir}"
+outdir = "${base.basedir}/training"
+inference_params = ["frequency", "quality", "ra", "dec", "psi"]
+
+ifos = "${base.ifos}"
+
+kernel_length = "${base.kernel_length}"
+sample_rate = "${base.sample_rate}"
+fduration = "${base.fduration}"
+highpass = 32 
+trigger_distance = -0.5
+batch_size = 512
+batches_per_epoch = 200
+max_epochs = 200
+
+lr = 4e-3
+min_lr = 1e-5
+decay_steps = 10000
+weight_decay = 1e-5
+early_stop = 20
+
+device = "cuda"
+profile = false
+use_amp = false
+
+# arch parameters
+commands.coupling = "${base.coupling}"

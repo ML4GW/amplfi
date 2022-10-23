@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 def train_for_one_epoch(
     flow: "transforms.flow",
+    preprocessor: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
     valid_dataset: Iterable[Tuple[np.ndarray, np.ndarray]] = None,
@@ -30,7 +31,9 @@ def train_for_one_epoch(
 
     for strain, parameters in train_dataset:
 
+        strain, parameters = preprocessor(strain, parameters)
         optimizer.zero_grad(set_to_none=True)  # reset gradient
+        strain = strain.reshape(len(strain), -1)
 
         with torch.autocast("cuda", enabled=scaler is not None):
             loss = -flow.log_prob(parameters, context=strain)
@@ -169,15 +172,16 @@ def train(
     # and the context from the batch
     strain, parameters = next(iter(train_dataset))
     if preprocessor is not None:
+        print(strain)
         strain, parameters = preprocessor(strain, parameters)
-
+        print(strain)
     with h5py.File(outdir / "batch.h5", "w") as f:
         f["strain"] = strain.cpu().numpy()
         f["parameters"] = parameters.cpu().numpy()
 
     param_dim = parameters.shape[-1]
-    context_dim = strain.shape[-1]
-    print(param_dim, context_dim)
+    context_dim = strain.shape[-1] * strain.shape[-2]
+
     logging.info(f"Device: {device}")
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
@@ -186,6 +190,12 @@ def train(
     # grab the flow
     flow = architecture((param_dim, context_dim)).flow
     flow.to(device)
+
+    # if we passed a module for preprocessing,
+    # include it in the model so that the weights
+    # get exported along with everything else
+    if preprocessor is not None:
+        preprocessor.to(device)
 
     if init_weights is not None:
         # allow us to easily point to the best weights
@@ -238,6 +248,7 @@ def train(
         logging.info(f"=== Epoch {epoch + 1}/{max_epochs} ===")
         train_loss, valid_loss, duration, throughput = train_for_one_epoch(
             flow,
+            preprocessor,
             optimizer,
             train_dataset,
             valid_dataset,

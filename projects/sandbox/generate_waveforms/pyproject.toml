@@ -8,21 +8,12 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
+
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "hermes.typeo" = "^0.1.5"
 
 [tool.poetry.scripts]
 generate-waveforms = "generate_waveforms:main"
-
-
-[tool.typeo]
-waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-prior = "./priors/sine_gaussian.prior"  
-sample_rate = 2048 
-domain = "frequency"
-n_samples = 100 
-waveform_duration = 4
-datadir = "./data/"
-logdir = "./log/"
 
 [build-system]
 requires = ["poetry-core"]
