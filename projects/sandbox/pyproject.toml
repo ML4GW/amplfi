@@ -1,0 +1,53 @@
+[tool.pinto]
+steps = [
+    "generate_background:generate-background",
+    "generate_waveforms:generate-waveforms",
+    "train:train:coupling"
+]
+
+
+[tool.typeo.base]
+basedir = "${BASE_DIR}"
+datadir = "${DATA_DIR}"
+logdir = "${BASE_DIR}/log"
+sample_rate = 2048
+ifos = ['H1', 'L1']
+start = 1262607622
+stop = 1262620622
+test_stop = 1262751694
+channel = "DCS-CALIB_STRAIN_CLEAN_C01"
+frame_type = "HOFT_C01"
+state_flag = "DCS-ANALYSIS_READY_C01:1"
+resnet = {layers = [3, 3, 3]}
+repository_directory = "${BASE_DIR}/model_repo/" 
+force_generation = false
+kernel_length = 2
+inference_sampling_rate = 16
+minimum_frequency = 20 
+reference_frequency = 50
+highpass = 32
+fduration = 1
+prior_file = "priors/sine_gaussian.prior"
+
+[tool.typeo.scripts.generate-background]
+datadir = "${base.datadir}"
+logdir = "${base.logdir}"
+channel = "${base.channel}"
+frame_type = "${base.frame_type}"
+state_flag = "${base.state_flag}"
+start = "${base.start}" 
+stop = "${base.stop}" 
+ifos = "${base.ifos}"
+sample_rate = "${base.sample_rate}" 
+minimum_length = 8000
+force_generation = "${base.force_generation}"
+
+[tool.typeo.scripts.generate-waveforms]
+datadir = "${base.datadir}"
+logdir = "${base.logdir}"
+n_samples = 10000
+prior_file = "${base.prior_file}"
+sample_rate = "${base.sample_rate}" 
+waveform_duration = 8
+force_generation = "${base.force_generation}"
+waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"

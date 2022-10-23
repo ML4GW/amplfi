@@ -7,6 +7,7 @@ import numpy as np
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.distributions import Cosine, Uniform
 from mlpe.data.transforms import Preprocessor, StandardScalerTransform
+from mlpe.trainer import trainify
 
 from ml4gw.transforms import RandomWaveformInjection
 
@@ -37,6 +38,7 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
     return plus, cross, parameters
 
 
+@trainify
 def main(
     background_path: Path,
     waveform_dataset: Path,

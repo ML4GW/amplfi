@@ -11,6 +11,9 @@ python = ">=3.8,<3.11"
 "mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 
+[tool.poetry.scripts]
+train = "train.train:main"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
