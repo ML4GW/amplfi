@@ -10,12 +10,12 @@ from generate_waveforms import main
 
 @pytest.fixture(params=["priors/nonspin_BBH.prior"])
 def cbc_prior_file(request):
-    return str(Path(__file__).resolve().parent / request.param)
+    return Path(__file__).resolve().parent / request.param
 
 
 @pytest.fixture(params=["priors/sine_gaussian.prior"])
 def sg_prior_file(request):
-    return str(Path(__file__).resolve().parent / request.param)
+    return Path(__file__).resolve().parent / request.param
 
 
 @pytest.fixture(params=[1, 2, 4])
