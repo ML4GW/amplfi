@@ -15,3 +15,6 @@ python = " >=3.8,<3.11"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+markers = ["gpu: run tests using default CUDA device"]

@@ -30,6 +30,9 @@ jobs:
       fail-fast: true # is this desired behavior here?
       matrix:
         library: ${{ fromJSON(needs.changes.outputs.libraries) }}
+        include: 
+          - library: 'libs/data/'
+            args: '-m "not gpu"'
         exclude:
           # don't run non-existent .github/workflow tests
           - library: 'workflow'
