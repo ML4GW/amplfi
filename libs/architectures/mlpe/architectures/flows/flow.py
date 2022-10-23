@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from typing import Callable
 
 import torch
+from mlpe.architectures.embeddings import Flattener
 from nflows import distributions, flows, transforms
 
 
@@ -11,7 +12,7 @@ class NormalizingFlow(ABC):
         param_dim: int,
         context_dim: int,
         num_flow_steps: int,
-        embedding_net: Optional[torch.nn.Module] = None,
+        embedding_net: torch.nn.Module = Flattener(),
     ):
 
         self.param_dim = param_dim
@@ -47,6 +48,7 @@ class NormalizingFlow(ABC):
             + [self.linear_block()]
         )
 
+        print(self.embedding_net)
         flow = flows.Flow(
             self.transform,
             self.distribution(),

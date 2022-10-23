@@ -39,21 +39,20 @@ def main(
     # make logdir dir
     logdir.mkdir(exist_ok=True, parents=True)
     datadir.mkdir(exist_ok=True, parents=True)
+
     # configure logging output file
     configure_logging(logdir / "generate_background.log", verbose)
 
     # check if paths already exist
     # TODO: maybe put all background in one path
-    paths_exist = [
-        Path(datadir / f"{ifo}_background.h5").exists() for ifo in ifos
-    ]
+    background_file = datadir / "background.h5"
 
-    if all(paths_exist) and not force_generation:
+    if background_file.exists() and not force_generation:
         logging.info(
             "Background data already exists"
             " and forced generation is off. Not generating background"
         )
-        return
+        return background_file
 
     # query segments for each ifo
     # I think a certificate is needed for this
@@ -89,28 +88,33 @@ def main(
         "from {} to {}".format(*segment)
     )
 
-    for ifo in ifos:
+    with h5py.File(datadir / "background.h5", "w") as f:
+        for ifo in ifos:
 
-        # find frame files
-        files = find_urls(
-            site=ifo.strip("1"),
-            frametype=f"{ifo}_{frame_type}",
-            gpsstart=start,
-            gpsend=stop,
-            urltype="file",
-        )
-        data = TimeSeries.read(
-            files, channel=f"{ifo}:{channel}", start=segment[0], end=segment[1]
-        )
-
-        # resample
-        data = data.resample(sample_rate)
-
-        if np.isnan(data).any():
-            raise ValueError(
-                f"The background for ifo {ifo} contains NaN values"
+            # find frame files
+            files = find_urls(
+                site=ifo.strip("1"),
+                frametype=f"{ifo}_{frame_type}",
+                gpsstart=start,
+                gpsend=stop,
+                urltype="file",
+            )
+            data = TimeSeries.read(
+                files,
+                channel=f"{ifo}:{channel}",
+                start=segment[0],
+                end=segment[1],
             )
 
-        with h5py.File(datadir / f"{ifo}_background.h5", "w") as f:
-            f.create_dataset("hoft", data=data)
-            f.create_dataset("t0", data=float(segment[0]))
+            # resample
+            data = data.resample(sample_rate)
+
+            if np.isnan(data).any():
+                raise ValueError(
+                    f"The background for ifo {ifo} contains NaN values"
+                )
+
+            f.create_dataset(f"{ifo}", data=data)
+            f.attrs.update({"t0": float(segment[0])})
+
+    return background_file

@@ -7,7 +7,7 @@ license = "MIT"
 packages = [{include = "mlpe"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.8,<3.11"
 nflows = "^0.14"
 torch = "^1.0"
 "hermes.typeo" = { version="^0.1.4", optional = true}

@@ -1,8 +1,8 @@
 import inspect
 
 from mlpe.architectures import get_arch_fns
+from mlpe.trainer.trainer import train
 
-from bbhnet.trainer.trainer import train
 from hermes.typeo import typeo
 from hermes.typeo.typeo import _parse_doc, _parse_help
 
@@ -89,6 +89,7 @@ def trainify(f):
         # add in the parsed data to our training kwargs
         train_kwargs["train_dataset"] = train_dataset
         train_kwargs["valid_dataset"] = valid_dataset
+        train_kwargs["preprocessor"] = preprocessor
 
         # allow wrapper functionality to be utilized if
         # `f` is called with an "arch" parameter
@@ -117,7 +118,7 @@ def trainify(f):
         else:
             # otherwise just return the train and valid datasets, equivalent
             # to running `f` without any wrapper functionality
-            result = train_dataset, valid_dataset
+            result = train_dataset, valid_dataset, preprocessor
 
         return result
 

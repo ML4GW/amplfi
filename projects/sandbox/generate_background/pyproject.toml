@@ -9,17 +9,7 @@ license = "MIT"
 python = ">=3.8,<3.11"
 "hermes.typeo" = "^0.1.5"
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
-
-[tool.typeo]
-start = 1263588390 
-stop = 1263698390 
-ifos = ['H1', 'L1']
-outdir = "${OUT_DIR}"
-sample_rate = 2048
-channel = "DCS-CALIB_STRAIN_CLEAN_C01"
-segment_name = "DCS-ANALYSIS_READY_C01:1"
-frame_type = "HOFT_C01"
-minimum_length = 8000
+"mlpe.base" = {path = "../../../libs/base", extras = ["numpy"], develop = true}
 
 [tool.poetry.scripts]
 generate-background = "generate_background:main"

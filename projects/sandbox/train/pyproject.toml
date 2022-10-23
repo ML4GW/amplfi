@@ -1,19 +1,18 @@
 [tool.poetry]
-name = "generate_waveforms"
+name = "train"
 version = "0.1.0"
-description = "Project for generating a waveform dataset of arbitrary morphology"
+description = "Generate training data and launch trainer"
 authors = ["ethan.marx <ethan.marx@ligo.org>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-"mlpe.injection" = {path = "../../../libs/injection", develop = true}
-
+"mlpe.data" = {path = "../../../libs/data", develop  = true}
+"mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
-"hermes.typeo" = "^0.1.5"
 
 [tool.poetry.scripts]
-generate-waveforms = "generate_waveforms:main"
+train = "train:main"
 
 [build-system]
 requires = ["poetry-core"]

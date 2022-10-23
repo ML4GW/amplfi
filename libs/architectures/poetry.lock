@@ -83,7 +83,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "fonttools"
-version = "4.37.4"
+version = "4.38.0"
 description = "Tools to manipulate font files"
 category = "main"
 optional = false
@@ -625,8 +625,8 @@ wrapper = ["hermes.typeo"]
 
 [metadata]
 lock-version = "1.1"
-python-versions = "^3.9"
-content-hash = "6ae28e14e6548982c7cbd37861458b3ff3be44437072869dd5718ae4e84eaf4d"
+python-versions = ">=3.8,<3.11"
+content-hash = "ff0fe7dec4a53e586ba9fe5668775994044d8007c6930d0bd359629bc83dbf98"
 
 [metadata.files]
 absl-py = []
