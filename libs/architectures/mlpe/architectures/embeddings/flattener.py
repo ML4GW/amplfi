@@ -7,5 +7,4 @@ class Flattener(torch.nn.Module):
 
     def forward(self, X):
         X = X.reshape(len(X), -1)
-        print(X.shape)
         return X
