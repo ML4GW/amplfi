@@ -109,10 +109,6 @@ def main(
             samples = dist(n_signals)
             intrinsic = np.column_stack([intrinsic, samples])
 
-    # fit standard scaler to parameters
-    standard_scaler = StandardScalerTransform(num_params)
-    standard_scaler.fit(intrinsic)
-
     # create full training dataloader
     train_dataset = PEInMemoryDataset(
         background,
@@ -131,6 +127,7 @@ def main(
     # and standard scaler
     # for parameters
 
+    standard_scaler = StandardScalerTransform(num_params)
     preprocessor = Preprocessor(
         num_ifos,
         sample_rate,
@@ -142,6 +139,8 @@ def main(
 
     preprocessor.whitener.fit(background)
     preprocessor.whitener.to(device)
+
+    preprocessor.normalizer.fit(intrinsic)
     preprocessor.normalizer.to(device)
 
     # TODO: Validation
