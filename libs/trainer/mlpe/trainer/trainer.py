@@ -35,9 +35,8 @@ def train_for_one_epoch(
 
         optimizer.zero_grad(set_to_none=True)  # reset gradient
 
-        with torch.autocast("cuda", enabled=scaler is not None):
+        with torch.autocast("cuda", enabled=False):
             loss = -flow.log_prob(parameters, context=strain)
-
         train_loss += loss.detach().sum()
         loss = loss.mean()
         samples_seen += len(parameters)

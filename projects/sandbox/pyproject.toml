@@ -19,7 +19,7 @@ channel = "DCS-CALIB_STRAIN_CLEAN_C01"
 frame_type = "HOFT_C01"
 state_flag = "DCS-ANALYSIS_READY_C01:1"
 repository_directory = "${BASE_DIR}/model_repo/" 
-force_generation = true
+force_generation = false
 kernel_length = 2
 highpass = 32
 fduration = 1
@@ -55,7 +55,7 @@ waveform_dataset = "${base.datadir}/signals.h5"
 background_path = "${base.datadir}/background.h5" 
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
-inference_params = ["frequency", "quality", "ra", "dec", "psi"]
+inference_params = ["frequency", "quality", "hrss", "dec", "psi", "phi"]
 
 ifos = "${base.ifos}"
 
@@ -63,7 +63,7 @@ kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
 highpass = 32 
-trigger_distance = -0.5
+trigger_distance = 0.0
 batch_size = 512
 batches_per_epoch = 200
 max_epochs = 200
