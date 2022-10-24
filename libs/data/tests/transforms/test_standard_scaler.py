@@ -21,8 +21,6 @@ def test_standard_scaler_transform(num_parameters):
     assert (scaler.std == (110 / 12) ** 0.5).all()
 
     y = scaler(X)
-    print(X, y)
-    assert False
     assert (y.mean(axis=0) == 0).all()
     assert (y.std(axis=0) == 1).all()
 
