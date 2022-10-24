@@ -13,8 +13,7 @@ def test_standard_scaler_transform(num_parameters):
         assert (param == i).all()
 
     x = torch.arange(10).type(torch.float32)
-    X = torch.stack([x + i for i in range(num_parameters)])
-    X = X.transpose(0, 1)
+    X = torch.column_stack([x + i for i in range(num_parameters)])
     scaler.fit(X)
 
     expected_mean = torch.Tensor([4.5 + i for i in range(num_parameters)])
@@ -22,7 +21,6 @@ def test_standard_scaler_transform(num_parameters):
     assert (scaler.std == (110 / 12) ** 0.5).all()
 
     y = scaler(X)
-    print(X, y, scaler.mean, scaler.std)
     assert (y.mean(axis=0) == 0).all()
     assert (y.std(axis=0) == 1).all()
 

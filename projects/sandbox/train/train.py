@@ -6,9 +6,23 @@ import h5py
 import numpy as np
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.distributions import Cosine, Uniform
-from mlpe.data.transforms import FixedLocationWaveformInjection, Preprocessor
+from mlpe.data.transforms import (
+    FixedLocationWaveformInjection,
+    Preprocessor,
+    StandardScalerTransform,
+)
 from mlpe.logging import configure_logging
 from mlpe.trainer import trainify
+
+EXTRINSIC_PARAMS = ["dec", "psi", "phi", "snr"]
+# TODO: how to generalize this to be able
+# to pass arbitrary distributions as function argument
+EXTRINSIC_DISTS = {
+    # uniform on sky
+    "dec": Cosine(),
+    "psi": Uniform(0, pi),
+    "phi": Uniform(-pi, pi),
+}
 
 
 def load_background(background_path: Path, ifos):
@@ -30,12 +44,17 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
         # of parameters throughout pipeline?
         data = []
         for param in parameter_names:
-            if param not in ["ra", "dec", "psi"]:
-                data.append(f[param][:])
+            if param not in EXTRINSIC_PARAMS:
+                values = f[param][:]
+                # take logarithm since hrss
+                # spans large magnitude range
+                if param == "hrss":
+                    values = np.log10(values)
+                data.append(values)
 
-        parameters = np.column_stack(data)
+        intrinsic = np.column_stack(data)
 
-    return plus, cross, parameters
+    return plus, cross, intrinsic
 
 
 @trainify
@@ -60,27 +79,38 @@ def main(
 
     configure_logging(logdir / "train.log", verbose)
     num_ifos = len(ifos)
-    # num_params = len(inference_params)
+    num_params = len(inference_params)
 
     # load in background
     background = load_background(background_path, ifos)
 
-    plus, cross, parameters = load_signals(waveform_dataset, inference_params)
+    plus, cross, intrinsic = load_signals(waveform_dataset, inference_params)
 
     # prepare injector
     injector = FixedLocationWaveformInjection(
         sample_rate,
         ifos,
-        dec=Cosine(),
-        psi=Uniform(0, pi),
-        phi=Uniform(-pi, pi),
-        intrinsic_parameters=parameters,
-        trigger_offset=0.0,
+        dec=EXTRINSIC_DISTS["dec"],
+        psi=EXTRINSIC_DISTS["psi"],
+        phi=EXTRINSIC_DISTS["phi"],
+        intrinsic_parameters=intrinsic,
+        trigger_offset=trigger_distance,
         plus=plus,
         cross=cross,
     )
 
     injector.to(device)
+
+    # construct samples of extrinsic parameters
+    # if they were passed as inference params
+    # so they can be fit to standard scaler
+    n_signals = len(plus)
+
+    for param, dist in EXTRINSIC_DISTS.items():
+        if param in inference_params:
+            samples = dist(n_signals)
+            intrinsic = np.column_stack([intrinsic, samples])
+
     # create full training dataloader
     train_dataset = PEInMemoryDataset(
         background,
@@ -93,27 +123,27 @@ def main(
         device=device,
     )
 
-    # fit standard scaler to parameters
-    # print(num_params, parameters.shape)
-    # standard_scaler = StandardScalerTransform(num_params)
-    # standard_scaler.fit(parameters)
-
     # create preprocessor
     # out of whitening transform
     # for strain data,
     # and standard scaler
     # for parameters
+
+    standard_scaler = StandardScalerTransform(num_params)
     preprocessor = Preprocessor(
         num_ifos,
         sample_rate,
         kernel_length,
-        # normalizer=standard_scaler,
+        normalizer=standard_scaler,
         fduration=fduration,
         highpass=highpass,
     )
 
     preprocessor.whitener.fit(background)
     preprocessor.whitener.to(device)
+
+    preprocessor.normalizer.fit(intrinsic)
+    preprocessor.normalizer.to(device)
 
     # TODO: Validation
     valid_dataset = None
