@@ -48,11 +48,11 @@ class FixedLocationWaveformInjection(RandomWaveformInjection):
 
             # calculate the fixed location
             # where waveform tc will placed
-            center = (X.shape[-1] // 2) + self.trigger_offset
+            center = (waveforms.shape[-1] // 2) + self.trigger_offset
             start = center - (kernel_size // 2)
             stop = center + (kernel_size // 2)
 
             waveforms = waveforms[:, :, start:stop]
             X += waveforms
 
-        return X, sampled_params
+            return X, sampled_params
