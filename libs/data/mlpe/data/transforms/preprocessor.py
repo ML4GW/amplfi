@@ -1,7 +1,10 @@
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 import torch
 from mlpe.data.transforms.whitening import WhiteningTransform
+
+if TYPE_CHECKING:
+    from mlpe.data.transforms import Transform
 
 
 class Preprocessor(torch.nn.Module):
@@ -23,7 +26,7 @@ class Preprocessor(torch.nn.Module):
         num_ifos: int,
         sample_rate: float,
         kernel_length: float,
-        normalizer: Optional[Callable] = None,
+        normalizer: Optional["Transform"] = None,
         fduration: Optional[float] = None,
         highpass: Optional[float] = None,
     ) -> None:
@@ -41,5 +44,5 @@ class Preprocessor(torch.nn.Module):
     def forward(self, strain, parameters):
         x = self.whitener(strain)
         if self.normalizer is not None:
-            parameters = self.normalizer(parameters)
-        return x, parameters
+            normed = self.normalizer(parameters)
+        return x, normed
