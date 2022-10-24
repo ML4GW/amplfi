@@ -41,5 +41,5 @@ class Preprocessor(torch.nn.Module):
     def forward(self, strain, parameters):
         x = self.whitener(strain)
         if self.normalizer is not None:
-            parameters = self.normalizer(parameters)
-        return x, parameters
+            normed = self.normalizer(parameters)
+        return x, normed

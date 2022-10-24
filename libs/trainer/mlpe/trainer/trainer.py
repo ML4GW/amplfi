@@ -170,6 +170,10 @@ def train(
     # infer the dimension of the parameters
     # and the context from the batch
     strain, parameters = next(iter(train_dataset))
+    with h5py.File(outdir / "raw_batch.h5", "w") as f:
+        f["strain"] = strain.cpu().numpy()
+        f["parameters"] = parameters.cpu().numpy()
+
     if preprocessor is not None:
         strain, parameters = preprocessor(strain, parameters)
 
