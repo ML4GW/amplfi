@@ -6,11 +6,9 @@ import h5py
 import numpy as np
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.distributions import Cosine, Uniform
-from mlpe.data.transforms import Preprocessor
+from mlpe.data.transforms import FixedLocationWaveformInjection, Preprocessor
 from mlpe.logging import configure_logging
 from mlpe.trainer import trainify
-
-from ml4gw.transforms import RandomWaveformInjection
 
 
 def load_background(background_path: Path, ifos):
@@ -70,14 +68,14 @@ def main(
     plus, cross, parameters = load_signals(waveform_dataset, inference_params)
 
     # prepare injector
-    injector = RandomWaveformInjection(
+    injector = FixedLocationWaveformInjection(
         sample_rate,
         ifos,
         dec=Cosine(),
         psi=Uniform(0, pi),
         phi=Uniform(-pi, pi),
         intrinsic_parameters=parameters,
-        trigger_offset=trigger_distance,
+        trigger_offset=0.0,
         plus=plus,
         cross=cross,
     )

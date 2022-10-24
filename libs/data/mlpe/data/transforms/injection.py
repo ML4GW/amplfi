@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from ml4gw.transforms.injection import SourceParameter
 
 
-class FixedLocationRandomWaveformInjection(RandomWaveformInjection):
+class FixedLocationWaveformInjection(RandomWaveformInjection):
     def __init__(
         self,
         sample_rate: float,
@@ -17,21 +17,18 @@ class FixedLocationRandomWaveformInjection(RandomWaveformInjection):
         dec: "SourceParameter",
         psi: "SourceParameter",
         phi: "SourceParameter",
-        snr: Optional["SourceParameter"] = None,
-        intrinsic_parameters: Optional[np.ndarray] = None,
+        intrinsic_parameters: Optional["np.ndarray"] = None,
         highpass: Optional[float] = None,
         trigger_offset: float = 0,
-        **polarizations: np.ndarray,
+        **polarizations: "np.ndarray",
     ):
 
         super().__init__(
-            self,
             sample_rate,
             ifos,
             dec,
             psi,
             phi,
-            snr=snr,
             intrinsic_parameters=intrinsic_parameters,
             highpass=highpass,
             trigger_offset=trigger_offset,
@@ -41,10 +38,10 @@ class FixedLocationRandomWaveformInjection(RandomWaveformInjection):
     def forward(self, X: "gw.WaveformTensor") -> "gw.WaveformTensor":
         if self.training:
             # inject waveform with probability 1
-            N = X.shape[:1]
+            N = len(X)
 
             # infer kernel size of background
-            kernel_size = len(X.shape[-1])
+            kernel_size = X.shape[-1]
 
             # randomly sample waveforms
             waveforms, sampled_params = self.sample(N)
