@@ -81,14 +81,14 @@ def main(
     injector, valid_injector = prepare_augmentation(
         signals,
         intrinsic,
+        ifos,
         valid_frac,
         sample_rate,
-        ifos,
+        trigger_distance,
         highpass,
     )
 
     injector.to(device)
-    valid_injector.to(device)
 
     # construct samples of extrinsic parameters
     # if they were passed as inference params

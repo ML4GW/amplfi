@@ -39,7 +39,7 @@ def prepare_augmentation(
     ifos: List[str],
     valid_frac: float,
     sample_rate: float,
-    trigger_offset: float,
+    trigger_distance: float,
     highpass: float,
 ):
 
@@ -63,7 +63,7 @@ def prepare_augmentation(
             phi=EXTRINSIC_DISTS["phi"],
             intrinsic_parameters=valid_intrinsic,
             highpass=highpass,
-            trigger_offset=0,
+            trigger_offset=trigger_distance,
             plus=valid_plus,
             cross=valid_cross,
         )
@@ -78,7 +78,7 @@ def prepare_augmentation(
         psi=EXTRINSIC_DISTS["psi"],
         phi=EXTRINSIC_DISTS["phi"],
         intrinsic_parameters=intrinsic,
-        trigger_offset=trigger_offset,
+        trigger_offset=trigger_distance,
         plus=plus,
         cross=cross,
     )

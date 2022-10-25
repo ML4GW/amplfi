@@ -82,6 +82,8 @@ def train_for_one_epoch(
         with torch.no_grad():
             for strain, parameters in valid_dataset:
                 strain, parameters = strain.to(device), parameters.to(device)
+                if preprocessor is not None:
+                    strain, parameters = preprocessor(strain, parameters)
                 loss = -flow.log_prob(parameters, context=strain)
 
                 valid_loss += loss.detach().sum()

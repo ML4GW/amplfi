@@ -18,8 +18,8 @@ def make_validation_dataset(
     device: str,
 ):
 
-    kernel_size = kernel_length * sample_rate
-    stride_size = stride * sample_rate
+    kernel_size = int(kernel_length * sample_rate)
+    stride_size = int(stride * sample_rate)
     num_kernels = (background.shape[-1] - kernel_size) // stride_size + 1
     num_kernels = int(num_kernels)
     num_ifos = len(background)
