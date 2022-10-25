@@ -66,7 +66,7 @@ class PEInMemoryDataset(InMemoryDataset):
     def __next__(self) -> Tuple[torch.Tensor, torch.Tensor]:
         X = super().__next__()
         if self.preprocessor is not None:
-            X, _, parameters = self.preprocessor(X)
+            X, parameters = self.preprocessor(X)
             return X, parameters
 
         return X

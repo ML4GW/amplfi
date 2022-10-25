@@ -6,11 +6,13 @@ import h5py
 import numpy as np
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.distributions import Cosine, Uniform
-from mlpe.data.transforms import Preprocessor, StandardScalerTransform
+from mlpe.data.transforms import (
+    Preprocessor,
+    StandardScalerTransform,
+    WaveformInjector,
+)
 from mlpe.logging import configure_logging
 from mlpe.trainer import trainify
-
-from ml4gw.transforms import RandomWaveformInjection
 
 EXTRINSIC_PARAMS = ["dec", "psi", "phi", "snr"]
 # TODO: how to generalize this to be able
@@ -85,7 +87,7 @@ def main(
     plus, cross, intrinsic = load_signals(waveform_dataset, inference_params)
 
     # prepare injector
-    injector = RandomWaveformInjection(
+    injector = WaveformInjector(
         sample_rate,
         ifos,
         dec=EXTRINSIC_DISTS["dec"],
