@@ -7,9 +7,9 @@ import numpy as np
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.distributions import Cosine, Uniform
 from mlpe.data.transforms import (
-    FixedLocationWaveformInjection,
     Preprocessor,
     StandardScalerTransform,
+    WaveformInjector,
 )
 from mlpe.logging import configure_logging
 from mlpe.trainer import trainify
@@ -87,7 +87,7 @@ def main(
     plus, cross, intrinsic = load_signals(waveform_dataset, inference_params)
 
     # prepare injector
-    injector = FixedLocationWaveformInjection(
+    injector = WaveformInjector(
         sample_rate,
         ifos,
         dec=EXTRINSIC_DISTS["dec"],

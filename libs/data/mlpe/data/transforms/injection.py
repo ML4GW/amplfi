@@ -9,7 +9,13 @@ if TYPE_CHECKING:
     from ml4gw.transforms.injection import SourceParameter
 
 
-class FixedLocationWaveformInjection(RandomWaveformInjection):
+class WaveformInjector(RandomWaveformInjection):
+    """Subclass of ml4gw's RandomWaveformInjection
+    that injects waveforms at a fixed location
+    into background kernels. The offset from the center
+    is determine by `trigger_offset`
+    """
+
     def __init__(
         self,
         sample_rate: float,
