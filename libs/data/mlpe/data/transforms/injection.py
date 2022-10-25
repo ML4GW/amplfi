@@ -62,3 +62,5 @@ class WaveformInjector(RandomWaveformInjection):
             X += waveforms
 
             return X, sampled_params
+
+        return X
