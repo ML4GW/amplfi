@@ -294,5 +294,8 @@ def train(
                     )
                     break
 
-    # return the training results
+    with h5py.File(outdir / "train_results.h5", "w") as f:
+        for key, value in history.items():
+            f.create_dataset(key, data=value)
+
     return history
