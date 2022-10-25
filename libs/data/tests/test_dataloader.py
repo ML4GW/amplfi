@@ -88,8 +88,7 @@ def test_pe_in_memory_dataloader_with_preprocessor(
     def preprocessor(X):
         X[:, 0] *= 2
         params = np.ones(len(X))
-        indices = list(range(len(X)))
-        return X, indices, params
+        return X, params
 
     dataset = PEInMemoryDataset(
         sequential_data,
