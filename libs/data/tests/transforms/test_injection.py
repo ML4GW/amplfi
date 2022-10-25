@@ -29,7 +29,7 @@ def test_waveform_injector(ifos, trigger_offset):
     mock_injector.trigger_offset = trigger_offset
 
     # create a bunch of random waveforms
-    waveforms = torch.randn(128, 4096)
+    waveforms = torch.randn(128, 2, 4096)
 
     # mock sample call to return all the waveforms
     # in order and dummy params
