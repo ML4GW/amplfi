@@ -1,7 +1,7 @@
 [tool.pinto]
 steps = [
-    #"generate_background:generate-background",
-    #"generate_waveforms:generate-waveforms",
+    "generate_background:generate-background",
+    "generate_waveforms:generate-waveforms",
     "train:train:coupling"
 ]
 
@@ -66,17 +66,19 @@ highpass = 32
 trigger_distance = 0.0
 batch_size = 512
 batches_per_epoch = 200
-max_epochs = 1000
+max_epochs = 300
 
 lr = 4e-3
 min_lr = 1e-5
 decay_steps = 10000
 weight_decay = 1e-5
-early_stop = 20
+early_stop = 50
 
 device = "cuda"
 profile = false
 use_amp = false
+valid_frac = 0.25
+valid_stride = 0.0625
 
 # arch parameters
 commands.coupling = "${base.coupling}"

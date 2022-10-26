@@ -10,7 +10,7 @@ python = ">=3.8,<3.11"
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
 
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
-"hermes.typeo" = "^0.1.5"
+typeo = {git = "https://github.com/ML4GW/typeo.git"}
 
 [tool.poetry.scripts]
 generate-waveforms = "generate_waveforms:main"

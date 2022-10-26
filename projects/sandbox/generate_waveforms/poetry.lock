@@ -211,17 +211,6 @@ python-versions = ">=3.7"
 numpy = ">=1.14.5"
 
 [[package]]
-name = "hermes-typeo"
-version = "0.1.5"
-description = "Utilities for running functions as scripts"
-category = "main"
-optional = false
-python-versions = ">=3.8,<4.0"
-
-[package.dependencies]
-toml = ">=0.10.2,<0.11.0"
-
-[[package]]
 name = "kiwisolver"
 version = "1.4.4"
 description = "A fast implementation of the Cassowary constraint solver"
@@ -601,6 +590,24 @@ slack = ["slack-sdk"]
 telegram = ["requests"]
 
 [[package]]
+name = "typeo"
+version = "0.1.5"
+description = "Utilities for running functions as scripts"
+category = "main"
+optional = false
+python-versions = "^3.8"
+develop = false
+
+[package.dependencies]
+toml = "^0.10.2"
+
+[package.source]
+type = "git"
+url = "https://github.com/ML4GW/typeo.git"
+reference = "HEAD"
+resolved_reference = "17376420b1a92ea12cbdfa884192aa0150f70b55"
+
+[[package]]
 name = "typing-extensions"
 version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -611,7 +618,7 @@ python-versions = ">=3.7"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "dd8a4ce495f59a79800594c143b397343be46963544bd830986570a873d73be7"
+content-hash = "1305fe821efb39dde6f9bf765feee15b92d11c5c3f956c990a12f97967621c31"
 
 [metadata.files]
 astropy = [
@@ -853,10 +860,6 @@ h5py = [
     {file = "h5py-3.7.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9e7535df5ee3dc3e5d1f408fdfc0b33b46bc9b34db82743c82cd674d8239b9ad"},
     {file = "h5py-3.7.0-cp39-cp39-win_amd64.whl", hash = "sha256:9e2ad2aa000f5b1e73b5dfe22f358ca46bf1a2b6ca394d9659874d7fc251731a"},
     {file = "h5py-3.7.0.tar.gz", hash = "sha256:3fcf37884383c5da64846ab510190720027dca0768def34dd8dcb659dbe5cbf3"},
-]
-hermes-typeo = [
-    {file = "hermes.typeo-0.1.5-py3-none-any.whl", hash = "sha256:a1fff2eeb257fb6f4f4b4b397681f2eddee59a4b8b3dd275f0fd9dac38e3371b"},
-    {file = "hermes.typeo-0.1.5.tar.gz", hash = "sha256:8bd1d97a698c0e99a7d2a6b3b082c8b8290aea1bf0e6a44548752ca178a8c73e"},
 ]
 kiwisolver = [
     {file = "kiwisolver-1.4.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:2f5e60fabb7343a836360c4f0919b8cd0d6dbf08ad2ca6b9cf90bf0c76a3c4f6"},
@@ -1316,6 +1319,7 @@ tqdm = [
     {file = "tqdm-4.64.1-py2.py3-none-any.whl", hash = "sha256:6fee160d6ffcd1b1c68c65f14c829c22832bc401726335ce92c52d395944a6a1"},
     {file = "tqdm-4.64.1.tar.gz", hash = "sha256:5f4f682a004951c1b450bc753c710e9280c5746ce6ffedee253ddbcbf54cf1e4"},
 ]
+typeo = []
 typing-extensions = [
     {file = "typing_extensions-4.4.0-py3-none-any.whl", hash = "sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e"},
     {file = "typing_extensions-4.4.0.tar.gz", hash = "sha256:1511434bb92bf8dd198c12b1cc812e800d4181cfcb867674e0f8279cc93087aa"},

@@ -88,11 +88,9 @@ def test_train_one_epoch(n_features):
         torch.flatten(flow.sample(100, torch.Tensor([[0]]))).detach().numpy()
     )
 
-    print(samples)
     assert (samples < 0).all()
 
     samples = (
         torch.flatten(flow.sample(100, torch.Tensor([[1]]))).detach().numpy()
     )
-    print(samples)
     assert (samples > 0).all()

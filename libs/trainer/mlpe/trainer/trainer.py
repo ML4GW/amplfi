@@ -82,6 +82,8 @@ def train_for_one_epoch(
         with torch.no_grad():
             for strain, parameters in valid_dataset:
                 strain, parameters = strain.to(device), parameters.to(device)
+                if preprocessor is not None:
+                    strain, parameters = preprocessor(strain, parameters)
                 loss = -flow.log_prob(parameters, context=strain)
 
                 valid_loss += loss.detach().sum()
@@ -259,12 +261,12 @@ def train(
             lr_scheduler,
         )
 
-        history["train_loss"].append(train_loss)
+        history["train_loss"].append(train_loss.cpu().item())
 
         # do some house cleaning with our
         # validation loss if we have one
         if valid_loss is not None:
-            history["valid_loss"].append(valid_loss)
+            history["valid_loss"].append(valid_loss.cpu().item())
 
             # update our learning rate scheduler if we
             # indicated a schedule with `patience`
