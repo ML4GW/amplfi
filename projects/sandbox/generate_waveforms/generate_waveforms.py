@@ -6,11 +6,10 @@ import bilby
 import h5py
 import mlpe.injection as injection
 from mlpe.logging import configure_logging
+from typeo import scriptify
 
-from hermes.typeo import typeo
 
-
-@typeo
+@scriptify
 def main(
     prior_file: Path,
     waveform: Callable,

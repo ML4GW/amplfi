@@ -12,7 +12,7 @@ h5py = "^3.7.0"
 nflows = "^0.14"
 "mlpe.data" = {path = "../data", develop = true}
 "mlpe.architectures" = {path = "../architectures", develop = true}
-"hermes.typeo" = "^0.1.5"
+typeo = {git = "https://github.com/ML4GW/typeo.git"}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"

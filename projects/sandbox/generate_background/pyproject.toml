@@ -7,13 +7,12 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-"hermes.typeo" = "^0.1.5"
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "mlpe.base" = {path = "../../../libs/base", extras = ["numpy"], develop = true}
+typeo = {git = "https://github.com/ML4GW/typeo.git"}
 
 [tool.poetry.scripts]
 generate-background = "generate_background:main"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

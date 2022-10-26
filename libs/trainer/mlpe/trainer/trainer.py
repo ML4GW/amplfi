@@ -261,12 +261,12 @@ def train(
             lr_scheduler,
         )
 
-        history["train_loss"].append(train_loss)
+        history["train_loss"].append(train_loss.cpu().item())
 
         # do some house cleaning with our
         # validation loss if we have one
         if valid_loss is not None:
-            history["valid_loss"].append(valid_loss)
+            history["valid_loss"].append(valid_loss.cpu().item())
 
             # update our learning rate scheduler if we
             # indicated a schedule with `patience`

@@ -1,16 +1,5 @@
 [[package]]
-name = "hermes.typeo"
-version = "0.1.5"
-description = "Utilities for running functions as scripts"
-category = "main"
-optional = false
-python-versions = ">=3.8,<4.0"
-
-[package.dependencies]
-toml = ">=0.10.2,<0.11.0"
-
-[[package]]
-name = "mlpe.base"
+name = "mlpe-base"
 version = "0.1.0"
 description = "Base environment for forcing version constraints"
 category = "main"
@@ -31,7 +20,7 @@ type = "directory"
 url = "../../../libs/base"
 
 [[package]]
-name = "mlpe.logging"
+name = "mlpe-logging"
 version = "0.0.1"
 description = "PE logging utilities"
 category = "main"
@@ -81,18 +70,32 @@ category = "main"
 optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
+[[package]]
+name = "typeo"
+version = "0.1.5"
+description = "Utilities for running functions as scripts"
+category = "main"
+optional = false
+python-versions = "^3.8"
+develop = false
+
+[package.dependencies]
+toml = "^0.10.2"
+
+[package.source]
+type = "git"
+url = "https://github.com/ML4GW/typeo.git"
+reference = "HEAD"
+resolved_reference = "17376420b1a92ea12cbdfa884192aa0150f70b55"
+
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "5bf09be8aa26c7677b8de80233d19db298b05aedc8bc5a1160ef6f18fc56a61a"
+content-hash = "ec25ab1a7f0af86a72f5f56f772e0bd4691ff47a9b02735c0b4c02c985929017"
 
 [metadata.files]
-"hermes.typeo" = [
-    {file = "hermes.typeo-0.1.5-py3-none-any.whl", hash = "sha256:a1fff2eeb257fb6f4f4b4b397681f2eddee59a4b8b3dd275f0fd9dac38e3371b"},
-    {file = "hermes.typeo-0.1.5.tar.gz", hash = "sha256:8bd1d97a698c0e99a7d2a6b3b082c8b8290aea1bf0e6a44548752ca178a8c73e"},
-]
-"mlpe.base" = []
-"mlpe.logging" = []
+mlpe-base = []
+mlpe-logging = []
 numpy = [
     {file = "numpy-1.22.3-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:92bfa69cfbdf7dfc3040978ad09a48091143cffb778ec3b03fa170c494118d75"},
     {file = "numpy-1.22.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:8251ed96f38b47b4295b1ae51631de7ffa8260b5b087808ef09a39a9d66c97ab"},
@@ -127,3 +130,4 @@ toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
     {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
 ]
+typeo = []

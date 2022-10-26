@@ -8,11 +8,10 @@ from gwdatafind import find_urls
 from gwpy.segments import DataQualityDict
 from gwpy.timeseries import TimeSeries
 from mlpe.logging import configure_logging
+from typeo import scriptify
 
-from hermes.typeo import typeo
 
-
-@typeo
+@scriptify
 def main(
     start: float,
     stop: float,

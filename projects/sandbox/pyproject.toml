@@ -1,7 +1,7 @@
 [tool.pinto]
 steps = [
-    #"generate_background:generate-background",
-    #"generate_waveforms:generate-waveforms",
+    "generate_background:generate-background",
+    "generate_waveforms:generate-waveforms",
     "train:train:coupling"
 ]
 
@@ -65,8 +65,8 @@ fduration = "${base.fduration}"
 highpass = 32 
 trigger_distance = 0.0
 batch_size = 512
-batches_per_epoch = 200
-max_epochs = 100
+batches_per_epoch = 20
+max_epochs = 1
 
 lr = 4e-3
 min_lr = 1e-5

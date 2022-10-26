@@ -2,9 +2,8 @@ import inspect
 
 from mlpe.architectures import get_arch_fns
 from mlpe.trainer.trainer import train
-
-from hermes.typeo import typeo
-from hermes.typeo.typeo import _parse_doc, _parse_help
+from typeo import scriptify
+from typeo.doc_utils import parse_doc, parse_help
 
 
 def _configure_wrapper(f, wrapper):
@@ -34,13 +33,13 @@ def _configure_wrapper(f, wrapper):
     wrapper.__signature__ = inspect.Signature(parameters=parameters)
     wrapper.__name__ = f.__name__
 
-    _, train_args = _parse_doc(train)
-    f_doc, f_args = _parse_doc(f)
+    _, train_args = parse_doc(train)
+    f_doc, f_args = parse_doc(f)
 
     wrapper_args = ""
     for p in parameters:
         for args in [f_args, train_args]:
-            doc_str = _parse_help(args, p.name)
+            doc_str = parse_help(args, p.name)
             if doc_str:
                 break
         else:
@@ -131,4 +130,4 @@ def trainify(f):
     # all training and architecture arguments. Each
     # network architecture will be exposed as a
     # subcommand with its own arguments
-    return typeo(wrapper, **arch_fns)
+    return scriptify(wrapper, **arch_fns)
