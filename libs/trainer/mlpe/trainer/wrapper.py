@@ -50,7 +50,7 @@ def _configure_wrapper(f, wrapper):
     wrapper.__doc__ = f_doc + "\n" + " " * 4 + "Args:\n" + wrapper_args
 
 
-def trainify(f):
+def trainify(f, return_result: bool = False):
     """Turn a data-generating function into a command line trainer
     Wraps the function `f`, which is assumed to generate training
     and validation data, so that this data gets passed to
@@ -130,4 +130,4 @@ def trainify(f):
     # all training and architecture arguments. Each
     # network architecture will be exposed as a
     # subcommand with its own arguments
-    return scriptify(wrapper, **arch_fns)
+    return scriptify(wrapper, return_result=return_result, **arch_fns)

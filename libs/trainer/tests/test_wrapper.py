@@ -89,7 +89,7 @@ def data_fn(unique_args, get_data):
 
 
 def test_wrapper(data_fn, preprocess, outdir, unique_args):
-    fn = trainify(data_fn)
+    fn = trainify(data_fn, return_result=True)
 
     # make sure we can run the function as-is with regular arguments
     if unique_args:
