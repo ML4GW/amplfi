@@ -4,11 +4,28 @@ version = "0.1.0"
 description = "Export trained mlpe model"
 authors = ["ethan.marx <ethan.marx@ligo.org>"]
 license = "MIT"
-readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.8,<3.11"
 
+"mlpe.architectures" = {path = "../../../libs/architectures", extras = ["wrapper"], develop = true}
+"mlpe.base" = {path = "../../../libs/base", develop = true}
+"mlpe.data" = {path = "../../../libs/data", develop = true}
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
+nvidia-tensorrt = {version = "<8.2.4", source = "ngc" }
+
+[tool.poetry.scripts]
+export-model = "export:export"
+
+[tool.poetry.dependencies."hermes.quiver"]
+path = "../../../hermes/hermes/hermes.quiver"
+develop = true
+extras = ["torch", "tensorrt"]
+
+[[tool.poetry.source]]
+# NVIDIA pypi repo for tensorrt install
+name = "ngc"
+url = "https://pypi.ngc.nvidia.com"
 
 [build-system]
 requires = ["poetry-core"]

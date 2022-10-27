@@ -1,7 +1,7 @@
 import logging
 import shutil
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional
 
 import h5py  # noqa
 import torch
@@ -23,11 +23,11 @@ def scale_model(model, instances):
 @architecturize
 def export(
     architecture: Callable,
+    inference_params: List[str],
+    ifos: List[str],
     repository_directory: str,
     outdir: Path,
-    num_ifos: int,
     kernel_length: float,
-    inference_sampling_rate: float,
     sample_rate: float,
     batch_size: int,
     fduration: Optional[float] = None,
@@ -99,13 +99,17 @@ def export(
     # its weights with the trained values
     logging.info(f"Creating model and loading weights from {weights}")
 
-    # TODO how to infer param and context dim
-    nn = architecture()
+    # infer shape dimensions from parameters
+    param_dim = len(inference_params)
+    num_ifos = len(ifos)
+    context_dim = int(num_ifos * (kernel_length - fduration) * sample_rate)
+
+    nn = architecture((param_dim, context_dim)).flow
     preprocessor = Preprocessor(
         num_ifos,
         sample_rate,
         kernel_length,
-        normalizer=StandardScalerTransform,
+        normalizer=StandardScalerTransform(param_dim),
         fduration=fduration,
         highpass=highpass,
     )
@@ -147,8 +151,8 @@ def export(
 
     mlpe.export_version(
         nn,
-        input_shapes={"hoft": input_shape},
-        output_names=["discriminator"],
+        input_shapes={"n_samples": (1,), "context": input_shape},
+        output_names=["samples"],
         **kwargs,
     )
 

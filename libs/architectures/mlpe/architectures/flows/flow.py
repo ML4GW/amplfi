@@ -20,6 +20,8 @@ class NormalizingFlow(ABC):
         self.num_flow_steps = num_flow_steps
         self.embedding_net = embedding_net
 
+        self.flow = self.construct_flow()
+
     @abstractmethod
     def transform_block(self, idx: int) -> Callable[int, transforms.Transform]:
         pass
@@ -32,8 +34,7 @@ class NormalizingFlow(ABC):
     def distribution(self) -> distributions.Distribution:
         pass
 
-    @property
-    def flow(self):
+    def construct_flow(self):
         """
         Constructs the normalizing flow model
         """
@@ -48,10 +49,17 @@ class NormalizingFlow(ABC):
             + [self.linear_block()]
         )
 
-        print(self.embedding_net)
         flow = flows.Flow(
             self.transform,
             self.distribution(),
             embedding_net=self.embedding_net,
         )
+
         return flow
+
+    def forward(self, n_samples: int, context):
+        # set the forward method of the
+        # flow to correspond to sampling
+        # so we can export the model later with tensorrt
+
+        return self.flow.sample(n_samples, context)

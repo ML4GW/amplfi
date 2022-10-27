@@ -2,7 +2,8 @@
 steps = [
     #"generate_background:generate-background",
     #"generate_waveforms:generate-waveforms",
-    "train:train:coupling"
+    #"train:train:coupling"
+    "export:export-model:coupling"
 ]
 
 
@@ -25,7 +26,7 @@ highpass = 32
 fduration = 1
 prior_file = "priors/sine_gaussian.prior"
 coupling = {num_flow_steps = 10}
-
+inference_params = ["frequency", "quality", "hrss", "ra", "dec", "psi"]
 
 [tool.typeo.scripts.generate-background]
 datadir = "${base.datadir}"
@@ -55,7 +56,7 @@ waveform_dataset = "${base.datadir}/signals.h5"
 background_path = "${base.datadir}/background.h5" 
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
-inference_params = ["frequency", "quality", "ra", "dec", "psi"]
+inference_params = "${base.inference_params}" 
 
 ifos = "${base.ifos}"
 
@@ -77,6 +78,29 @@ early_stop = 20
 device = "cuda"
 profile = false
 use_amp = false
+
+# arch parameters
+commands.coupling = "${base.coupling}"
+
+[tool.typeo.scripts.export-model]
+# paths
+repository_directory = "${base.repository_directory}" 
+outdir = "${base.logdir}"
+weights = "${base.basedir}/training/weights.pt"
+
+# input-output mapping info
+ifos = "${base.ifos}"
+inference_params = "${base.inference_params}" 
+kernel_length = "${base.kernel_length}" 
+sample_rate = "${base.sample_rate}"
+fduration = "${base.fduration}"
+highpass = "${base.highpass}"
+batch_size = 4 
+
+# repo/triton parameters
+platform = "tensorrt_plan"
+verbose = false
+clean = true
 
 # arch parameters
 commands.coupling = "${base.coupling}"
