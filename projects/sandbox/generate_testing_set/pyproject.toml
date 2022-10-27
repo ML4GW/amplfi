@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "generate-testing-set"
+version = "0.1.0"
+description = "Generate testing data"
+authors = ["ethan.marx <ethan.marx@ligo.org>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "generate_testing_set"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+"mlpe.injection" = {path = "../../../libs/injection", develop = true}
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
