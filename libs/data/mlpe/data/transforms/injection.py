@@ -1,12 +1,9 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING
 
 from ml4gw.transforms import RandomWaveformInjection
 
 if TYPE_CHECKING:
-    import numpy as np
-
     from ml4gw import gw
-    from ml4gw.transforms.injection import SourceParameter
 
 
 class WaveformInjector(RandomWaveformInjection):
@@ -15,31 +12,6 @@ class WaveformInjector(RandomWaveformInjection):
     into background kernels. The offset from the center
     is determine by `trigger_offset`
     """
-
-    def __init__(
-        self,
-        sample_rate: float,
-        ifos: List[str],
-        dec: "SourceParameter",
-        psi: "SourceParameter",
-        phi: "SourceParameter",
-        intrinsic_parameters: Optional["np.ndarray"] = None,
-        highpass: Optional[float] = None,
-        trigger_offset: float = 0,
-        **polarizations: "np.ndarray",
-    ):
-
-        super().__init__(
-            sample_rate,
-            ifos,
-            dec,
-            psi,
-            phi,
-            intrinsic_parameters=intrinsic_parameters,
-            highpass=highpass,
-            trigger_offset=trigger_offset,
-            **polarizations,
-        )
 
     def forward(self, X: "gw.WaveformTensor") -> "gw.WaveformTensor":
         if self.training:
@@ -50,7 +22,7 @@ class WaveformInjector(RandomWaveformInjection):
             kernel_size = X.shape[-1]
 
             # randomly sample waveforms
-            waveforms, sampled_params = self.sample(N)
+            waveforms, sampled_params = self.sample(N, device=X.device)
 
             # calculate the fixed location
             # where waveform tc will placed

@@ -1,8 +1,8 @@
 [tool.pinto]
 steps = [
-    "generate_background:generate-background",
-    "generate_waveforms:generate-waveforms",
-    "generate_testing_set:generate-testing",
+    #"generate_background:generate-background",
+    #"generate_waveforms:generate-waveforms",
+    #"generate_testing_set:generate-testing",
     "train:train:coupling"
 ]
 
@@ -25,7 +25,6 @@ kernel_length = 2
 highpass = 32
 fduration = 1
 waveform_duration = 8
-prior_file = "priors/sine_gaussian.prior"
 coupling = {num_flow_steps = 10}
 
 
@@ -46,12 +45,11 @@ force_generation = "${base.force_generation}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 n_samples = 10000
-prior_file = "${base.prior_file}"
 sample_rate = "${base.sample_rate}" 
 force_generation = "${base.force_generation}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 waveform_duration = "${base.waveform_duration}"
-
+prior = "mlpe.injection.priors.sg_uniform"
 
 [tool.typeo.scripts.train]
 waveform_dataset = "${base.datadir}/signals.h5"
