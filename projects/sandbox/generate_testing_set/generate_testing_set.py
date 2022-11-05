@@ -123,8 +123,8 @@ def main(
     )
 
     plus, cross = signals.transpose(1, 0, 2)
-    plus = plus.as_tensor(plus)
-    cross = cross.as_tensor(cross)
+    plus = torch.Tensor(plus)
+    cross = torch.Tensor(cross)
 
     kernel_size = int(kernel_length * sample_rate)
 
@@ -132,9 +132,9 @@ def main(
     # with sampled sky localizations
     tensors, vertices = get_ifo_geometry(*ifos)
 
-    dec = torch.as_tensor(parameters["dec"])
-    psi = torch.as_tensor(parameters["dec"])
-    ra = torch.as_tensor(parameters["dec"])
+    dec = torch.Tensor(parameters["dec"])
+    psi = torch.Tensor(parameters["dec"])
+    ra = torch.Tensor(parameters["dec"])
 
     waveforms = compute_observed_strain(
         dec,
