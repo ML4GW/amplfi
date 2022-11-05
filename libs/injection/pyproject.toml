@@ -16,7 +16,7 @@ lalsuite = "^7.4"
 "mlpe.base" = {path = "../base", extras = ["gwpy", "numpy"], develop = true}
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2"
+pytest = "^7.2"
 
 [build-system]
 requires = ["poetry>=1.2"]
