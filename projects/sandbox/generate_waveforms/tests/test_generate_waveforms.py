@@ -1,21 +1,20 @@
-from pathlib import Path
-
 import h5py
 import mlpe.injection.waveforms as waveforms
 import pytest
 from bilby.gw.conversion import convert_to_lal_binary_black_hole_parameters
 from bilby.gw.source import lal_binary_black_hole
 from generate_waveforms import main
+from mlpe.injection.priors import nonspin_bbh, sg_uniform
 
 
-@pytest.fixture(params=["priors/nonspin_BBH.prior"])
-def cbc_prior_file(request):
-    return Path(__file__).resolve().parent / request.param
+@pytest.fixture(params=[nonspin_bbh])
+def cbc_prior(request):
+    return request.param
 
 
-@pytest.fixture(params=["priors/sine_gaussian.prior"])
-def sg_prior_file(request):
-    return Path(__file__).resolve().parent / request.param
+@pytest.fixture(params=[sg_uniform])
+def sg_prior(request):
+    return request.param
 
 
 @pytest.fixture(params=[1, 2, 4])
@@ -34,7 +33,7 @@ def n_samples(request):
 
 
 def test_generate_waveforms_custom_model(
-    sg_prior_file,
+    sg_prior,
     sample_rate,
     n_samples,
     waveform_duration,
@@ -43,7 +42,7 @@ def test_generate_waveforms_custom_model(
 ):
 
     signal_file = main(
-        sg_prior_file,
+        sg_prior,
         waveforms.sine_gaussian_frequency,
         sample_rate,
         n_samples,
@@ -71,7 +70,7 @@ def test_generate_waveforms_custom_model(
 
 
 def test_generate_waveforms_cbc_model(
-    cbc_prior_file,
+    cbc_prior,
     sample_rate,
     n_samples,
     waveform_duration,
@@ -80,7 +79,7 @@ def test_generate_waveforms_cbc_model(
 ):
 
     signal_file = main(
-        cbc_prior_file,
+        cbc_prior,
         lal_binary_black_hole,
         sample_rate,
         n_samples,

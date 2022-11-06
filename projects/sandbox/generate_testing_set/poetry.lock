@@ -57,6 +57,14 @@ tqdm = "*"
 gw = ["astropy", "gwpy", "lalsuite"]
 
 [[package]]
+name = "certifi"
+version = "2022.9.24"
+description = "Python package for providing Mozilla's CA Bundle."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "cffi"
 version = "1.15.1"
 description = "Foreign Function Interface for Python calling C code."
@@ -66,6 +74,17 @@ python-versions = "*"
 
 [package.dependencies]
 pycparser = "*"
+
+[[package]]
+name = "charset-normalizer"
+version = "2.1.1"
+description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
+category = "main"
+optional = false
+python-versions = ">=3.6.0"
+
+[package.extras]
+unicode-backport = ["unicodedata2"]
 
 [[package]]
 name = "colorama"
@@ -149,6 +168,23 @@ python-versions = ">=3.7"
 graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
+name = "dqsegdb2"
+version = "1.1.3"
+description = "Simplified python interface to DQSEGDB"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+igwn-auth-utils = ">=0.3.1"
+ligo-segments = ">=1.0.0"
+
+[package.extras]
+docs = ["sphinx", "sphinx-automodapi", "sphinx-immaterial"]
+lint = ["flake8 (>=3.7.0)", "flake8-bandit"]
+test = ["pytest (>=2.9.2)", "pytest-cov (>=2.5.1)", "requests-mock (>=1.5.0)"]
+
+[[package]]
 name = "dynesty"
 version = "1.0.1"
 description = "A dynamic nested sampling package for computing Bayesian posteriors and evidences."
@@ -211,6 +247,66 @@ unicode = ["unicodedata2 (>=14.0.0)"]
 woff = ["brotli (>=1.0.1)", "brotlicffi (>=0.8.0)", "zopfli (>=0.1.4)"]
 
 [[package]]
+name = "gwdatafind"
+version = "1.1.2"
+description = "The GWDataFind data discovery client"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+igwn-auth-utils = ">=0.3.1"
+ligo-segments = "*"
+
+[package.extras]
+docs = ["numpydoc", "sphinx (>=1.8.0)", "sphinx-automodapi", "sphinx-rtd-theme", "sphinx-tabs"]
+lint = ["flake8", "flake8-bandit", "flake8-docstrings", "radon"]
+test = ["pytest (>=2.8.0)", "pytest-cov", "requests-mock"]
+
+[[package]]
+name = "gwosc"
+version = "0.6.1"
+description = "A python interface to the GW Open Science data archive"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[package.dependencies]
+requests = ">=1.0.0"
+
+[package.extras]
+docs = ["sphinx", "sphinx-automodapi", "sphinx-rtd-theme"]
+test = ["pytest (>=2.7.0)", "pytest-cov", "pytest-socket", "requests-mock (>=1.5.0)"]
+
+[[package]]
+name = "gwpy"
+version = "2.1.5"
+description = "A python package for gravitational-wave astrophysics"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+astropy = ">=4.0"
+dqsegdb2 = "*"
+gwdatafind = ">=1.1.0"
+gwosc = ">=0.5.3"
+h5py = ">=2.8.0"
+ligo-segments = ">=1.0.0"
+ligotimegps = ">=1.2.1"
+matplotlib = ">=3.3.0"
+numpy = ">=1.16"
+python-dateutil = "*"
+scipy = ">=1.2.0"
+tqdm = ">=4.10.0"
+
+[package.extras]
+conda = ["python-framel (>=8.40.1)", "python-ldas-tools-framecpp", "python-nds2-client"]
+dev = ["astropy (<5.1a0)", "ciecplib", "lalsuite", "lscsoft-glue", "maya", "pandas", "psycopg2", "pyRXP", "pycbc (>=1.13.4)", "pymysql", "python-ligo-lw (>=1.7.0)", "sqlalchemy", "uproot (>=3.11)", "uproot3"]
+docs = ["numpydoc (>=0.8.0)", "requests", "sphinx (>=4.0.0)", "sphinx-automodapi", "sphinx-material (>=0.0.32)", "sphinx-panels (>=0.6.0)", "sphinxcontrib-programoutput"]
+test = ["coverage[toml] (>=5.0)", "freezegun (>=0.3.12)", "pytest (>=3.9.1)", "pytest-cov (>=2.4.0)", "pytest-socket", "pytest-xdist", "requests-mock"]
+
+[[package]]
 name = "h5py"
 version = "3.7.0"
 description = "Read and write HDF5 files from Python"
@@ -220,6 +316,33 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 numpy = ">=1.14.5"
+
+[[package]]
+name = "idna"
+version = "3.4"
+description = "Internationalized Domain Names in Applications (IDNA)"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[[package]]
+name = "igwn-auth-utils"
+version = "0.3.1"
+description = "Authorisation utilities for IGWN"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+cryptography = ">=2.3"
+requests = ">=2.14"
+safe-netrc = ">=1.0.0"
+scitokens = ">=1.7.0"
+
+[package.extras]
+docs = ["sphinx (>=4.0.0)", "sphinx-immaterial-igwn"]
+lint = ["flake8 (>=3.7.0)", "flake8-bandit"]
+test = ["pytest (>=3.9.1)", "pytest-cov", "requests (>=2.14)", "requests-mock", "safe-netrc (>=1.0.0)"]
 
 [[package]]
 name = "iniconfig"
@@ -270,6 +393,14 @@ python-versions = "*"
 six = "*"
 
 [[package]]
+name = "ligotimegps"
+version = "2.0.1"
+description = "A pure-python version of lal.LIGOTimeGPS"
+category = "main"
+optional = false
+python-versions = ">=3.4"
+
+[[package]]
 name = "lscsoft-glue"
 version = "3.0.1"
 description = "Grid LSC User Engine"
@@ -305,6 +436,45 @@ python-dateutil = ">=2.7"
 setuptools_scm = ">=7"
 
 [[package]]
+name = "ml4gw"
+version = "0.0.1"
+description = "Tools for building training torch models on gravitational wave data"
+category = "main"
+optional = false
+python-versions = ">=3.8,<3.11"
+develop = true
+
+[package.dependencies]
+bilby = "^1.1"
+gwpy = "^2.1"
+torch = "^1.10"
+torchtyping = "^0.1"
+
+[package.source]
+type = "directory"
+url = "../../../ml4gw"
+
+[[package]]
+name = "mldatafind"
+version = "0.1.0"
+description = "Tools for gravitational wave data discovery"
+category = "main"
+optional = false
+python-versions = ">=3.8,<3.11"
+develop = false
+
+[package.dependencies]
+astropy = "<5.0"
+numpy = ">=1.22.0,<1.22.4"
+scipy = "<1.8"
+
+[package.source]
+type = "git"
+url = "https://github.com/ML4GW/mldatafind.git"
+reference = "HEAD"
+resolved_reference = "c2e487ce07b8b9d03067188c500913a9cae1537c"
+
+[[package]]
 name = "mlpe-base"
 version = "0.1.0"
 description = "Base environment for forcing version constraints"
@@ -325,7 +495,38 @@ numpy = ["numpy (>=1.22.0,<1.22.4)"]
 
 [package.source]
 type = "directory"
-url = "../base"
+url = "../../../libs/base"
+
+[[package]]
+name = "mlpe-injection"
+version = "0.0.1"
+description = "Utilities for generating gravitational wave signals"
+category = "main"
+optional = false
+python-versions = ">=3.8,<3.11"
+develop = true
+
+[package.dependencies]
+bilby = "<1.2"
+lalsuite = "^7.4"
+"mlpe.base" = {path = "../base", develop = true, extras = ["gwpy", "numpy"]}
+
+[package.source]
+type = "directory"
+url = "../../../libs/injection"
+
+[[package]]
+name = "mlpe-logging"
+version = "0.0.1"
+description = "PE logging utilities"
+category = "main"
+optional = false
+python-versions = ">=3.8,<3.11"
+develop = true
+
+[package.source]
+type = "directory"
+url = "../../../libs/logging"
 
 [[package]]
 name = "mock"
@@ -358,6 +559,54 @@ description = "NumPy is the fundamental package for array computing with Python.
 category = "main"
 optional = false
 python-versions = ">=3.8"
+
+[[package]]
+name = "nvidia-cublas-cu11"
+version = "11.10.3.66"
+description = "CUBLAS native runtime libraries"
+category = "main"
+optional = false
+python-versions = ">=3"
+
+[package.dependencies]
+setuptools = "*"
+wheel = "*"
+
+[[package]]
+name = "nvidia-cuda-nvrtc-cu11"
+version = "11.7.99"
+description = "NVRTC native runtime libraries"
+category = "main"
+optional = false
+python-versions = ">=3"
+
+[package.dependencies]
+setuptools = "*"
+wheel = "*"
+
+[[package]]
+name = "nvidia-cuda-runtime-cu11"
+version = "11.7.99"
+description = "CUDA Runtime native Libraries"
+category = "main"
+optional = false
+python-versions = ">=3"
+
+[package.dependencies]
+setuptools = "*"
+wheel = "*"
+
+[[package]]
+name = "nvidia-cudnn-cu11"
+version = "8.5.0.96"
+description = "cuDNN runtime libraries"
+category = "main"
+optional = false
+python-versions = ">=3"
+
+[package.dependencies]
+setuptools = "*"
+wheel = "*"
 
 [[package]]
 name = "packaging"
@@ -437,6 +686,20 @@ docs = ["sphinx-astropy (>=1.3)"]
 test = ["pytest", "pytest-doctestplus (>=0.7)"]
 
 [[package]]
+name = "pyjwt"
+version = "2.6.0"
+description = "JSON Web Token implementation in Python"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+crypto = ["cryptography (>=3.4.0)"]
+dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
+docs = ["sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
+tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
+
+[[package]]
 name = "pyopenssl"
 version = "22.1.0"
 description = "Python wrapper module around the OpenSSL library"
@@ -510,6 +773,32 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "requests"
+version = "2.28.1"
+description = "Python HTTP for Humans."
+category = "main"
+optional = false
+python-versions = ">=3.7, <4"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+charset-normalizer = ">=2,<3"
+idna = ">=2.5,<4"
+urllib3 = ">=1.21.1,<1.27"
+
+[package.extras]
+socks = ["PySocks (>=1.5.6,!=1.5.7)"]
+use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
+
+[[package]]
+name = "safe-netrc"
+version = "1.0.0"
+description = "Safe netrc file parser"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "scipy"
 version = "1.7.3"
 description = "SciPy: Scientific Library for Python"
@@ -519,6 +808,20 @@ python-versions = ">=3.7,<3.11"
 
 [package.dependencies]
 numpy = ">=1.16.5,<1.23.0"
+
+[[package]]
+name = "scitokens"
+version = "1.7.2"
+description = "SciToken reference implementation library"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[package.dependencies]
+cryptography = "*"
+PyJWT = ">=1.6.1"
+setuptools = "*"
+six = "*"
 
 [[package]]
 name = "setuptools"
@@ -576,12 +879,50 @@ packaging = "*"
 doc = ["ipython", "numpydoc", "sphinx (>=1.1)", "sphinx-rtd-theme"]
 
 [[package]]
+name = "toml"
+version = "0.10.2"
+description = "Python Library for Tom's Obvious, Minimal Language"
+category = "main"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
 category = "main"
 optional = false
 python-versions = ">=3.7"
+
+[[package]]
+name = "torch"
+version = "1.13.0"
+description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
+category = "main"
+optional = false
+python-versions = ">=3.7.0"
+
+[package.dependencies]
+nvidia-cublas-cu11 = "11.10.3.66"
+nvidia-cuda-nvrtc-cu11 = "11.7.99"
+nvidia-cuda-runtime-cu11 = "11.7.99"
+nvidia-cudnn-cu11 = "8.5.0.96"
+typing-extensions = "*"
+
+[package.extras]
+opt-einsum = ["opt-einsum (>=3.3)"]
+
+[[package]]
+name = "torchtyping"
+version = "0.1.4"
+description = "Runtime type annotations for the shape, dtype etc. of PyTorch Tensors."
+category = "main"
+optional = false
+python-versions = ">=3.7.0"
+
+[package.dependencies]
+torch = ">=1.7.0"
+typeguard = ">=2.11.1"
 
 [[package]]
 name = "tqdm"
@@ -601,6 +942,36 @@ slack = ["slack-sdk"]
 telegram = ["requests"]
 
 [[package]]
+name = "typeguard"
+version = "2.13.3"
+description = "Run-time type checker for Python"
+category = "main"
+optional = false
+python-versions = ">=3.5.3"
+
+[package.extras]
+doc = ["sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme"]
+test = ["mypy", "pytest", "typing-extensions"]
+
+[[package]]
+name = "typeo"
+version = "0.1.5"
+description = "Utilities for running functions as scripts"
+category = "main"
+optional = false
+python-versions = "^3.8"
+develop = false
+
+[package.dependencies]
+toml = "^0.10.2"
+
+[package.source]
+type = "git"
+url = "https://github.com/ML4GW/typeo.git"
+reference = "HEAD"
+resolved_reference = "17376420b1a92ea12cbdfa884192aa0150f70b55"
+
+[[package]]
 name = "typing-extensions"
 version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -608,10 +979,34 @@ category = "main"
 optional = false
 python-versions = ">=3.7"
 
+[[package]]
+name = "urllib3"
+version = "1.26.12"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4"
+
+[package.extras]
+brotli = ["brotli (>=1.0.9)", "brotlicffi (>=0.8.0)", "brotlipy (>=0.6.0)"]
+secure = ["certifi", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "ipaddress", "pyOpenSSL (>=0.14)", "urllib3-secure-extra"]
+socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
+
+[[package]]
+name = "wheel"
+version = "0.38.2"
+description = "A built-package format for Python"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+test = ["pytest (>=3.0.0)"]
+
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "3e67639c6db6db66924c4be5442a3695f212032dd308af9e00bfa157b79aa2e8"
+content-hash = "021e1873d050bfa7ee2b69abab0781495ae4fb3ce76d72cba4c7f763b28afd9b"
 
 [metadata.files]
 astropy = [
@@ -638,6 +1033,10 @@ attrs = [
 ]
 bilby = [
     {file = "bilby-1.1.5.tar.gz", hash = "sha256:82f5920dd48d2088eb6bcdbef8f91854c3f9f343ffd01cb4f069d00d1e512bc2"},
+]
+certifi = [
+    {file = "certifi-2022.9.24-py3-none-any.whl", hash = "sha256:90c1a32f1d68f940488354e36370f6cca89f0f106db09518524c88d6ed83f382"},
+    {file = "certifi-2022.9.24.tar.gz", hash = "sha256:0d9c601124e5a6ba9712dbc60d9c53c21e34f5f641fe83002317394311bdce14"},
 ]
 cffi = [
     {file = "cffi-1.15.1-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:a66d3508133af6e8548451b25058d5812812ec3798c886bf38ed24a98216fab2"},
@@ -704,6 +1103,10 @@ cffi = [
     {file = "cffi-1.15.1-cp39-cp39-win32.whl", hash = "sha256:40f4774f5a9d4f5e344f31a32b5096977b5d48560c5592e2f3d2c4374bd543ee"},
     {file = "cffi-1.15.1-cp39-cp39-win_amd64.whl", hash = "sha256:70df4e3b545a17496c9b3f41f5115e69a4f2e77e94e1d2a8e1070bc0c38c8a3c"},
     {file = "cffi-1.15.1.tar.gz", hash = "sha256:d400bfb9a37b1351253cb402671cea7e89bdecc294e8016a707f6d1d8ac934f9"},
+]
+charset-normalizer = [
+    {file = "charset-normalizer-2.1.1.tar.gz", hash = "sha256:5a3d016c7c547f69d6f81fb0db9449ce888b418b5b9952cc5e6e66843e9dd845"},
+    {file = "charset_normalizer-2.1.1-py3-none-any.whl", hash = "sha256:83e9a75d1911279afd89352c68b45348559d1fc0506b054b346651b5e7fee29f"},
 ]
 colorama = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
@@ -820,6 +1223,10 @@ dill = [
     {file = "dill-0.3.6-py3-none-any.whl", hash = "sha256:a07ffd2351b8c678dfc4a856a3005f8067aea51d6ba6c700796a4d9e280f39f0"},
     {file = "dill-0.3.6.tar.gz", hash = "sha256:e5db55f3687856d8fbdab002ed78544e1c4559a130302693d839dfe8f93f2373"},
 ]
+dqsegdb2 = [
+    {file = "dqsegdb2-1.1.3-py3-none-any.whl", hash = "sha256:0bc012e8830082222f3c8ea41bd535599c526af34e97c07fb4236d08d36a38c9"},
+    {file = "dqsegdb2-1.1.3.tar.gz", hash = "sha256:1c731a7f7db78d578edf7256e5b12804f70523f0fc1fdd683ccbeee4acce7fc3"},
+]
 dynesty = [
     {file = "dynesty-1.0.1-py2.py3-none-any.whl", hash = "sha256:98e381308f9a280bdb8d186b7dd333edf71583117a9f06605b845541d60dfb5b"},
     {file = "dynesty-1.0.1.tar.gz", hash = "sha256:ddaeae35d359abb4cbb1c277500acab55b54ef4fb14932caacb4b8a6f719f7af"},
@@ -835,6 +1242,18 @@ exceptiongroup = [
 fonttools = [
     {file = "fonttools-4.38.0-py3-none-any.whl", hash = "sha256:820466f43c8be8c3009aef8b87e785014133508f0de64ec469e4efb643ae54fb"},
     {file = "fonttools-4.38.0.zip", hash = "sha256:2bb244009f9bf3fa100fc3ead6aeb99febe5985fa20afbfbaa2f8946c2fbdaf1"},
+]
+gwdatafind = [
+    {file = "gwdatafind-1.1.2-py3-none-any.whl", hash = "sha256:5e7f53392dbf3feae311293a27c22ed02cec87903f63447749bef54fd36a28c5"},
+    {file = "gwdatafind-1.1.2.tar.gz", hash = "sha256:178392bdd5a45ddcc7773bb3ec8aa8f31c34af2f4672740c0dd1449fa1d75a7b"},
+]
+gwosc = [
+    {file = "gwosc-0.6.1-py3-none-any.whl", hash = "sha256:387d47ec5b2b6ab74106a463e67e4270e58c6324dc5c75e1440a8768ee1e6f42"},
+    {file = "gwosc-0.6.1.tar.gz", hash = "sha256:cfe0d65aa92827e3d50652c9abcccc846449a42512b1a2a19007b30f98bf1e26"},
+]
+gwpy = [
+    {file = "gwpy-2.1.5-py2.py3-none-any.whl", hash = "sha256:544908c43ddcd1a8253424b3ad619d8a817c26f6be5cfce14503250716fb2733"},
+    {file = "gwpy-2.1.5.tar.gz", hash = "sha256:687015973b84c0d628fa7b245ff8f6a2a7a6008aee6860f17167c87ee8394521"},
 ]
 h5py = [
     {file = "h5py-3.7.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:d77af42cb751ad6cc44f11bae73075a07429a5cf2094dfde2b1e716e059b3911"},
@@ -857,6 +1276,14 @@ h5py = [
     {file = "h5py-3.7.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9e7535df5ee3dc3e5d1f408fdfc0b33b46bc9b34db82743c82cd674d8239b9ad"},
     {file = "h5py-3.7.0-cp39-cp39-win_amd64.whl", hash = "sha256:9e2ad2aa000f5b1e73b5dfe22f358ca46bf1a2b6ca394d9659874d7fc251731a"},
     {file = "h5py-3.7.0.tar.gz", hash = "sha256:3fcf37884383c5da64846ab510190720027dca0768def34dd8dcb659dbe5cbf3"},
+]
+idna = [
+    {file = "idna-3.4-py3-none-any.whl", hash = "sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2"},
+    {file = "idna-3.4.tar.gz", hash = "sha256:814f528e8dead7d329833b91c5faa87d60bf71824cd12a7530b5526063d02cb4"},
+]
+igwn-auth-utils = [
+    {file = "igwn-auth-utils-0.3.1.tar.gz", hash = "sha256:9698bbd9c46eddf4fe65d157c16a2ee185e4ccf5f98ecc24b08d4bd79378ccae"},
+    {file = "igwn_auth_utils-0.3.1-py3-none-any.whl", hash = "sha256:e0ac5433410aaca5916479b3d61ee221235dcb451b05ef2272818a7fde437d41"},
 ]
 iniconfig = [
     {file = "iniconfig-1.1.1-py2.py3-none-any.whl", hash = "sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3"},
@@ -949,6 +1376,10 @@ lalsuite = [
 ligo-segments = [
     {file = "ligo-segments-1.4.0.tar.gz", hash = "sha256:e072a844713c5b02efdcaf5bfe4c3a8cd9ef225b08cfd3202a4e185e0f71f5dc"},
 ]
+ligotimegps = [
+    {file = "ligotimegps-2.0.1-py2.py3-none-any.whl", hash = "sha256:da8c1289ba1310337ef5177e7936e25ce47d4e8e6a269cbdd5e9abfc5b5db490"},
+    {file = "ligotimegps-2.0.1.tar.gz", hash = "sha256:88626c02ad9a464d1242a1147b40074792f424bafa2ab013eee629c7d1b6469c"},
+]
 lscsoft-glue = [
     {file = "lscsoft-glue-3.0.1.tar.gz", hash = "sha256:a242f29537f18957dbb07e6d9d20d7ebddc86c8325d4fa9e192cfa61a7c6ffbd"},
 ]
@@ -995,7 +1426,11 @@ matplotlib = [
     {file = "matplotlib-3.6.2-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:4426c74761790bff46e3d906c14c7aab727543293eed5a924300a952e1a3a3c1"},
     {file = "matplotlib-3.6.2.tar.gz", hash = "sha256:b03fd10a1709d0101c054883b550f7c4c5e974f751e2680318759af005964990"},
 ]
+ml4gw = []
+mldatafind = []
 mlpe-base = []
+mlpe-injection = []
+mlpe-logging = []
 mock = [
     {file = "mock-4.0.3-py3-none-any.whl", hash = "sha256:122fcb64ee37cfad5b3f48d7a7d51875d7031aaf3d8be7c42e2bee25044eee62"},
     {file = "mock-4.0.3.tar.gz", hash = "sha256:7d3fbbde18228f4ff2f1f119a45cdffa458b4c0dee32eb4d2bb2f82554bac7bc"},
@@ -1053,6 +1488,23 @@ numpy = [
     {file = "numpy-1.22.3-cp39-cp39-win_amd64.whl", hash = "sha256:639b54cdf6aa4f82fe37ebf70401bbb74b8508fddcf4797f9fe59615b8c5813a"},
     {file = "numpy-1.22.3-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c34ea7e9d13a70bf2ab64a2532fe149a9aced424cd05a2c4ba662fd989e3e45f"},
     {file = "numpy-1.22.3.zip", hash = "sha256:dbc7601a3b7472d559dc7b933b18b4b66f9aa7452c120e87dfb33d02008c8a18"},
+]
+nvidia-cublas-cu11 = [
+    {file = "nvidia_cublas_cu11-11.10.3.66-py3-none-manylinux1_x86_64.whl", hash = "sha256:d32e4d75f94ddfb93ea0a5dda08389bcc65d8916a25cb9f37ac89edaeed3bded"},
+    {file = "nvidia_cublas_cu11-11.10.3.66-py3-none-win_amd64.whl", hash = "sha256:8ac17ba6ade3ed56ab898a036f9ae0756f1e81052a317bf98f8c6d18dc3ae49e"},
+]
+nvidia-cuda-nvrtc-cu11 = [
+    {file = "nvidia_cuda_nvrtc_cu11-11.7.99-2-py3-none-manylinux1_x86_64.whl", hash = "sha256:9f1562822ea264b7e34ed5930567e89242d266448e936b85bc97a3370feabb03"},
+    {file = "nvidia_cuda_nvrtc_cu11-11.7.99-py3-none-manylinux1_x86_64.whl", hash = "sha256:f7d9610d9b7c331fa0da2d1b2858a4a8315e6d49765091d28711c8946e7425e7"},
+    {file = "nvidia_cuda_nvrtc_cu11-11.7.99-py3-none-win_amd64.whl", hash = "sha256:f2effeb1309bdd1b3854fc9b17eaf997808f8b25968ce0c7070945c4265d64a3"},
+]
+nvidia-cuda-runtime-cu11 = [
+    {file = "nvidia_cuda_runtime_cu11-11.7.99-py3-none-manylinux1_x86_64.whl", hash = "sha256:cc768314ae58d2641f07eac350f40f99dcb35719c4faff4bc458a7cd2b119e31"},
+    {file = "nvidia_cuda_runtime_cu11-11.7.99-py3-none-win_amd64.whl", hash = "sha256:bc77fa59a7679310df9d5c70ab13c4e34c64ae2124dd1efd7e5474b71be125c7"},
+]
+nvidia-cudnn-cu11 = [
+    {file = "nvidia_cudnn_cu11-8.5.0.96-2-py3-none-manylinux1_x86_64.whl", hash = "sha256:402f40adfc6f418f9dae9ab402e773cfed9beae52333f6d86ae3107a1b9527e7"},
+    {file = "nvidia_cudnn_cu11-8.5.0.96-py3-none-manylinux1_x86_64.whl", hash = "sha256:71f8111eb830879ff2836db3cccf03bbd735df9b0d17cd93761732ac50a8a108"},
 ]
 packaging = [
     {file = "packaging-20.9-py2.py3-none-any.whl", hash = "sha256:67714da7f7bc052e064859c05c595155bd1ee9f69f76557e21f051443c20947a"},
@@ -1187,6 +1639,10 @@ pyerfa = [
     {file = "pyerfa-2.0.0.1-cp39-cp39-win_amd64.whl", hash = "sha256:63a83c35cea8c5d50d53c18089f1e625c0ffc59a7a5b8d44e0f1b3ec5288f183"},
     {file = "pyerfa-2.0.0.1.tar.gz", hash = "sha256:2fd4637ffe2c1e6ede7482c13f583ba7c73119d78bef90175448ce506a0ede30"},
 ]
+pyjwt = [
+    {file = "PyJWT-2.6.0-py3-none-any.whl", hash = "sha256:d83c3d892a77bbb74d3e1a2cfa90afaadb60945205d1095d9221f04466f64c14"},
+    {file = "PyJWT-2.6.0.tar.gz", hash = "sha256:69285c7e31fc44f68a1feb309e948e0df53259d579295e6cfe2b1792329f05fd"},
+]
 pyopenssl = [
     {file = "pyOpenSSL-22.1.0-py3-none-any.whl", hash = "sha256:b28437c9773bb6c6958628cf9c3bebe585de661dba6f63df17111966363dd15e"},
     {file = "pyOpenSSL-22.1.0.tar.gz", hash = "sha256:7a83b7b272dd595222d672f5ce29aa030f1fb837630ef229f62e72e395ce8968"},
@@ -1253,6 +1709,14 @@ pytz = [
     {file = "pytz-2022.6-py2.py3-none-any.whl", hash = "sha256:222439474e9c98fced559f1709d89e6c9cbf8d79c794ff3eb9f8800064291427"},
     {file = "pytz-2022.6.tar.gz", hash = "sha256:e89512406b793ca39f5971bc999cc538ce125c0e51c27941bef4568b460095e2"},
 ]
+requests = [
+    {file = "requests-2.28.1-py3-none-any.whl", hash = "sha256:8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349"},
+    {file = "requests-2.28.1.tar.gz", hash = "sha256:7c5599b102feddaa661c826c56ab4fee28bfd17f5abca1ebbe3e7f19d7c97983"},
+]
+safe-netrc = [
+    {file = "safe-netrc-1.0.0.tar.gz", hash = "sha256:55fe78dfc8bda48ee5b26c930a8efdecbb7ff5b5a45e2552381c84f13bb4a98a"},
+    {file = "safe_netrc-1.0.0-py2.py3-none-any.whl", hash = "sha256:5011368564eabd3accc196e499de111e4403c29f48eb6c60a3141b6ad507eb50"},
+]
 scipy = [
     {file = "scipy-1.7.3-1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:c9e04d7e9b03a8a6ac2045f7c5ef741be86727d8f49c45db45f244bdd2bcff17"},
     {file = "scipy-1.7.3-1-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:b0e0aeb061a1d7dcd2ed59ea57ee56c9b23dd60100825f98238c06ee5cc4467e"},
@@ -1283,6 +1747,10 @@ scipy = [
     {file = "scipy-1.7.3-cp39-cp39-win32.whl", hash = "sha256:2c56b820d304dffcadbbb6cbfbc2e2c79ee46ea291db17e288e73cd3c64fefa9"},
     {file = "scipy-1.7.3-cp39-cp39-win_amd64.whl", hash = "sha256:3f78181a153fa21c018d346f595edd648344751d7f03ab94b398be2ad083ed3e"},
     {file = "scipy-1.7.3.tar.gz", hash = "sha256:ab5875facfdef77e0a47d5fd39ea178b58e60e454a4c85aa1e52fcb80db7babf"},
+]
+scitokens = [
+    {file = "scitokens-1.7.2-py3-none-any.whl", hash = "sha256:6cddfa8876e50e120c9cb66c2132dcd0618693ef17225a8bbc663b8a48d2dfac"},
+    {file = "scitokens-1.7.2.tar.gz", hash = "sha256:b81d57831b60ab41cb5711e08a5441a8bb7b320870f4ea3579bab650a1800e5b"},
 ]
 setuptools = [
     {file = "setuptools-65.5.1-py3-none-any.whl", hash = "sha256:d0b9a8433464d5800cbe05094acf5c6d52a91bfac9b52bcfc4d41382be5d5d31"},
@@ -1324,15 +1792,59 @@ tables = [
     {file = "tables-3.7.0-cp39-cp39-win_amd64.whl", hash = "sha256:3c2350f0047685f5932fb0af09806ed0089d042d550292ff1e68d796da0d90fb"},
     {file = "tables-3.7.0.tar.gz", hash = "sha256:e92a887ad6f2a983e564a69902de4a7645c30069fc01abd353ec5da255c5e1fe"},
 ]
+toml = [
+    {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
+    {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
+]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
     {file = "tomli-2.0.1.tar.gz", hash = "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"},
+]
+torch = [
+    {file = "torch-1.13.0-cp310-cp310-manylinux1_x86_64.whl", hash = "sha256:f68edfea71ade3862039ba66bcedf954190a2db03b0c41a9b79afd72210abd97"},
+    {file = "torch-1.13.0-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:d2d2753519415d154de4d3e64d2eaaeefdba6b6fd7d69d5ffaef595988117700"},
+    {file = "torch-1.13.0-cp310-cp310-win_amd64.whl", hash = "sha256:6c227c16626e4ce766cca5351cc62a2358a11e8e466410a298487b9dff159eb1"},
+    {file = "torch-1.13.0-cp310-none-macosx_10_9_x86_64.whl", hash = "sha256:49a949b8136b32b2ec0724cbf4c6678b54e974b7d68f19f1231eea21cde5c23b"},
+    {file = "torch-1.13.0-cp310-none-macosx_11_0_arm64.whl", hash = "sha256:0fdd38c96230947b1ed870fed4a560252f8d23c3a2bf4dab9d2d42b18f2e67c8"},
+    {file = "torch-1.13.0-cp311-cp311-manylinux1_x86_64.whl", hash = "sha256:43db0723fc66ad6486f86dc4890c497937f7cd27429f28f73fb7e4d74b7482e2"},
+    {file = "torch-1.13.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:e643ac8d086706e82f77b5d4dfcf145a9dd37b69e03e64177fc23821754d2ed7"},
+    {file = "torch-1.13.0-cp37-cp37m-manylinux2014_aarch64.whl", hash = "sha256:bb33a911460475d1594a8c8cb73f58c08293211760796d99cae8c2509b86d7f1"},
+    {file = "torch-1.13.0-cp37-cp37m-win_amd64.whl", hash = "sha256:220325d0f4e69ee9edf00c04208244ef7cf22ebce083815ce272c7491f0603f5"},
+    {file = "torch-1.13.0-cp37-none-macosx_10_9_x86_64.whl", hash = "sha256:cd1e67db6575e1b173a626077a54e4911133178557aac50683db03a34e2b636a"},
+    {file = "torch-1.13.0-cp37-none-macosx_11_0_arm64.whl", hash = "sha256:9197ec216833b836b67e4d68e513d31fb38d9789d7cd998a08fba5b499c38454"},
+    {file = "torch-1.13.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:fa768432ce4b8ffa29184c79a3376ab3de4a57b302cdf3c026a6be4c5a8ab75b"},
+    {file = "torch-1.13.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:635dbb99d981a6483ca533b3dc7be18ef08dd9e1e96fb0bb0e6a99d79e85a130"},
+    {file = "torch-1.13.0-cp38-cp38-win_amd64.whl", hash = "sha256:857c7d5b1624c5fd979f66d2b074765733dba3f5e1cc97b7d6909155a2aae3ce"},
+    {file = "torch-1.13.0-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:ef934a21da6f6a516d0a9c712a80d09c56128abdc6af8dc151bee5199b4c3b4e"},
+    {file = "torch-1.13.0-cp38-none-macosx_11_0_arm64.whl", hash = "sha256:f01a9ae0d4b69d2fc4145e8beab45b7877342dddbd4838a7d3c11ca7f6680745"},
+    {file = "torch-1.13.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:9ac382cedaf2f70afea41380ad8e7c06acef6b5b7e2aef3971cdad666ca6e185"},
+    {file = "torch-1.13.0-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:e20df14d874b024851c58e8bb3846249cb120e677f7463f60c986e3661f88680"},
+    {file = "torch-1.13.0-cp39-cp39-win_amd64.whl", hash = "sha256:4a378f5091307381abfb30eb821174e12986f39b1cf7c4522bf99155256819eb"},
+    {file = "torch-1.13.0-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:922a4910613b310fbeb87707f00cb76fec328eb60cc1349ed2173e7c9b6edcd8"},
+    {file = "torch-1.13.0-cp39-none-macosx_11_0_arm64.whl", hash = "sha256:47fe6228386bff6d74319a2ffe9d4ed943e6e85473d78e80502518c607d644d2"},
+]
+torchtyping = [
+    {file = "torchtyping-0.1.4-py3-none-any.whl", hash = "sha256:485fb6ef3965c39b0de15f00d6f49373e0a3a6993e9733942a63c5e207d35390"},
+    {file = "torchtyping-0.1.4.tar.gz", hash = "sha256:4763375d17752641bd1bff0faaddade29be3c125fca6355e3cee7700e975fdb5"},
 ]
 tqdm = [
     {file = "tqdm-4.64.1-py2.py3-none-any.whl", hash = "sha256:6fee160d6ffcd1b1c68c65f14c829c22832bc401726335ce92c52d395944a6a1"},
     {file = "tqdm-4.64.1.tar.gz", hash = "sha256:5f4f682a004951c1b450bc753c710e9280c5746ce6ffedee253ddbcbf54cf1e4"},
 ]
+typeguard = [
+    {file = "typeguard-2.13.3-py3-none-any.whl", hash = "sha256:5e3e3be01e887e7eafae5af63d1f36c849aaa94e3a0112097312aabfa16284f1"},
+    {file = "typeguard-2.13.3.tar.gz", hash = "sha256:00edaa8da3a133674796cf5ea87d9f4b4c367d77476e185e80251cc13dfbb8c4"},
+]
+typeo = []
 typing-extensions = [
     {file = "typing_extensions-4.4.0-py3-none-any.whl", hash = "sha256:16fa4864408f655d35ec496218b85f79b3437c829e93320c7c9215ccfd92489e"},
     {file = "typing_extensions-4.4.0.tar.gz", hash = "sha256:1511434bb92bf8dd198c12b1cc812e800d4181cfcb867674e0f8279cc93087aa"},
+]
+urllib3 = [
+    {file = "urllib3-1.26.12-py2.py3-none-any.whl", hash = "sha256:b930dd878d5a8afb066a637fbb35144fe7901e3b209d1cd4f524bd0e9deee997"},
+    {file = "urllib3-1.26.12.tar.gz", hash = "sha256:3fa96cf423e6987997fc326ae8df396db2a8b7c667747d47ddd8ecba91f4a74e"},
+]
+wheel = [
+    {file = "wheel-0.38.2-py3-none-any.whl", hash = "sha256:7a5a3095dceca97a3cac869b8fef4e89b83fafde21b6688f47b6fda7600eb441"},
+    {file = "wheel-0.38.2.tar.gz", hash = "sha256:3d492ef22379a156ec923d2a77051cedfd4df4b667864e9e41ba83f0b70b7149"},
 ]

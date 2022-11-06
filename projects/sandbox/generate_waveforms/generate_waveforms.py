@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from typing import Callable, Dict, Optional
 
-import bilby
 import h5py
 import mlpe.injection as injection
 from mlpe.logging import configure_logging
@@ -11,7 +10,7 @@ from typeo import scriptify
 
 @scriptify
 def main(
-    prior_file: Path,
+    prior: Callable,
     waveform: Callable,
     sample_rate: float,
     n_samples: int,
@@ -28,7 +27,7 @@ def main(
 
     Args:
 
-        prior_file: Path to prior for generating waveforms
+        prior: Callable that instantiates a bilby prior
         waveform: A callable compatible with bilby waveform generator
         sample_rate: sample rate for generating waveform
         n_samples: number of signal to inject
@@ -55,13 +54,8 @@ def main(
         )
         return signal_file
 
-    # if prior file is a relative path,
-    # make it relative to this script
-    if not prior_file.is_absolute():
-        prior_file = Path(__file__).resolve().parent / prior_file
+    priors = prior()
 
-    # initiate prior and sample
-    priors = bilby.gw.prior.PriorDict(str(prior_file))
     sample_params = priors.sample(n_samples)
 
     signals = injection.generate_gw(

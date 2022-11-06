@@ -35,6 +35,13 @@ projects/sandbox/generate_waveforms/:
   - 'projects/sandbox/generate_waveforms/**'
   - 'libs/injection/**'
 
+projects/sandbox/generate_testing_set/:
+  - *workflow
+  - 'ml4gw/**'
+  - 'projects/sandbox/generate_testing_set/**'
+  - 'libs/injection/**'
+
+
 
 # projects/sandbox/generate_background/:
 #  - *workflow

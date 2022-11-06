@@ -88,7 +88,7 @@ def main(
         highpass,
     )
 
-    injector.to(device)
+    injector.to(device, waveforms=True)
 
     # construct samples of extrinsic parameters
     # if they were passed as inference params

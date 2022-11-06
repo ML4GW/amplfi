@@ -33,7 +33,7 @@ def test_waveform_injector(ifos, trigger_offset):
 
     # mock sample call to return all the waveforms
     # in order and dummy params
-    def mock_sample(N):
+    def mock_sample(N, device):
         return waveforms[:N], None
 
     mock_injector.sample = mock_sample
