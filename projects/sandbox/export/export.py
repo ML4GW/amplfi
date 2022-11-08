@@ -6,7 +6,7 @@ from typing import Callable, List, Optional
 import h5py  # noqa
 import torch
 from mlpe.architectures import architecturize
-from mlpe.data.transforms import Preprocessor, StandardScalerTransform
+from mlpe.data.transforms import Preprocessor
 from mlpe.logging import configure_logging
 
 import hermes.quiver as qv
@@ -104,18 +104,20 @@ def export(
     num_ifos = len(ifos)
     context_dim = int(num_ifos * (kernel_length - fduration) * sample_rate)
 
-    nn = architecture((param_dim, context_dim)).flow
-    preprocessor = Preprocessor(
+    context_preprocessor = Preprocessor(
         num_ifos,
         sample_rate,
         kernel_length,
-        normalizer=StandardScalerTransform(param_dim),
         fduration=fduration,
         highpass=highpass,
+    ).whitener
+
+    flow_constructor = architecture((param_dim, context_dim))
+    flow = flow_constructor.construct_flow(
+        context_preprocessor=context_preprocessor
     )
-    nn = torch.nn.Sequential(preprocessor, nn)
-    nn.load_state_dict(torch.load(weights))
-    nn.eval()
+    flow.load_state_dict(torch.load(weights))
+    flow.eval()
 
     # instantiate a model repository at the
     # indicated location and see if a bbhnet
@@ -150,8 +152,8 @@ def export(
         kwargs["use_fp16"] = True
 
     mlpe.export_version(
-        nn,
-        input_shapes={"n_samples": (1,), "context": input_shape},
+        flow,
+        input_shapes={"n_samples": -1, "context": input_shape},
         output_names=["samples"],
         **kwargs,
     )
