@@ -4,11 +4,11 @@ import h5py
 import numpy as np
 import pytest
 import torch
-from generate_testing_set import main
+from data_generation.generate_testing_set import main
+from data_generation.utils import inject_into_background
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
 from mlpe.injection.priors import sg_uniform
 from mlpe.injection.waveforms import sine_gaussian_frequency
-from utils import inject_into_background
 
 
 @pytest.fixture(params=[["H1", "L1"]])
@@ -75,10 +75,12 @@ def test_generate_test_set(
         background_dict[ifo] = TimeSeries(data=np.zeros(n_background_samples))
 
     query_patch = patch(
-        "generate_testing_set.query_segments", return_value=[[0, 1000]]
+        "data_generation.generate_testing_set.query_segments",
+        return_value=[[0, 1000]],
     )
     download_patch = patch(
-        "generate_testing_set.download_data", return_value=background_dict
+        "data_generation.generate_testing_set.download_data",
+        return_value=background_dict,
     )
 
     with query_patch, download_patch:
