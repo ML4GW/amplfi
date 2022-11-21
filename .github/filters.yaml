@@ -30,15 +30,10 @@ libs/data/:
   - 'libs/base/**'
 
 # projects
-projects/sandbox/generate_waveforms/:
-  - *workflow
-  - 'projects/sandbox/generate_waveforms/**'
-  - 'libs/injection/**'
-
-projects/sandbox/generate_testing_set/:
+projects/sandbox/data_generation/:
   - *workflow
   - 'ml4gw/**'
-  - 'projects/sandbox/generate_testing_set/**'
+  - 'projects/sandbox/data_generation/**'
   - 'libs/injection/**'
 
 
@@ -51,4 +46,4 @@ projects/sandbox/generate_testing_set/:
 #  - *workflow
 #  - 'projects/sandbox/train/**'
 #  - 'ml4gw/**'
-  - 'libs/data/**'
+#  - 'libs/data/**'

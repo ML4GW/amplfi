@@ -1,8 +1,8 @@
 [tool.pinto]
 steps = [
-    #"generate_background:generate-background",
-    #"generate_waveforms:generate-waveforms",
-    #"generate_testing_set:generate-testing",
+    "data_generation:generate-background",
+    "data_generation:generate-waveforms",
+    "data_generation:generate-testing",
     "train:train:coupling"
 ]
 
