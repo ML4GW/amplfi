@@ -1,6 +1,4 @@
 # 1 dimensional convolutional encoder
-
-
 import torch
 import torch.nn as nn
 
@@ -102,3 +100,71 @@ class Conv1dEmbedding(torch.nn.Module):
         out = self.downsampler(x)
         out = torch.flatten(out)
         return len(out)
+
+
+class DenseEmbedding(torch.nn.Module):
+    """Fully connected embedding with some hidden layers."""
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        hidden_layer_size=100,
+        num_hidden_layers=3,
+        activation=torch.relu,
+    ) -> None:
+        super().__init__()
+        self.in_features = in_features
+        self.hidden_layer_size = hidden_layer_size
+        self.num_hidden_layers = num_hidden_layers
+        self.out_features = out_features
+        self.activation = activation
+
+        self.initial_layer = nn.Linear(
+            self.in_features, self.hidden_layer_size
+        )
+        self.final_layer = nn.Linear(self.hidden_layer_size, self.out_features)
+        self.hidden_layers = nn.ModuleList(
+            [
+                nn.Linear(self.hidden_layer_size, self.hidden_layer_size)
+                for _ in range(self.num_hidden_layers)
+            ]
+        )
+
+    def forward(self, x):
+        x = self.initial_layer(x)
+        x = self.activation(x)
+        for layer in self.hidden_layers:
+            x = self.activation(layer(x))
+        x = self.final_layer(x)
+        return x
+
+
+class TwoChannelDenseEmbedding(nn.Module):
+    """
+    DenseEmbedding for 2 channels.
+    Only works for shape (num_batch, 2, num_vals)
+    """
+
+    def __init__(
+        self,
+        in_shape,
+        out_shape,
+        **kwargs,
+    ) -> None:
+        super().__init__()
+        self.activation = kwargs.get("activation", torch.relu)
+        self.embedding_1 = DenseEmbedding(in_shape, out_shape, **kwargs)
+        self.embedding_2 = DenseEmbedding(in_shape, out_shape, **kwargs)
+        self.final_layer = nn.Linear(2 * out_shape, out_shape)
+
+    def forward(self, x):
+        # assume x.shape (batch, 2, num)
+        channel_1 = x[:, 0, :]
+        channel_2 = x[:, 1, :]
+        x1 = self.embedding_1(channel_1)
+        x2 = self.embedding_2(channel_2)
+        x_concat = torch.concat((x1, x2), dim=1)
+        x_concat = self.final_layer(x_concat)
+        x_concat = self.activation(x_concat)
+        return x_concat

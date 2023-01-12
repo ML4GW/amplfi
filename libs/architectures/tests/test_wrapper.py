@@ -40,3 +40,35 @@ def test_coupling_flow_wrappers():
         )
         wrapped()
         mock.assert_called_with(1e-3)
+
+
+def test_maf_wrappers():
+    mock = Mock()
+
+    def func(architecture: Callable, learning_rate: float):
+        nn = architecture((10, 2, 100))
+
+        # arch will be defined in the dict loop later
+        assert isinstance(nn, arch)
+
+        mock(learning_rate)
+
+    wrapped = architecturize(func)
+
+    # now try to use this wrapped function at
+    # the "command" line for both architectures
+    for name, arch in architectures.items():
+        if name not in ("maf-flow"):
+            continue
+
+        set_argv(
+            "--learning-rate",
+            "1e-3",
+            name,
+            "--num-transforms",
+            "5",
+            "--num-blocks",
+            "3",
+        )
+        wrapped()
+        mock.assert_called_with(1e-3)

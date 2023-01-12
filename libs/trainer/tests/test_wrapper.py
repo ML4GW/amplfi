@@ -93,6 +93,8 @@ def data_fn(unique_args, get_data):
     [
         ("coupling", dict(num_flow_steps=10)),
         ("coupling", dict(num_flow_steps=10, num_transform_blocks=2)),
+        ("maf", dict(num_transforms=10)),
+        ("maf", dict(num_transforms=2, hidden_features=10)),
     ],
 )
 def test_wrapper(arch, arch_kwargs, data_fn, preprocess, outdir, unique_args):

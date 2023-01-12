@@ -2,9 +2,9 @@ import inspect
 from collections.abc import Callable
 
 import torch
-from mlpe.architectures.flows import CouplingFlow
+from mlpe.architectures.flows import CouplingFlow, MaskedAutoRegressiveFlow
 
-architectures = {"coupling": CouplingFlow}
+architectures = {"coupling": CouplingFlow, "maf": MaskedAutoRegressiveFlow}
 
 
 def get_arch_fn(name: str, fn, fn_kwargs={}):
