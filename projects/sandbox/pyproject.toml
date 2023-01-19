@@ -57,6 +57,8 @@ background_path = "${base.datadir}/background.h5"
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
 inference_params = ["frequency", "quality", "hrss", "dec", "psi", "phi"]
+optimizer = "torch.optimizers.lr_scheduler.Adam"
+optimizer_kwargs = {"weight_decay": 0}
 
 ifos = "${base.ifos}"
 

@@ -110,14 +110,15 @@ def train(
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
     lr: float = 1e-3,
-    min_lr: float = 1e-5,
-    decay_steps: int = 10000,
-    weight_decay: float = 0.0,
     early_stop: int = 20,
     # misc params
     device: Optional[str] = None,
     use_amp: bool = False,
     profile: bool = False,
+    optimizer_fn: Callable = torch.optim.Adam,
+    optimizer_kwargs: dict = dict(weight_decay=0),
+    scheduler_fn: Callable = torch.optim.lr_scheduler.CosineAnnealingLR,
+    scheduler_kwargs: dict = dict(eta_min=1e-5, T_max=10000),
 ) -> float:
     """Train Flow model on in-memory data
     Args:
@@ -143,12 +144,6 @@ def train(
             that this directory contains a file called `weights.pt`.
         lr:
             Learning rate to use during training.
-        min_lr:
-            Minimum learning rate to decay to throughout training.
-        decay_steps:
-            The number of steps over which to decay from lr to min_lr.
-        weight_decay:
-            Amount of regularization to apply during training.
         early_stop:
             Number of epochs without improvement in validation
             loss before training terminates altogether. Ignored
@@ -164,6 +159,18 @@ def train(
             Whether to generate a tensorboard profile of the
             training step on the first epoch. This will make
             this first epoch slower.
+        optimizer_fn:
+            Weights optimizer. E.g. ``Adam``,
+        optimizer_kwargs:
+            Keyword arguments, except ``lr``, to training optimizer. Supply as,
+            ``{parameter_key: parameter_value}`` in pyproject.toml,
+            e.g. ``{weight_decay: 0}``.
+        scheduler_fn:
+            Learning rate scheduler. E.g.
+            ``torch.optim.lr_scheduler.CosineAnnealingLR``.
+        scheduler_kwargs:
+            Keyword arguments to scheduler. Supply as,
+            ``{parameter_key: parameter_value}`` in project's pyproject.toml
     """
 
     device = device or "cpu"
@@ -215,12 +222,8 @@ def train(
     logging.info(flow)
     logging.info("Initializing loss and optimizer")
 
-    optimizer = torch.optim.Adam(
-        flow.parameters(), lr=lr, weight_decay=weight_decay
-    )
-    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=decay_steps, eta_min=min_lr
-    )
+    optimizer = optimizer_fn(flow.parameters(), lr=lr, **optimizer_kwargs)
+    lr_scheduler = scheduler_fn(optimizer, **scheduler_kwargs)
 
     # start training
     torch.backends.cudnn.benchmark = True
