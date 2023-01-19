@@ -128,7 +128,7 @@ def architecturize(f):
     # doing the unthinkable and putting this import
     # here until I decide what I really want to do
     # with this function
-    from hermes.typeo import typeo
+    from typeo import scriptify
 
     f_kwargs = {}
     arch_fns = get_arch_fns(f, f_kwargs)
@@ -168,4 +168,4 @@ def architecturize(f):
     wrapper.__name__ = f.__name__
     wrapper.__doc__ = f.__doc__
 
-    return typeo(wrapper, **arch_fns)
+    return scriptify(wrapper, **arch_fns)
