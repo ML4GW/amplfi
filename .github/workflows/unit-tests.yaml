@@ -45,7 +45,9 @@ jobs:
         password: ${{ secrets.github_token }}
       volumes:
         - ${{ github.workspace }}:/github/workspace
-    
+    env:
+        CONDA_DEFAULT_ENV: base
+        CONDA_PREFIX: /opt/conda
     steps:
       - uses: actions/checkout@v2
         with:
@@ -62,8 +64,7 @@ jobs:
         name: build environment
         env:
           test_dir: /github/workspace/${{ matrix.library }}
-          CONDA_PREFIX: /opt/conda
-          CONDA_DEFAULT_ENV: base
+          
         # TODO: use case statement here, or add separate matrix.build_args
         run: |
             if [[ "${{ matrix.library }}" == "libs/architectures/" ]]; then
@@ -79,7 +80,6 @@ jobs:
       - name: run tests 
         env:
           test_dir: /github/workspace/${{ matrix.library }}
-          CONDA_PREFIX: /opt/conda
         run: pinto -p $test_dir run pytest $test_dir/tests ${{matrix.args}}
         shell: bash
         
