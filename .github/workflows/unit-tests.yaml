@@ -70,6 +70,7 @@ jobs:
             else
                 FLAGS=""
             fi
+            echo $FLAGS
             pinto -p $test_dir build $FLAGS
         shell: bash
       
