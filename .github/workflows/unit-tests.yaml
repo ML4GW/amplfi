@@ -63,6 +63,7 @@ jobs:
         env:
           test_dir: /github/workspace/${{ matrix.library }}
           CONDA_PREFIX: /opt/conda
+          CONDA_DEFAULT_ENV: base
         # TODO: use case statement here, or add separate matrix.build_args
         run: |
             if [[ "${{ matrix.library }}" == "libs/architectures/" ]]; then
