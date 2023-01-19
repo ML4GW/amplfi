@@ -36,9 +36,6 @@ jobs:
         exclude:
           # don't run non-existent .github/workflow tests
           - library: 'workflow'
-         
-         
-           
     permissions:
       packages: read
     container:
@@ -48,7 +45,9 @@ jobs:
         password: ${{ secrets.github_token }}
       volumes:
         - ${{ github.workspace }}:/github/workspace
-    
+    env:
+        CONDA_DEFAULT_ENV: base
+        CONDA_PREFIX: /opt/conda
     steps:
       - uses: actions/checkout@v2
         with:
@@ -60,16 +59,27 @@ jobs:
         name: install gcc
         run: apt update && apt install -y build-essential
 
-        
+      # build the project's environment
+      -
+        name: build environment
+        env:
+          test_dir: /github/workspace/${{ matrix.library }}
+          
+        # TODO: use case statement here, or add separate matrix.build_args
+        run: |
+            if [[ "${{ matrix.library }}" == "libs/architectures/" ]]; then
+                FLAGS="-E wrapper"
+            else
+                FLAGS=""
+            fi
+            pinto -p $test_dir build $FLAGS
+            printenv
+        shell: bash
+      
       # run tests
-        
       - name: run tests 
         env:
           test_dir: /github/workspace/${{ matrix.library }}
-        run: |
-            if [[ "${{matrix.library}}" == "libs/architectures/" ]]; then
-                pinto -p $test_dir build -E wrapper
-            fi
-            pinto -p $test_dir run pytest $test_dir/tests ${{matrix.args}}
+        run: pinto -p $test_dir run pytest $test_dir/tests ${{matrix.args}}
         shell: bash
         

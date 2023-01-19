@@ -5,7 +5,8 @@
 # to workflow
 workflow: &workflow
   - '.github/filters.yaml'
-  - '.github/workflows/ci-tests.yaml'
+  - '.github/workflows/unit-tests.yaml'
+  - '.github/workflows/pre-commit.yaml'
 
 # libraries
 libs/injection/:
@@ -35,15 +36,3 @@ projects/sandbox/data_generation/:
   - 'ml4gw/**'
   - 'projects/sandbox/data_generation/**'
   - 'libs/injection/**'
-
-
-
-# projects/sandbox/generate_background/:
-#  - *workflow
-#  - 'projects/sandbox/generate_background/**'
-
-# projects/sandbox/train/:
-#  - *workflow
-#  - 'projects/sandbox/train/**'
-#  - 'ml4gw/**'
-#  - 'libs/data/**'
