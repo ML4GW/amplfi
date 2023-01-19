@@ -72,8 +72,8 @@ jobs:
             else
                 FLAGS=""
             fi
-            echo $FLAGS
             pinto -p $test_dir build $FLAGS
+            printenv
         shell: bash
       
       # run tests
