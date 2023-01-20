@@ -88,7 +88,14 @@ def data_fn(unique_args, get_data):
     return fn
 
 
-def test_wrapper(data_fn, preprocess, outdir, unique_args):
+@pytest.mark.parametrize(
+    "arch, arch_kwargs",
+    [
+        ("coupling", dict(num_flow_steps=10)),
+        ("coupling", dict(num_flow_steps=10, num_transform_blocks=2)),
+    ],
+)
+def test_wrapper(arch, arch_kwargs, data_fn, preprocess, outdir, unique_args):
     fn = trainify(data_fn, return_result=True)
 
     # make sure we can run the function as-is with regular arguments
@@ -103,13 +110,7 @@ def test_wrapper(data_fn, preprocess, outdir, unique_args):
 
     # call function passing keyword args
     # for train function
-    result = fn(
-        4,
-        outdir=outdir,
-        max_epochs=1,
-        arch="coupling",
-        num_flow_steps=10,
-    )
+    result = fn(4, outdir=outdir, max_epochs=1, arch=arch, **arch_kwargs)
     assert len(result["train_loss"]) == 1
 
     sys.argv = [
