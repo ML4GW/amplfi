@@ -63,6 +63,10 @@ scheduler_fn = "torch.optim.lr_scheduler.CosineAnnealingLR"
 scheduler_kwargs = {eta_min=1e-5, T_max=10000}
 ifos = "${base.ifos}"
 
+min_lr  = 1e-5,
+decay_steps = 100000
+weight_decay = 0.0
+
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
