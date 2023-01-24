@@ -1,7 +1,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple, Dict, Any
 
 import h5py
 import numpy as np
@@ -110,15 +110,15 @@ def train(
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
     lr: float = 1e-3,
-    early_stop: int = 20,
+    early_stop: Optional[int] = 50,
     # misc params
     device: Optional[str] = None,
     use_amp: bool = False,
     profile: bool = False,
     optimizer_fn: Callable = torch.optim.Adam,
-    optimizer_kwargs: dict = dict(weight_decay=0),
+    optimizer_kwargs: Dict[str, Any] = dict(weight_decay=0),
     scheduler_fn: Callable = torch.optim.lr_scheduler.CosineAnnealingLR,
-    scheduler_kwargs: dict = dict(eta_min=1e-5, T_max=10000),
+    scheduler_kwargs: Dict[str, Any] = dict(eta_min=1e-5, T_max=10000),
 ) -> float:
     """Train Flow model on in-memory data
     Args:
@@ -290,14 +290,17 @@ def train(
                 weights_path = outdir / "weights.pt"
                 torch.save(flow.state_dict(), weights_path)
                 since_last_improvement = 0
-            else:
+            elif early_stop is not None:
                 since_last_improvement += 1
+
                 if since_last_improvement >= early_stop:
                     logging.info(
                         "No improvement in validation loss in {} "
                         "epochs, halting training early".format(early_stop)
                     )
                     break
+            else:
+                continue
 
     with h5py.File(outdir / "train_results.h5", "w") as f:
         for key, value in history.items():
