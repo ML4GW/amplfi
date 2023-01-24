@@ -59,7 +59,8 @@ outdir = "${base.basedir}/training"
 inference_params = ["frequency", "quality", "hrss", "dec", "psi", "phi"]
 optimizer_fn = "torch.optim.Adam"
 optimizer_kwargs = {weight_decay = 0}
-
+scheduler_fn = "torch.optim.lr_scheduler.CosineAnnealingLR"
+scheduler_kwargs = {eta_min=1e-5, T_max=10000}
 ifos = "${base.ifos}"
 
 kernel_length = "${base.kernel_length}"
@@ -72,10 +73,8 @@ batches_per_epoch = 200
 max_epochs = 300
 
 lr = 4e-3
-min_lr = 1e-5
-decay_steps = 10000
-weight_decay = 1e-5
-early_stop = 50
+
+early_stop = 100
 
 device = "cuda"
 profile = false
