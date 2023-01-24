@@ -11,7 +11,7 @@ from nflows import distributions, transforms, utils
 @dataclass
 class CouplingFlow(NormalizingFlow):
 
-    shape: Tuple[int, int]
+    shape: Tuple[int, int, int]
     num_flow_steps: int
     embedding_net: torch.nn.Module = Flattener()
     hidden_dim: int = 512
@@ -26,11 +26,12 @@ class CouplingFlow(NormalizingFlow):
 
     def __post_init__(self):
         # unpack shape parameters
-        self.param_dim = self.shape[0]
-        self.context_dim = self.shape[1]
+        self.param_dim, self.n_ifos, self.strain_dim = self.shape
+
         super().__init__(
             self.param_dim,
-            self.context_dim,
+            self.n_ifos,
+            self.strain_dim,
             self.num_flow_steps,
             self.embedding_net,
         )
