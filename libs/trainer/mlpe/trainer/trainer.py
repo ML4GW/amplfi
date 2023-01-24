@@ -190,7 +190,7 @@ def train(
         f["parameters"] = parameters.cpu().numpy()
 
     param_dim = parameters.shape[-1]
-    n_ifos, strain_dim = strain.shape
+    _, n_ifos, strain_dim = strain.shape
 
     logging.info(f"Device: {device}")
     # Creating model, loss function, optimizer and lr scheduler
