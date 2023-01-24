@@ -14,7 +14,7 @@ def test_coupling_flow_wrappers():
     mock = Mock()
 
     def func(architecture: Callable, learning_rate: float):
-        nn = architecture((2, 100))
+        nn = architecture((10, 2, 100))
 
         # arch will be defined in the dict loop later
         assert isinstance(nn, arch)
