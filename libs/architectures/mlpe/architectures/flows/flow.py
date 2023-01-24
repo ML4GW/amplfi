@@ -20,11 +20,11 @@ class NormalizingFlow(ABC):
         This class should not be used directly, but instead should be subclassed.
 
         Args:
-            param_dim: 
+            param_dim:
                 The dimensionality of the parameter space for inference
-            strain_dim: 
+            strain_dim:
                 The dimensionality of the strain data. (i.e. number of time samples)
-            n_ifos: 
+            n_ifos:
                 The number of interferometers
             num_flow_steps:
                 The number of flow blocks to use in the normalizing flow
