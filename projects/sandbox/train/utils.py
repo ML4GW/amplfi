@@ -3,8 +3,9 @@ from typing import List, Tuple, TypeVar
 
 import numpy as np
 import torch
-from mlpe.data.distributions import Cosine, Uniform
 from mlpe.data.transforms import WaveformInjector
+
+from ml4gw.distributions import Cosine, Uniform
 
 Tensor = TypeVar("T", np.ndarray, torch.Tensor)
 
