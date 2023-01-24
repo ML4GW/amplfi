@@ -295,17 +295,15 @@ def train(
                 torch.save(flow.state_dict(), weights_path)
                 since_last_improvement = 0
 
-            elif early_stop is not None:
-                since_last_improvement += 1
-
-                if since_last_improvement >= early_stop:
-                    logging.info(
-                        "No improvement in validation loss in {} "
-                        "epochs, halting training early".format(early_stop)
-                    )
-                    break
             else:
-                continue
+                if early_stop is not None:
+                    since_last_improvement += 1
+                    if since_last_improvement >= early_stop:
+                        logging.info(
+                            "No improvement in validation loss in {} "
+                            "epochs, halting training early".format(early_stop)
+                        )
+                        break
 
     with h5py.File(outdir / "train_results.h5", "w") as f:
         for key, value in history.items():
