@@ -110,7 +110,7 @@ def train(
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
     lr: float = 1e-3,
-    early_stop: Optional[int] = 50,
+    early_stop: Optional[int] = None,
     # misc params
     device: Optional[str] = None,
     use_amp: bool = False,
@@ -290,7 +290,7 @@ def train(
                 weights_path = outdir / "weights.pt"
                 torch.save(flow.state_dict(), weights_path)
                 since_last_improvement = 0
-                
+
             elif early_stop is not None:
                 since_last_improvement += 1
 
