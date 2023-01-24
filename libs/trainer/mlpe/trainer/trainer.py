@@ -290,6 +290,7 @@ def train(
                 weights_path = outdir / "weights.pt"
                 torch.save(flow.state_dict(), weights_path)
                 since_last_improvement = 0
+                
             elif early_stop is not None:
                 since_last_improvement += 1
 
