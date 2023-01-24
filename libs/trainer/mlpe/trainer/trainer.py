@@ -1,13 +1,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    Iterable,
-    Optional,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple
 
 import h5py
 import numpy as np
