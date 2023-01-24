@@ -191,7 +191,7 @@ def train(
         f["parameters"] = parameters.cpu().numpy()
 
     param_dim = parameters.shape[-1]
-    context_dim = strain.shape[-1] * strain.shape[-2]
+    n_ifos, strain_dim = strain.shape
 
     logging.info(f"Device: {device}")
     # Creating model, loss function, optimizer and lr scheduler
@@ -199,7 +199,7 @@ def train(
 
     # instantiate the architecture and
     # grab the flow
-    flow = architecture((param_dim, context_dim)).flow
+    flow = architecture((param_dim, n_ifos, strain_dim)).flow
     flow.to(device)
 
     # if we passed a module for preprocessing,
