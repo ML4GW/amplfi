@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, Tuple
 
 import torch
-from mlpe.architectures.embeddings.convolution import TwoChannelDenseEmbedding
+from mlpe.architectures.embeddings import NChannelDenseEmbedding
 from mlpe.architectures.flows.flow import NormalizingFlow
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
@@ -25,7 +25,8 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
     def __post_init__(self):
         self.param_dim, self.n_ifos, self.strain_dim = self.shape
         # FIXME: port to project config; remove hardcoding
-        self.embedding_net = TwoChannelDenseEmbedding(
+        self.embedding_net = NChannelDenseEmbedding(
+            self.n_ifos,
             self.strain_dim,
             50,
             activation=self.activation,

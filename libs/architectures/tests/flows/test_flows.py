@@ -37,11 +37,15 @@ def test_coupling_flow(param_dim, strain_dim, n_ifos, num_flow_steps):
     assert log_likelihoods.shape == (len(data),)
 
 
-def test_masked_autoregressive_flow(param_dim, strain_dim, num_flow_steps):
+def test_masked_autoregressive_flow(
+    param_dim, strain_dim, n_ifos, num_flow_steps
+):
     data = torch.randn((100, param_dim))
-    strain = torch.randn((100, 2, strain_dim))
+    strain = torch.randn((100, n_ifos, strain_dim))
 
-    maf = MaskedAutoRegressiveFlow((param_dim, 2, strain_dim), num_flow_steps)
+    maf = MaskedAutoRegressiveFlow(
+        (param_dim, n_ifos, strain_dim), num_flow_steps
+    )
     flow = maf.flow
     log_likelihoods = flow.log_prob(data, context=strain)
     assert log_likelihoods.shape == (len(data),)

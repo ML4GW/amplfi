@@ -140,31 +140,36 @@ class DenseEmbedding(torch.nn.Module):
         return x
 
 
-class TwoChannelDenseEmbedding(nn.Module):
+class NChannelDenseEmbedding(nn.Module):
     """
-    DenseEmbedding for 2 channels.
-    Only works for shape (num_batch, 2, num_vals)
+    DenseEmbedding for N channels. Creates a :meth:`DenseEmbedding`
+    for individual channel, with a final Linear layer acting on stacked
+    embedding on a single channel.
+    Expect input shape is (num_batch, N, in_shape). Output shape
+    is (num_batch, 1, out_shape)
     """
 
     def __init__(
         self,
+        N,
         in_shape,
         out_shape,
         **kwargs,
     ) -> None:
         super().__init__()
+        self.N = N
         self.activation = kwargs.get("activation", torch.relu)
-        self.embedding_1 = DenseEmbedding(in_shape, out_shape, **kwargs)
-        self.embedding_2 = DenseEmbedding(in_shape, out_shape, **kwargs)
-        self.final_layer = nn.Linear(2 * out_shape, out_shape)
+        self.embeddings = nn.ModuleList(
+            [DenseEmbedding(in_shape, out_shape, **kwargs) for _ in range(N)]
+        )
+        self.final_layer = nn.Linear(N * out_shape, out_shape)
 
     def forward(self, x):
-        # assume x.shape (batch, 2, num)
-        channel_1 = x[:, 0, :]
-        channel_2 = x[:, 1, :]
-        x1 = self.embedding_1(channel_1)
-        x2 = self.embedding_2(channel_2)
-        x_concat = torch.concat((x1, x2), dim=1)
+        embedded_vals = []
+        for channel_num, embedding in enumerate(self.embeddings):
+            embedded_vals.append(embedding(x[:, channel_num, :]))
+
+        x_concat = torch.concat(embedded_vals, dim=1)
         x_concat = self.final_layer(x_concat)
         x_concat = self.activation(x_concat)
         return x_concat
