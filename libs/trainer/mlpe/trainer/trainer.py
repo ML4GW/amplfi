@@ -110,9 +110,10 @@ def train(
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
     lr: float = 1e-3,
-    min_lr: float = 1e-5,
-    decay_steps: int = 10000,
-    weight_decay: float = 0.0,
+    optimizer_fn: Callable = torch.optim.Adam,
+    optimizer_kwargs: dict = dict(weight_decay=0),
+    scheduler_fn: Callable = torch.optim.lr_scheduler.CosineAnnealingLR,
+    scheduler_kwargs: dict = dict(eta_min=1e-5, T_max=10000),
     early_stop: Optional[int] = None,
     # misc params
     device: Optional[str] = None,
@@ -222,12 +223,8 @@ def train(
     logging.info("Initializing loss and optimizer")
 
     # TODO: Allow different loss functions or optimizers to be passed?
-    optimizer = torch.optim.Adam(
-        flow.parameters(), lr=lr, weight_decay=weight_decay
-    )
-    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=decay_steps, eta_min=min_lr
-    )
+    optimizer = optimizer_fn(flow.parameters(), lr=lr, **optimizer_kwargs)
+    lr_scheduler = scheduler_fn(optimizer, **scheduler_kwargs)
 
     # start training
     torch.backends.cudnn.benchmark = True

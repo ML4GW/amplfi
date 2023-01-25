@@ -58,11 +58,6 @@ logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
 inference_params = ["frequency", "quality", "hrss", "dec", "psi", "phi"]
 ifos = "${base.ifos}"
-
-min_lr = 1e-5
-decay_steps = 100000
-weight_decay = 0.0
-
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
