@@ -8,8 +8,13 @@ def param_dim(request):
     return request.param
 
 
-@pytest.fixture(params=[100, 200])
-def context_dim(request):
+@pytest.fixture(params=[512, 1024])
+def strain_dim(request):
+    return request.param
+
+
+@pytest.fixture(params=[1, 2, 3])
+def n_ifos(request):
     return request.param
 
 
@@ -18,13 +23,15 @@ def num_flow_steps(request):
     return request.param
 
 
-def test_coupling_flow(param_dim, context_dim, num_flow_steps):
+def test_coupling_flow(param_dim, strain_dim, n_ifos, num_flow_steps):
     data = torch.randn((100, param_dim))
-    context = torch.randn((100, context_dim))
+    strain = torch.randn((100, n_ifos, strain_dim))
 
-    coupling_flow = CouplingFlow((param_dim, context_dim), num_flow_steps)
+    coupling_flow = CouplingFlow(
+        (param_dim, n_ifos, strain_dim), num_flow_steps
+    )
 
     flow = coupling_flow.flow
-    log_likelihoods = flow.log_prob(data, context=context)
+    log_likelihoods = flow.log_prob(data, context=strain)
 
     assert log_likelihoods.shape == (len(data),)

@@ -57,11 +57,7 @@ background_path = "${base.datadir}/background.h5"
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
 inference_params = ["frequency", "quality", "hrss", "dec", "psi", "phi"]
-optimizer = "torch.optimizers.lr_scheduler.Adam"
-optimizer_kwargs = {"weight_decay": 0}
-
 ifos = "${base.ifos}"
-
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
@@ -72,10 +68,8 @@ batches_per_epoch = 200
 max_epochs = 300
 
 lr = 4e-3
-min_lr = 1e-5
-decay_steps = 10000
-weight_decay = 1e-5
-early_stop = 50
+
+early_stop = 100
 
 device = "cuda"
 profile = false

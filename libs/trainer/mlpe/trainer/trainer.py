@@ -110,15 +110,15 @@ def train(
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
     lr: float = 1e-3,
-    early_stop: int = 20,
-    # misc params
-    device: Optional[str] = None,
-    use_amp: bool = False,
-    profile: bool = False,
     optimizer_fn: Callable = torch.optim.Adam,
     optimizer_kwargs: dict = dict(weight_decay=0),
     scheduler_fn: Callable = torch.optim.lr_scheduler.CosineAnnealingLR,
     scheduler_kwargs: dict = dict(eta_min=1e-5, T_max=10000),
+    early_stop: Optional[int] = None,
+    # misc params
+    device: Optional[str] = None,
+    use_amp: bool = False,
+    profile: bool = False,
 ) -> float:
     """Train Flow model on in-memory data
     Args:
@@ -191,7 +191,7 @@ def train(
         f["parameters"] = parameters.cpu().numpy()
 
     param_dim = parameters.shape[-1]
-    context_dim = strain.shape[-1] * strain.shape[-2]
+    _, n_ifos, strain_dim = strain.shape
 
     logging.info(f"Device: {device}")
     # Creating model, loss function, optimizer and lr scheduler
@@ -199,7 +199,7 @@ def train(
 
     # instantiate the architecture and
     # grab the flow
-    flow = architecture((param_dim, context_dim)).flow
+    flow = architecture((param_dim, n_ifos, strain_dim)).flow
     flow.to(device)
 
     # if we passed a module for preprocessing,
@@ -222,6 +222,7 @@ def train(
     logging.info(flow)
     logging.info("Initializing loss and optimizer")
 
+    # TODO: Allow different loss functions or optimizers to be passed?
     optimizer = optimizer_fn(flow.parameters(), lr=lr, **optimizer_kwargs)
     lr_scheduler = scheduler_fn(optimizer, **scheduler_kwargs)
 
@@ -290,14 +291,16 @@ def train(
                 weights_path = outdir / "weights.pt"
                 torch.save(flow.state_dict(), weights_path)
                 since_last_improvement = 0
+
             else:
-                since_last_improvement += 1
-                if since_last_improvement >= early_stop:
-                    logging.info(
-                        "No improvement in validation loss in {} "
-                        "epochs, halting training early".format(early_stop)
-                    )
-                    break
+                if early_stop is not None:
+                    since_last_improvement += 1
+                    if since_last_improvement >= early_stop:
+                        logging.info(
+                            "No improvement in validation loss in {} "
+                            "epochs, halting training early".format(early_stop)
+                        )
+                        break
 
     with h5py.File(outdir / "train_results.h5", "w") as f:
         for key, value in history.items():
