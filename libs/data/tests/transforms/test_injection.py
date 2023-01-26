@@ -21,9 +21,8 @@ def ifos(request):
 
 def test_waveform_injector(ifos, trigger_offset):
 
-    # create background
-    # of all zeros
-    # and a magic mock for the WaveformInjector
+    # create background of all zeros
+    # and a magic mock for the WaveformInjector`1`2
     background = torch.zeros((128, 2, 2048))
     mock_injector = MagicMock()
     mock_injector.trigger_offset = trigger_offset

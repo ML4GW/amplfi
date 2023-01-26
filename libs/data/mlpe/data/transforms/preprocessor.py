@@ -1,6 +1,7 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-import torch
+if TYPE_CHECKING:
+    import torch
 
 from ml4gw.transforms import Whitening
 
@@ -43,9 +44,8 @@ class Preprocessor(torch.nn.Module):
         )
         self.normalizer = normalizer
 
-    def forward(self, strain: torch.Tensor, parameters: torch.Tensor):
+    def forward(self, strain: "torch.Tensor", parameters: "torch.Tensor"):
         x = self.whitener(strain)
-
         # since the normalizer standardizes along dim=1
         # we need to transpose the parameters tensor so that
         # we normalize along each individual attribute, and not each
