@@ -1,6 +1,6 @@
 import pytest
 import torch
-from mlpe.architectures.embeddings import Conv1dEmbedding
+from mlpe.architectures.embeddings import Conv1dEmbedding, DenseEmbedding
 
 
 @pytest.fixture(params=[1, 2, 3])
@@ -35,3 +35,11 @@ def test_convolution(n_ifos, length, out_features, kernel_size):
     y = convolution(x)
 
     assert y.shape == (8, out_features)
+
+
+def test_dense_embedding(n_ifos, length):
+    embedding = DenseEmbedding(length, 10)
+    x = torch.randn(8, n_ifos, length)
+    y = embedding(x)
+
+    assert y.shape == (8, n_ifos, 10)

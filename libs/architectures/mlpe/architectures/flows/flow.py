@@ -3,7 +3,7 @@ from typing import Callable
 
 import torch
 from mlpe.architectures.embeddings import Flattener
-from nflows import distributions, flows, transforms
+from nflows import distributions, transforms
 
 
 class NormalizingFlow(ABC):
@@ -34,6 +34,7 @@ class NormalizingFlow(ABC):
                 The embedding network for transforming strain
                 before passing to the normalizing flow.
         """
+        self._flow = None
         self.param_dim = param_dim
         self.strain_dim = strain_dim
         self.n_ifos = n_ifos
@@ -41,16 +42,33 @@ class NormalizingFlow(ABC):
         self.embedding_net = embedding_net
 
     @abstractmethod
-    def transform_block(self, idx: int) -> Callable[int, transforms.Transform]:
-        pass
-
-    @abstractmethod
-    def linear_block(self) -> transforms.Transform:
+    def transform_block(
+        self, *args, **kwargs
+    ) -> Callable[int, transforms.Transform]:
         pass
 
     @abstractmethod
     def distribution(self) -> distributions.Distribution:
         pass
+
+    @abstractmethod
+    def build_flow(self) -> None:
+        """Initialzes flow and sets it to ``_flow`` attribute"""
+        pass
+
+    def set_weights_from_state_dict(self, state_dict):
+        if self._flow is None:
+            raise ValueError(
+                "Flow is not built. Call build_flow before setting weights"
+            )
+        self._flow.load_state_dict(state_dict)
+
+    def to_device(self, device):
+        if self._flow is None:
+            raise ValueError(
+                "Flow is not built. Call build_flow before sending to device"
+            )
+        self._flow = self._flow.to(device)
 
     @property
     def context_dim(self):
@@ -60,24 +78,6 @@ class NormalizingFlow(ABC):
 
     @property
     def flow(self):
-        """
-        Constructs the normalizing flow model.
-        """
-
-        self.transform = transforms.CompositeTransform(
-            [
-                transforms.CompositeTransform(
-                    [self.transform_block(i), self.linear_block()]
-                )
-                for i in range(self.num_flow_steps)
-            ]
-            + [self.linear_block()]
-        )
-
-        print(self.embedding_net)
-        flow = flows.Flow(
-            self.transform,
-            self.distribution(),
-            embedding_net=self.embedding_net,
-        )
-        return flow
+        if self._flow is None:
+            self.build_flow()
+        return self._flow

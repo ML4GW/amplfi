@@ -197,11 +197,12 @@ def train(
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
-    # instantiate the architecture and
-    # grab the flow
-    flow = architecture((param_dim, n_ifos, strain_dim)).flow
-    flow.to(device)
-
+    # instantiate the architecture
+    flow_obj = architecture((param_dim, n_ifos, strain_dim))
+    # build the flow
+    flow_obj.build_flow()
+    # send to neural net to device
+    flow_obj.to_device(device)
     # if we passed a module for preprocessing,
     # include it in the model so that the weights
     # get exported along with everything else
@@ -217,13 +218,16 @@ def train(
         logging.debug(
             f"Initializing model weights from checkpoint '{init_weights}'"
         )
-        flow.load_state_dict(torch.load(init_weights))
+        state_dict = torch.load(init_weights)
+        flow_obj.set_weights_from_state_dict(state_dict)
 
-    logging.info(flow)
+    logging.info(flow_obj.flow)
     logging.info("Initializing loss and optimizer")
 
     # TODO: Allow different loss functions or optimizers to be passed?
-    optimizer = optimizer_fn(flow.parameters(), lr=lr, **optimizer_kwargs)
+    optimizer = optimizer_fn(
+        flow_obj.flow.parameters(), lr=lr, **optimizer_kwargs
+    )
     lr_scheduler = scheduler_fn(optimizer, **scheduler_kwargs)
 
     # start training
@@ -255,7 +259,7 @@ def train(
 
         logging.info(f"=== Epoch {epoch + 1}/{max_epochs} ===")
         train_loss, valid_loss, duration, throughput = train_for_one_epoch(
-            flow,
+            flow_obj.flow,
             optimizer,
             train_dataset,
             valid_dataset,
@@ -289,7 +293,7 @@ def train(
                 best_valid_loss = valid_loss
 
                 weights_path = outdir / "weights.pt"
-                torch.save(flow.state_dict(), weights_path)
+                torch.save(flow_obj.flow.state_dict(), weights_path)
                 since_last_improvement = 0
 
             else:

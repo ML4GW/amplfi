@@ -6,6 +6,7 @@ import torch
 from mlpe.architectures.embeddings import Flattener
 from mlpe.architectures.flows.flow import NormalizingFlow
 from nflows import distributions, transforms, utils
+from nflows.flows import Flow
 
 
 @dataclass
@@ -73,3 +74,27 @@ class CouplingFlow(NormalizingFlow):
 
     def distribution(self):
         return distributions.StandardNormal((self.param_dim,))
+
+    def build_flow(self, state_dict=None):
+        """
+        Constructs the normalizing flow model
+        """
+
+        self.transform = transforms.CompositeTransform(
+            [
+                transforms.CompositeTransform(
+                    [self.transform_block(i), self.linear_block()]
+                )
+                for i in range(self.num_flow_steps)
+            ]
+            + [self.linear_block()]
+        )
+
+        flow = Flow(
+            self.transform,
+            self.distribution(),
+            embedding_net=self.embedding_net,
+        )
+        if state_dict:
+            flow.load_state_dict(state_dict)
+        self._flow = flow
