@@ -45,7 +45,7 @@ class Dataset:
 class Preprocessor(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.factor = self.add_parameter(10.0)
+        self.factor = 10.0
 
     def forward(self, x, params):
         return self.factor * x, self.factor * params
