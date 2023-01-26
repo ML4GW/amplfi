@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 import torch
-from mlpe.data.transforms.transform import Transform
 from mlpe.trainer.wrapper import trainify
 
 
@@ -23,7 +22,7 @@ def preprocess(request):
     return request.param
 
 
-class dataset:
+class Dataset:
     def __init__(self, batches):
         self.batches = batches
 
@@ -43,7 +42,7 @@ class dataset:
         return
 
 
-class Preprocessor(Transform):
+class Preprocessor(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.factor = self.add_parameter(10.0)
@@ -59,8 +58,8 @@ class Preprocessor(Transform):
 @pytest.fixture
 def get_data(validate, preprocess):
     def fn(batches: int):
-        train_dataset = dataset(batches)
-        valid_dataset = dataset(batches) if validate else None
+        train_dataset = Dataset(batches)
+        valid_dataset = Dataset(batches) if validate else None
         preprocessor = Preprocessor() if preprocess else None
         return train_dataset, valid_dataset, preprocessor
 
