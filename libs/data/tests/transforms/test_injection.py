@@ -17,8 +17,6 @@ def ifos(request):
 
 # here we only test the forward call
 # as the rest is tested in ml4gw
-
-
 def test_waveform_injector(ifos, trigger_offset):
 
     # create background of all zeros
