@@ -25,7 +25,7 @@ class WaveformInjector(RandomWaveformInjection):
             waveforms, sampled_params = self.sample(N, device=X.device)
 
             # calculate the fixed location
-            # where waveform tc will placed
+            # where waveform T_c will placed
             center = (waveforms.shape[-1] // 2) + self.trigger_offset
             start = center - (kernel_size // 2)
             stop = center + (kernel_size // 2)

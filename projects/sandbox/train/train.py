@@ -3,12 +3,15 @@ from typing import List, Optional
 
 import h5py
 import numpy as np
+import torch
 from mlpe.data.dataloader import PEInMemoryDataset
-from mlpe.data.transforms import Preprocessor, StandardScalerTransform
+from mlpe.data.transforms import Preprocessor
 from mlpe.logging import configure_logging
 from mlpe.trainer import trainify
 from utils import EXTRINSIC_DISTS, prepare_augmentation, split
 from validation import make_validation_dataset
+
+from ml4gw.transforms import ChannelWiseScaler
 
 
 def load_background(background_path: Path, ifos):
@@ -37,7 +40,7 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
                     values = np.log10(values)
                 data.append(values)
 
-        intrinsic = np.column_stack(data)
+        intrinsic = np.row_stack(data)
 
     return signals, intrinsic
 
@@ -68,9 +71,8 @@ def main(
     num_ifos = len(ifos)
     num_params = len(inference_params)
 
-    # load in background
-    # and split into training and validation
-    # if valid_frac specified
+    # load in background and split into training
+    # and validation if valid_frac specified
     background = load_background(background_path, ifos)
 
     signals, intrinsic = load_signals(waveform_dataset, inference_params)
@@ -98,7 +100,7 @@ def main(
     for param, dist in EXTRINSIC_DISTS.items():
         if param in inference_params:
             samples = dist(n_signals)
-            intrinsic = np.column_stack([intrinsic, samples])
+            intrinsic = np.row_stack([intrinsic, samples])
 
     # create full training dataloader
     train_dataset = PEInMemoryDataset(
@@ -112,27 +114,27 @@ def main(
         device=device,
     )
 
-    # create preprocessor
-    # out of whitening transform
-    # for strain data,
-    # and standard scaler
-    # for parameters
-
-    standard_scaler = StandardScalerTransform(num_params)
+    # create preprocessor out of whitening transform
+    # for strain data, and standard scaler for parameters
+    standard_scaler = ChannelWiseScaler(num_params)
     preprocessor = Preprocessor(
         num_ifos,
         sample_rate,
-        kernel_length,
+        fduration,
         normalizer=standard_scaler,
-        fduration=fduration,
-        highpass=highpass,
     )
 
     preprocessor.whitener.fit(background)
     preprocessor.whitener.to(device)
 
-    preprocessor.normalizer.fit(intrinsic)
-    preprocessor.normalizer.to(device)
+    preprocessor.scaler.fit(intrinsic)
+    preprocessor.scaler.to(device)
+
+    # TODO: this light preprocessor wrapper can probably be removed
+    # save preprocessor
+    preprocess_dir = outdir / "preprocessor"
+    torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
+    torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
 
     # construct validation dataset
     # from validation injector
