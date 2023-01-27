@@ -130,6 +130,7 @@ def main(
     preprocessor.scaler.fit(intrinsic)
     preprocessor.scaler.to(device)
 
+    # TODO: this light preprocessor wrapper can probably be removed
     # save preprocessor
     preprocess_dir = outdir / "preprocessor"
     torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
