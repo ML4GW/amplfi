@@ -127,10 +127,13 @@ def main(
     preprocessor.whitener.fit(background)
     preprocessor.whitener.to(device)
 
-    preprocessor.normalizer.fit(intrinsic)
-    preprocessor.normalizer.to(device)
+    preprocessor.scaler.fit(intrinsic)
+    preprocessor.scaler.to(device)
 
-    torch.save(preprocessor, outdir / "preprocessor.pt")
+    # save preprocessor
+    preprocess_dir = outdir / "preprocessor"
+    torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
+    torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
 
     # construct validation dataset
     # from validation injector

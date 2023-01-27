@@ -21,7 +21,7 @@ class Preprocessor(torch.nn.Module):
             Sample rate of the data.
         fduration:
             Duration of the time domain whitening filter.
-        normalizer:
+        scaler:
             torch.nn.Module that takes in a tensor of parameters
             of shape (n_dim, batch) and returns a transformed
             tensor of shape (n_dim, batch). If not passed, the identity
@@ -33,7 +33,7 @@ class Preprocessor(torch.nn.Module):
         num_ifos: int,
         sample_rate: float,
         fduration: Optional[float] = None,
-        normalizer: torch.nn.Module = torch.nn.Identity(),
+        scaler: torch.nn.Module = torch.nn.Identity(),
     ) -> None:
         super().__init__()
         self.whitener = Whitening(
@@ -41,7 +41,7 @@ class Preprocessor(torch.nn.Module):
             sample_rate,
             fduration,
         )
-        self.normalizer = normalizer
+        self.scaler = scaler
 
     def forward(self, strain: torch.Tensor, parameters: torch.Tensor):
         x = self.whitener(strain)
