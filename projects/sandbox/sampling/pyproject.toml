@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "sample"
+version = "0.0.0"
+description = "Generate samples from testing set, get diagnostic plots"
+authors = ["Deep Chatterjee <deep.chatterjee@ligo.org>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+torch = {version = "^1.12", source = "torch"}
+"mlpe.data" = {path = "../../../libs/data", develop  = true}
+"mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
+"ml4gw" = {path = "../../../ml4gw", develop = true}
+
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu116"
+secondary = true
+default = false
+
+[tool.poetry.scripts]
+sample_testing_set = "sample:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
