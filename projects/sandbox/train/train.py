@@ -71,7 +71,7 @@ def main(
     num_ifos = len(ifos)
     num_params = len(inference_params)
 
-    # load in background and split into training
+    # load in background of shape (n_ifos, n_samples) and split into training
     # and validation if valid_frac specified
     background = load_background(background_path, ifos)
 
