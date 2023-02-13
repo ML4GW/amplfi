@@ -7,11 +7,11 @@ import numpy as np
 import torch
 from data_generation.utils import download_data, inject_into_background
 from mldatafind.segments import query_segments
-from mlpe.injection import generate_gw
-from mlpe.logging import configure_logging
 from typeo import scriptify
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
+from mlpe.injection import generate_gw
+from mlpe.logging import configure_logging
 
 
 @scriptify

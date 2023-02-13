@@ -4,14 +4,14 @@ from typing import List, Optional
 import h5py
 import numpy as np
 import torch
-from mlpe.data.dataloader import PEInMemoryDataset
-from mlpe.data.transforms import Preprocessor
-from mlpe.logging import configure_logging
-from mlpe.trainer import trainify
 from utils import EXTRINSIC_DISTS, prepare_augmentation, split
 from validation import make_validation_dataset
 
 from ml4gw.transforms import ChannelWiseScaler
+from mlpe.data.dataloader import PEInMemoryDataset
+from mlpe.data.transforms import Preprocessor
+from mlpe.logging import configure_logging
+from mlpe.trainer import trainify
 
 
 def load_background(background_path: Path, ifos):
@@ -71,18 +71,21 @@ def main(
     num_ifos = len(ifos)
     num_params = len(inference_params)
 
-    # load in background and split into training
+    # load in background of shape (n_ifos, n_samples) and split into training
     # and validation if valid_frac specified
     background = load_background(background_path, ifos)
 
+    # intrinsic parameters is an array of shape (n_params, n_signals)
     signals, intrinsic = load_signals(waveform_dataset, inference_params)
 
     if valid_frac is not None:
         background, valid_background = split(background, 1 - valid_frac, 1)
 
+    # note: we pass the transpose the intrinsic parameters here because
+    # the ml4gw transforms expects an array of shape (n_signals, n_params)
     injector, valid_injector = prepare_augmentation(
         signals,
-        intrinsic,
+        intrinsic.transpose(1, 0),
         ifos,
         valid_frac,
         sample_rate,
@@ -121,18 +124,23 @@ def main(
         num_ifos,
         sample_rate,
         fduration,
-        normalizer=standard_scaler,
+        scaler=standard_scaler,
     )
 
-    preprocessor.whitener.fit(background)
+    preprocessor.whitener.fit(kernel_length, *background)
     preprocessor.whitener.to(device)
 
+    # to perform the normalization over each parameters,
+    # the ml4gw ChannelWiseScaler expects an array of shape
+    # (n_params, n_signals), so we pass the untransposed
+    # intrinsic parameters here
     preprocessor.scaler.fit(intrinsic)
     preprocessor.scaler.to(device)
 
     # TODO: this light preprocessor wrapper can probably be removed
     # save preprocessor
     preprocess_dir = outdir / "preprocessor"
+    preprocess_dir.mkdir(exist_ok=True, parents=True)
     torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
     torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
 

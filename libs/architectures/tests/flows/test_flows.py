@@ -1,5 +1,6 @@
 import pytest
 import torch
+
 from mlpe.architectures.flows import CouplingFlow, MaskedAutoRegressiveFlow
 
 

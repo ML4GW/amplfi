@@ -2,14 +2,15 @@ from dataclasses import dataclass
 from typing import Callable, Tuple
 
 import torch
-from mlpe.architectures.embeddings import NChannelDenseEmbedding
-from mlpe.architectures.flows.flow import NormalizingFlow
 from nflows.distributions import StandardNormal
 from nflows.flows import Flow
 from nflows.transforms import CompositeTransform, RandomPermutation
 from nflows.transforms.autoregressive import (
     MaskedAffineAutoregressiveTransform,
 )
+
+from mlpe.architectures.embeddings import NChannelDenseEmbedding
+from mlpe.architectures.flows.flow import NormalizingFlow
 
 
 @dataclass

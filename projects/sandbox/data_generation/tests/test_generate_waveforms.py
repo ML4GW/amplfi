@@ -1,9 +1,10 @@
 import h5py
-import mlpe.injection.waveforms as waveforms
 import pytest
 from bilby.gw.conversion import convert_to_lal_binary_black_hole_parameters
 from bilby.gw.source import lal_binary_black_hole
 from data_generation.generate_waveforms import main
+
+import mlpe.injection.waveforms as waveforms
 from mlpe.injection.priors import nonspin_bbh, sg_uniform
 
 

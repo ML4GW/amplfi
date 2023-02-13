@@ -2,6 +2,7 @@ import inspect
 from collections.abc import Callable
 
 import torch
+
 from mlpe.architectures.flows import CouplingFlow, MaskedAutoRegressiveFlow
 
 architectures = {"coupling": CouplingFlow, "maf": MaskedAutoRegressiveFlow}

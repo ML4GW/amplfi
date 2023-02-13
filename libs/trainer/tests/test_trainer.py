@@ -1,7 +1,8 @@
 import pytest
 import torch
-from mlpe.trainer.trainer import train_for_one_epoch
 from nflows import distributions, flows, transforms
+
+from mlpe.trainer.trainer import train_for_one_epoch
 
 
 @pytest.fixture(params=[1])
