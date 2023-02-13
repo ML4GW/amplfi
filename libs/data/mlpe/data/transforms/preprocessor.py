@@ -49,9 +49,9 @@ class Preprocessor(torch.nn.Module):
         # we need to transpose the parameters tensor so that
         # we normalize along each individual attribute, and not each
         # individual sample
-        parameters.transpose(0, 1)
-        normed = self.normalizer(parameters)
+        parameters = parameters.transpose(1, 0)
+        normed = self.scaler(parameters)
         # transpose back to for consistency with flow.log_prob,
-        normed.transpose(0, 1)
+        normed = normed.transpose(1, 0)
 
         return x, normed

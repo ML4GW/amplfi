@@ -124,7 +124,7 @@ def main(
         num_ifos,
         sample_rate,
         fduration,
-        normalizer=standard_scaler,
+        scaler=standard_scaler,
     )
 
     preprocessor.whitener.fit(kernel_length, *background)
@@ -140,6 +140,7 @@ def main(
     # TODO: this light preprocessor wrapper can probably be removed
     # save preprocessor
     preprocess_dir = outdir / "preprocessor"
+    preprocess_dir.mkdir(exist_ok=True, parents=True)
     torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
     torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
 
