@@ -4,14 +4,14 @@ from typing import List, Optional
 import h5py
 import numpy as np
 import torch
-from mlpe.data.dataloader import PEInMemoryDataset
-from mlpe.data.transforms import Preprocessor
-from mlpe.logging import configure_logging
-from mlpe.trainer import trainify
 from utils import EXTRINSIC_DISTS, prepare_augmentation, split
 from validation import make_validation_dataset
 
 from ml4gw.transforms import ChannelWiseScaler
+from mlpe.data.dataloader import PEInMemoryDataset
+from mlpe.data.transforms import Preprocessor
+from mlpe.logging import configure_logging
+from mlpe.trainer import trainify
 
 
 def load_background(background_path: Path, ifos):

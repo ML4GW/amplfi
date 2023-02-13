@@ -3,6 +3,7 @@ from pathlib import Path
 import bilby
 import numpy as np
 import pytest
+
 from mlpe.injection.waveforms import sine_gaussian_frequency
 
 

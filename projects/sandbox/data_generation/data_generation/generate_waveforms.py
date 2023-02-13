@@ -3,9 +3,10 @@ from pathlib import Path
 from typing import Callable, Dict, Optional
 
 import h5py
+from typeo import scriptify
+
 import mlpe.injection as injection
 from mlpe.logging import configure_logging
-from typeo import scriptify
 
 
 @scriptify

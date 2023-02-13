@@ -3,10 +3,11 @@ from typing import Callable, Tuple
 
 import nflows.nn.nets as nn_
 import torch
-from mlpe.architectures.embeddings import Flattener
-from mlpe.architectures.flows.flow import NormalizingFlow
 from nflows import distributions, transforms, utils
 from nflows.flows import Flow
+
+from mlpe.architectures.embeddings import Flattener
+from mlpe.architectures.flows.flow import NormalizingFlow
 
 
 @dataclass

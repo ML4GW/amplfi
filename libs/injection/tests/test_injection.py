@@ -3,10 +3,11 @@
 from pathlib import Path
 
 import bilby
-import mlpe.injection
-import mlpe.injection.waveforms as waveforms
 import pytest
 from bilby.gw.conversion import convert_to_lal_binary_black_hole_parameters
+
+import mlpe.injection
+import mlpe.injection.waveforms as waveforms
 
 TEST_DIR = Path(__file__).resolve().parent
 

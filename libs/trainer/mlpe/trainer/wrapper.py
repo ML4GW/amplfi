@@ -1,9 +1,10 @@
 import inspect
 
-from mlpe.architectures import get_arch_fns
-from mlpe.trainer.trainer import train
 from typeo import scriptify
 from typeo.doc_utils import parse_doc, parse_help
+
+from mlpe.architectures import get_arch_fns
+from mlpe.trainer.trainer import train
 
 
 def _configure_wrapper(f, wrapper):

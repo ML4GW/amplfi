@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from typing import Callable
 
 import torch
-from mlpe.architectures.embeddings import Flattener
 from nflows import distributions, transforms
+
+from mlpe.architectures.embeddings import Flattener
 
 
 class NormalizingFlow(ABC):
