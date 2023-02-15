@@ -3,7 +3,8 @@ steps = [
     "data_generation:generate-background",
     "data_generation:generate-waveforms",
     "data_generation:generate-testing",
-    "train:train:coupling"
+    "train:train:coupling",
+    "sample_testing_set:sample_testing_set:coupling"
 ]
 
 
@@ -13,6 +14,8 @@ datadir = "${DATA_DIR}"
 logdir = "${BASE_DIR}/log"
 sample_rate = 2048
 ifos = ['H1', 'L1']
+inference_params = ["frequency", "quality", "hrss", "dec", "psi", "phi"]
+trigger_distance = 0.0
 start = 1262607622
 stop = 1262620622
 test_stop = 1262751694
@@ -26,6 +29,7 @@ highpass = 32
 fduration = 1
 waveform_duration = 8
 coupling = {num_flow_steps = 10}
+maf = {num_transforms = 10}
 
 
 [tool.typeo.scripts.generate-background]
@@ -56,7 +60,7 @@ waveform_dataset = "${base.datadir}/signals.h5"
 background_path = "${base.datadir}/background.h5" 
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
-inference_params = ["frequency", "quality", "hrss", "dec", "psi", "phi"]
+inference_params = "${base.inference_params}"
 optimizer_fn = "torch.optim.Adam"
 
 ifos = "${base.ifos}"
@@ -64,7 +68,7 @@ kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
 highpass = 32 
-trigger_distance = 0.0
+trigger_distance = "${base.trigger_distance}"
 batch_size = 512
 batches_per_epoch = 200
 max_epochs = 300
@@ -81,6 +85,7 @@ valid_stride = 0.0625
 
 # arch parameters
 commands.coupling = "${base.coupling}"
+commands.maf = "${base.maf}"
 
 
 [tool.typeo.scripts.generate-testing]
@@ -98,3 +103,21 @@ kernel_length = "${base.kernel_length}"
 waveform_duration = "${base.waveform_duration}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
+
+[tool.typeo.scripts.sample_testing_set]
+ifos = "${base.ifos}"
+kernel_length = "${base.kernel_length}"
+sample_rate = "${base.sample_rate}"
+fduration = "${base.fduration}"
+trigger_distance = "${base.trigger_distance}"
+model-state-path = "${base.basedir}/training/weights.pt"
+inference_params = "${base.inference_params}"
+datadir = "${base.datadir}"
+logdir = "${base.logdir}"
+num_samples_draw = 2000
+device = "cuda"
+outdir = "${base.basedir}/training"
+
+# arch parameters
+commands.coupling = "${base.coupling}"
+commands.maf = "${base.maf}"
