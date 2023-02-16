@@ -10,7 +10,8 @@ def sg_uniform():
         name="frequency", minimum=32, maximum=1024
     )
     prior_dict["dec"] = Cosine(name="dec")
-    prior_dict["ra"] = Uniform(name="ra", minimum=0, maximum=2 * np.pi)
+    # the relative angle between the source ra and the earth ra
+    prior_dict["phi"] = Uniform(name="phi", minimum=0, maximum=2 * np.pi)
     prior_dict["hrss"] = LogUniform(name="hrss", minimum=1e-23, maximum=1e-19)
     prior_dict["time"] = Uniform(name="time", minimum=-0.1, maximum=0.1)
     prior_dict["eccentricity"] = Uniform(
