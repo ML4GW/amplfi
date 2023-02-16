@@ -132,14 +132,17 @@ def main(
     # with sampled sky localizations
     tensors, vertices = get_ifo_geometry(*ifos)
 
+    # dec is declination
+    # psi is polarization angle
+    # phi is relative azimuthal angle between source and earth
     dec = torch.Tensor(parameters["dec"])
-    psi = torch.Tensor(parameters["dec"])
-    ra = torch.Tensor(parameters["dec"])
+    psi = torch.Tensor(parameters["psi"])
+    phi = torch.Tensor(parameters["phi"])
 
     waveforms = compute_observed_strain(
         dec,
         psi,
-        ra,
+        phi,
         tensors,
         vertices,
         sample_rate,
