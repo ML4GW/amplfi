@@ -1,10 +1,10 @@
 [tool.pinto]
 steps = [
-    "data_generation:generate-background",
-    "data_generation:generate-waveforms",
-    "data_generation:generate-testing",
-    "train:train:coupling",
-    "sample_testing_set:sample_testing_set:coupling"
+    #"data_generation:generate-background",
+    #"data_generation:generate-waveforms",
+    #"data_generation:generate-testing",
+    #"train:train:coupling",
+    "sampling:sample_testing_set:coupling"
 ]
 
 
@@ -109,7 +109,6 @@ ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
-trigger_distance = "${base.trigger_distance}"
 model-state-path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
 datadir = "${base.datadir}"
