@@ -32,7 +32,7 @@ def _load_test_data(testing_path: Path, inference_params: List[str]):
         signals = f["injections"][:]
         params = []
         for param in inference_params:
-            values = f["phase" if param == "phi" else param][:]
+            values = f[param][:]
             # take logarithm since hrss
             # spans large magnitude range
             if param == "hrss":
@@ -70,7 +70,6 @@ def main(
     model_state_path: Path,
     ifos: List[str],
     sample_rate: float,
-    trigger_distance: float,
     kernel_length: float,
     fduration: float,
     inference_params: List[str],
@@ -82,10 +81,7 @@ def main(
     verbose: bool = False,
 ):
     device = device or "cpu"
-    # FIXME: fix phi/phase discrepancy
     priors = sg_uniform()
-    priors["phi"] = priors["phase"]
-    del priors["phase"]
 
     configure_logging(logdir / "sample.log", verbose)
     num_ifos = len(ifos)
