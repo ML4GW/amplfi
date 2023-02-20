@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List, Optional
 
@@ -75,6 +76,9 @@ def main(
     # and validation if valid_frac specified
     background = load_background(background_path, ifos)
 
+    logging.info(
+        "Loading signals, splitting into validation, and preparing augmentors"
+    )
     # intrinsic parameters is an array of shape (n_params, n_signals)
     signals, intrinsic = load_signals(waveform_dataset, inference_params)
 
@@ -117,6 +121,7 @@ def main(
         device=device,
     )
 
+    logging.info("Preparing preprocessors")
     # create preprocessor out of whitening transform
     # for strain data, and standard scaler for parameters
     standard_scaler = ChannelWiseScaler(num_params)
