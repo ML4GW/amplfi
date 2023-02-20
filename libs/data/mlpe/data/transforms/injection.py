@@ -22,7 +22,8 @@ class WaveformInjector(RandomWaveformInjection):
             kernel_size = X.shape[-1]
 
             # randomly sample waveforms
-            waveforms, sampled_params = self.sample(N, device=X.device)
+            waveforms, sampled_params = self.sample(N)
+            waveforms = waveforms.to(X.device)
 
             # calculate the fixed location
             # where waveform T_c will placed

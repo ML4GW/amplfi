@@ -1,12 +1,11 @@
 [tool.pinto]
 steps = [
-    #"data_generation:generate-background",
-    #"data_generation:generate-waveforms",
+    "data_generation:generate-background",
+    "data_generation:generate-waveforms",
     "data_generation:generate-testing",
     "train:train:maf",
     "sampling:sample_testing_set:maf"
 ]
-
 
 [tool.typeo.base]
 basedir = "${BASE_DIR}"
@@ -48,7 +47,7 @@ force_generation = "${base.force_generation}"
 [tool.typeo.scripts.generate-waveforms]
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
-n_samples = 10000
+n_samples = 50000
 sample_rate = "${base.sample_rate}" 
 force_generation = "${base.force_generation}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
@@ -75,7 +74,7 @@ max_epochs = 300
 
 lr = 4e-3
 
-early_stop = 100
+early_stop = 30
 
 device = "cuda"
 profile = false
@@ -84,7 +83,7 @@ valid_frac = 0.25
 valid_stride = 0.0625
 
 # arch parameters
-commands.coupling = "${base.coupling}"
+#commands.coupling = "${base.coupling}"
 commands.maf = "${base.maf}"
 
 
@@ -113,7 +112,7 @@ model-state-path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
-num_samples_draw = 2000
+num_samples_draw = 10000
 device = "cuda"
 outdir = "${base.basedir}/training"
 
