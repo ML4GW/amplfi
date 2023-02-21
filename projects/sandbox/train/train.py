@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import List, Optional
 
@@ -75,6 +76,9 @@ def main(
     # and validation if valid_frac specified
     background = load_background(background_path, ifos)
 
+    logging.info(
+        "Loading signals, performing train/val split, and preparing augmentors"
+    )
     # intrinsic parameters is an array of shape (n_params, n_signals)
     signals, intrinsic = load_signals(waveform_dataset, inference_params)
 
@@ -117,6 +121,7 @@ def main(
         device=device,
     )
 
+    logging.info("Preparing preprocessors")
     # create preprocessor out of whitening transform
     # for strain data, and standard scaler for parameters
     standard_scaler = ChannelWiseScaler(num_params)
@@ -144,6 +149,7 @@ def main(
     torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
     torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
 
+    logging.info("Constructing validation dataloader")
     # construct validation dataset
     # from validation injector
     valid_dataset = None
@@ -158,4 +164,5 @@ def main(
             device,
         )
 
+    logging.info("Launching training")
     return train_dataset, valid_dataset, preprocessor

@@ -5,20 +5,32 @@ from bilby.gw.prior import UniformSourceFrame
 
 def sg_uniform():
     prior_dict = PriorDict()
-    prior_dict["quality"] = Uniform(name="quality", minimum=2, maximum=100)
+    prior_dict["quality"] = Uniform(
+        name="quality", minimum=2, maximum=100, latex_label="quality"
+    )
     prior_dict["frequency"] = Uniform(
-        name="frequency", minimum=32, maximum=1024
+        name="frequency", minimum=32, maximum=1024, latex_label="frequency"
     )
-    prior_dict["dec"] = Cosine(name="dec")
+    prior_dict["dec"] = Cosine(name="dec", latex_label="dec")
     # the relative angle between the source ra and the earth ra
-    prior_dict["phi"] = Uniform(name="phi", minimum=0, maximum=2 * np.pi)
-    prior_dict["hrss"] = LogUniform(name="hrss", minimum=1e-23, maximum=1e-19)
-    prior_dict["time"] = Uniform(name="time", minimum=-0.1, maximum=0.1)
-    prior_dict["eccentricity"] = Uniform(
-        name="eccentricity", minimum=0, maximum=1
+    prior_dict["phi"] = Uniform(
+        name="phi", minimum=-np.pi, maximum=np.pi, latex_label="ra-like (phi)"
     )
-    prior_dict["psi"] = Uniform(name="psi", minimum=0, maximum=np.pi)
-    prior_dict["phase"] = Uniform(name="phase", minimum=0, maximum=2 * np.pi)
+    prior_dict["hrss"] = LogUniform(
+        name="hrss", minimum=1e-23, maximum=1e-19, latex_label="hrss"
+    )
+    prior_dict["time"] = Uniform(
+        name="time", minimum=-0.1, maximum=0.1, latex_label="time"
+    )
+    prior_dict["eccentricity"] = Uniform(
+        name="eccentricity", minimum=0, maximum=1, latex_label="eccentricity"
+    )
+    prior_dict["psi"] = Uniform(
+        name="psi", minimum=0, maximum=np.pi, latex_label="psi"
+    )
+    prior_dict["phase"] = Uniform(
+        name="phase", minimum=0, maximum=2 * np.pi, latex_label="phase"
+    )
 
     return prior_dict
 

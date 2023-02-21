@@ -174,6 +174,7 @@ def train(
     """
 
     device = device or "cpu"
+    logging.info(f"Device: {device}")
     outdir.mkdir(exist_ok=True)
 
     # infer the dimension of the parameters
@@ -193,7 +194,6 @@ def train(
     param_dim = parameters.shape[-1]
     _, n_ifos, strain_dim = strain.shape
 
-    logging.info(f"Device: {device}")
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
