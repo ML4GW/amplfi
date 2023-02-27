@@ -113,6 +113,7 @@ inference_params = "${base.inference_params}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 num_samples_draw = 10000
+num_plot_corner = 30
 device = "cuda"
 outdir = "${base.basedir}/training"
 
