@@ -1,4 +1,5 @@
 import logging
+import random
 from pathlib import Path
 from time import time
 from typing import List
@@ -78,6 +79,7 @@ def main(
     outdir: Path,
     device: str,
     num_samples_draw: int,
+    num_plot_corner: int,
     verbose: bool = False,
 ):
     device = device or "cpu"
@@ -128,27 +130,62 @@ def main(
         "Drawing {} samples for each test data".format(num_samples_draw)
     )
     results = []
+    descaled_results = []
     total_sampling_time = 0.0
+    num_plotted = 0  # corner plots for diagnostic analysis
     for signal, param in test_dataloader:
         signal = signal.to(device)
         param = param.to(device)
-        strain, parameter = preprocessor(signal, param)
+        strain, scaled_param = preprocessor(signal, param)
 
         _time = time()
         with torch.no_grad():
             samples = flow_obj.flow.sample(num_samples_draw, context=strain)
-        results.append(
-            _cast_as_bilby_result(
-                samples.cpu().numpy(),
-                parameter.cpu().numpy(),
-                inference_params,
-                priors,
+            descaled_samples = preprocessor.scaler(
+                samples[0].transpose(1, 0), reverse=True
             )
-        )
+            descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
         _time = time() - _time
+
+        descaled_res = _cast_as_bilby_result(
+            descaled_samples.cpu().numpy(),
+            param.cpu().numpy(),
+            inference_params,
+            priors,
+        )
+        descaled_results.append(descaled_res)
+
+        res = _cast_as_bilby_result(
+            samples.cpu().numpy(),
+            scaled_param.cpu().numpy(),
+            inference_params,
+            priors,
+        )
+        results.append(res)
 
         logging.debug("Time taken to sample: %.2f" % (_time))
         total_sampling_time += _time
+
+        # generate diagnostic posteriors
+        if random.random() > 0.5 and num_plotted < num_plot_corner:
+            scaled_corner_plot_filename = (
+                outdir / f"{num_plotted}_scaled_corner.png"
+            )
+            res.plot_corner(
+                save=True,
+                filename=scaled_corner_plot_filename,
+                levels=(0.5, 0.9),
+            )
+
+            descaled_corner_plot_filename = (
+                outdir / f"{num_plotted}_descaled_corner.png"
+            )
+            descaled_res.plot_corner(
+                save=True,
+                filename=descaled_corner_plot_filename,
+                levels=(0.5, 0.9),
+            )
+            num_plotted += 1
 
     logging.info(
         "Total/Avg. samlping time: {:.1f}/{:.2f}(s)".format(
@@ -156,9 +193,20 @@ def main(
         )
     )
     logging.info("Making pp-plot")
+    pp_plot_scaled_filename = outdir / "pp-plot-test-set-scaled.png"
     pp_plot_filename = outdir / "pp-plot-test-set.png"
 
     bilby.result.make_pp_plot(
-        results, save=True, filename=pp_plot_filename, keys=inference_params
+        results,
+        save=True,
+        filename=pp_plot_scaled_filename,
+        keys=inference_params,
+    )
+
+    bilby.result.make_pp_plot(
+        descaled_results,
+        save=True,
+        filename=pp_plot_filename,
+        keys=inference_params,
     )
     logging.info("Plot saved in %s" % (pp_plot_filename))
