@@ -4,8 +4,25 @@ import gwdatafind
 import numpy as np
 import torch
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
+from pycbc.noise import noise_from_psd
+from pycbc.types import FrequencySeries
 
+from ml4gw.spectral import normalize_psd
 from ml4gw.utils.slicing import slice_kernels
+
+
+def gaussian_noise_from_gwpy_timeseries(
+    data: TimeSeries, df: float
+) -> TimeSeries:
+    sample_rate = 1 / data.dt.value
+    psd = normalize_psd(data, df, sample_rate)
+
+    length = len(data)
+    psd = FrequencySeries(psd, df)
+    data = noise_from_psd(length, 1 / sample_rate, psd)
+    data = TimeSeries(data.data, dt=sample_rate)
+
+    return data
 
 
 def download_data(

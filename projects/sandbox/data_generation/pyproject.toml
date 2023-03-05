@@ -6,6 +6,9 @@ authors = ["ethan.marx <ethan.marx@ligo.org>"]
 license = "MIT"
 include = ["data_generation/", "tests/"]
 
+[tool.pinto]
+conda = {append_base_ld_library_path = true}
+
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 "ml4gw" = {path = "../../../ml4gw/", develop = true}
@@ -14,6 +17,7 @@ mldatafind = {git = "https://github.com/ML4GW/mldatafind.git"}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
 typeo = {git = "https://github.com/ML4GW/typeo.git"}
+pycbc = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"

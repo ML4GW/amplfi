@@ -5,7 +5,11 @@ from typing import Callable, Dict, List, Optional
 import h5py
 import numpy as np
 import torch
-from data_generation.utils import download_data, inject_into_background
+from data_generation.utils import (
+    download_data,
+    gaussian_noise_from_gwpy_timeseries,
+    inject_into_background,
+)
 from mldatafind.segments import query_segments
 from typeo import scriptify
 
@@ -33,6 +37,7 @@ def main(
     min_duration: float = 0,
     waveform_arguments: Optional[Dict] = None,
     parameter_conversion: Optional[Callable] = None,
+    gaussian: bool = False,
     force_generation: bool = False,
     verbose: bool = False,
 ):
@@ -105,6 +110,13 @@ def main(
     background_dict = download_data(
         ifos, frame_type, channel, sample_rate, segment_start, segment_stop
     )
+
+    if gaussian:
+        df = 1 / waveform_duration
+        for ifo in ifos:
+            background_dict[ifo] = gaussian_noise_from_gwpy_timeseries(
+                background_dict[ifo], df
+            )
 
     background = np.stack([ts.value for ts in background_dict.values()])
     background = torch.as_tensor(background)

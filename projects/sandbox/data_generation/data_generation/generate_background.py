@@ -4,6 +4,7 @@ from typing import List
 
 import h5py
 import numpy as np
+from data_generation.utils import gaussian_noise_from_gwpy_timeseries
 from gwdatafind import find_urls
 from gwpy.segments import DataQualityDict
 from gwpy.timeseries import TimeSeries
@@ -26,6 +27,7 @@ def main(
     logdir: Path,
     force_generation: bool = False,
     verbose: bool = False,
+    gaussian: bool = False,
 ):
     """Generates background data for training BBHnet
 
@@ -88,33 +90,42 @@ def main(
         "from {} to {}".format(*segment)
     )
 
-    with h5py.File(datadir / "background.h5", "w") as f:
-        for ifo in ifos:
+    background_data = {}
+    for ifo in ifos:
 
-            # find frame files
-            files = find_urls(
-                site=ifo.strip("1"),
-                frametype=f"{ifo}_{frame_type}",
-                gpsstart=start,
-                gpsend=stop,
-                urltype="file",
+        # find frame files
+        files = find_urls(
+            site=ifo.strip("1"),
+            frametype=f"{ifo}_{frame_type}",
+            gpsstart=start,
+            gpsend=stop,
+            urltype="file",
+        )
+        data = TimeSeries.read(
+            files,
+            channel=f"{ifo}:{channel}",
+            start=segment[0],
+            end=segment[1],
+        )
+
+        # resample
+        data = data.resample(sample_rate)
+
+        if np.isnan(data).any():
+            raise ValueError(
+                f"The background for ifo {ifo} contains NaN values"
             )
-            data = TimeSeries.read(
-                files,
-                channel=f"{ifo}:{channel}",
-                start=segment[0],
-                end=segment[1],
-            )
 
-            # resample
-            data = data.resample(sample_rate)
+        if gaussian:
+            logging.info(f"Generating gaussian noise from psd for ifo {ifo}")
+            df = 0.5
+            data = gaussian_noise_from_gwpy_timeseries(data, df)
 
-            if np.isnan(data).any():
-                raise ValueError(
-                    f"The background for ifo {ifo} contains NaN values"
-                )
+        background_data[ifo] = data
 
-            f.create_dataset(f"{ifo}", data=data)
-            f.attrs.update({"t0": float(segment[0])})
+    with h5py.File(background_file, "w") as f:
+        for ifo, data in background_data.items():
+            f.create_dataset(ifo, data=data)
+        f.attrs.update({"t0": float(segment[0])})
 
     return background_file
