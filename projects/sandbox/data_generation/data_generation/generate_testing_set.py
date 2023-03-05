@@ -52,21 +52,36 @@ def main(
     and injected into kernels sampled non-coincidentally from the background.
 
     Args:
-        ifos: List of interferometers
-        state_flag: Flag used to find times with good data quality.
-        frame_type: Frame type used for discovering data
-        channel: Channel for reading data
-        start: Start time for finding data
-        stop: Stop time for finding data
-        sample_rate: Rate at which timeseries are sampled
-        prior: Callable that instantiates a bilby prior
-        waveform: A callable compatible with bilby waveform generator
-        n_samples: Number of waveforms to sample and inject
-        kernel_length: Length in seconds of kernels produced
-        waveform_duration: length of injected waveforms
-        datadir: Path to store data
-        logdir: Path to store logs
-        min_duration: Minimum duration of segments
+        ifos:
+            List of interferometers
+        state_flag:
+            Flag used to find times with good data quality.
+        frame_type:
+            Frame type used for discovering data
+        channel:
+            Channel for reading data
+        start:
+            Start time for finding data
+        stop:
+            Stop time for finding data
+        sample_rate:
+            Rate at which timeseries are sampled
+        prior:
+            Callable that instantiates a bilby prior
+        waveform:
+            A callable compatible with bilby waveform generator
+        n_samples:
+            Number of waveforms to sample and inject
+        kernel_length:
+            Length in seconds of kernels produced
+        waveform_duration:
+            length of injected waveforms
+        datadir:
+            Path to store data
+        logdir:
+            Path to store logs
+        min_duration:
+            Minimum duration of segments
         waveform_arguments:
             Additional arguments to pass to waveform generator,
             that will ultimately get passed
@@ -77,8 +92,14 @@ def main(
             Parameter conversion to pass the bilby waveform generator.
             Typically used for converting between bilby and lalsimulation
             BBH parameters
-        force_generation: Force generation of data
-        verbose: Log verbosely
+        gaussian:
+            If True, generate gaussian noise from a psd calculated using
+            the requested period of data. This will be used as the background
+            to inject the waveforms into.
+        force_generation:
+            Force generation of data
+        verbose:
+            Log verbosely
 
     Returns signal file containiing injections and parameters
     """
