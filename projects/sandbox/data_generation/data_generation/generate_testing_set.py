@@ -133,6 +133,9 @@ def main(
     )
 
     if gaussian:
+        logging.info(
+            "Generating gaussian noise from psd for injection background"
+        )
         df = 1 / waveform_duration
         for ifo in ifos:
             background_dict[ifo] = gaussian_noise_from_gwpy_timeseries(
