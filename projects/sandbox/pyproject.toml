@@ -1,10 +1,12 @@
 [tool.pinto]
 steps = [
-    "data_generation:generate-background",
-    "data_generation:generate-waveforms",
-    "data_generation:generate-testing",
+    #"data_generation:generate-background",
+    #"data_generation:generate-waveforms",
+    #"data_generation:generate-pp-plot-injections",
+    #"data_generation:generate-bilby-injections",
+    "bilby:analyze-with-bilby",
     "train:train:maf",
-    "sampling:sample_testing_set:maf"
+    "testing:create-pp-plot:maf"
 ]
 
 [tool.typeo.base]
@@ -17,7 +19,7 @@ inference_params = ["frequency", "quality", "hrss", "phase", "dec", "psi", "phi"
 trigger_distance = 0.0
 start = 1262607622
 stop = 1262620622
-test_stop = 1262751694
+test_stop = 1262751694 
 channel = "DCS-CALIB_STRAIN_CLEAN_C01"
 frame_type = "HOFT_C01"
 state_flag = "DCS-ANALYSIS_READY_C01:1"
@@ -43,6 +45,7 @@ ifos = "${base.ifos}"
 sample_rate = "${base.sample_rate}" 
 minimum_length = 10000
 force_generation = "${base.force_generation}"
+waveform_duration = "${base.waveform_duration}" # used for delta f of psd
 
 [tool.typeo.scripts.generate-waveforms]
 datadir = "${base.datadir}"
@@ -87,7 +90,7 @@ valid_stride = 0.0625
 commands.maf = "${base.maf}"
 
 
-[tool.typeo.scripts.generate-testing]
+[tool.typeo.scripts.generate-pp-plot-injections]
 ifos = "${base.ifos}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
@@ -103,19 +106,47 @@ waveform_duration = "${base.waveform_duration}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 
-[tool.typeo.scripts.sample_testing_set]
+[tool.typeo.scripts.generate-bilby-injections]
+ifos = "${base.ifos}"
+state_flag = "${base.state_flag}"
+frame_type = "${base.frame_type}"
+channel = "${base.channel}"
+start = "${base.stop}"
+stop = "${base.test_stop}"
+sample_rate = "${base.sample_rate}"
+prior = "mlpe.injection.priors.sg_uniform"
+waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
+n_samples = 2
+waveform_duration = "${base.waveform_duration}"
+spacing = 100
+buffer = 10
+datadir = "${base.datadir}"
+logdir = "${base.logdir}"
+
+[tool.typeo.scripts.analyze-with-bilby]
+ifos = "${base.ifos}"
+waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
+datadir = "${base.datadir}"
+writedir = "${base.basedir}"
+logdir = "${base.logdir}"
+accounting_group_user = "${LIGO_USERNAME}"
+accounting_group = "${LIGO_ACCOUNTING_GROUP}"
+
+
+[tool.typeo.scripts.create-pp-plot]
 ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
 model-state-path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
+preprocessor_dir = "${base.basedir}/training/preprocessor"
+writedir = "${base.basedir}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 num_samples_draw = 10000
 num_plot_corner = 30
 device = "cuda"
-outdir = "${base.basedir}/training"
 
 # arch parameters
 commands.coupling = "${base.coupling}"

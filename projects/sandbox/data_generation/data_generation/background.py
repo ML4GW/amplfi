@@ -9,6 +9,8 @@ from gwdatafind import find_urls
 from gwpy.frequencyseries import FrequencySeries
 from gwpy.segments import DataQualityDict
 from gwpy.timeseries import TimeSeries
+from pycbc.noise import noise_from_psd
+from pycbc.types import FrequencySeries
 from typeo import scriptify
 
 from ml4gw.spectral import normalize_psd
@@ -25,6 +27,7 @@ def main(
     frame_type: str,
     state_flag: str,
     minimum_length: float,
+    waveform_duration: float,
     datadir: Path,
     logdir: Path,
     gaussian: bool = False,
@@ -52,16 +55,21 @@ def main(
     logdir.mkdir(exist_ok=True, parents=True)
     datadir.mkdir(exist_ok=True, parents=True)
 
+    # make psd dir and check if psds already exist
+    psd_dir = datadir / "psds"
+    psd_dir.mkdir(exist_ok=True, parents=True)
+    psd_files = [Path(f"{psd_dir}/{ifo}_psd.txt") for ifo in ifos]
+    psd_files_exist = all([psd_file.exists() for psd_file in psd_files])
+
     # configure logging output file
     configure_logging(logdir / "generate_background.log", verbose)
 
-    # check if paths already exist
-    # TODO: maybe put all background in one path
+    # check if all data paths already exist
     background_file = datadir / "background.h5"
 
-    if background_file.exists() and not force_generation:
+    if background_file.exists() and psd_files_exist and not force_generation:
         logging.info(
-            "Background data already exists"
+            "Background data and psds already exists"
             " and forced generation is off. Not generating background"
         )
         return background_file
@@ -125,6 +133,14 @@ def main(
             raise ValueError(
                 f"The background for ifo {ifo} contains NaN values"
             )
+
+        # calculate psd and save to later use in bilby analysis
+        df = 1 / waveform_duration
+        frequencies = np.arange(0, sample_rate / 2 + df, df)
+        psd = normalize_psd(data, df, sample_rate)
+        np.savetxt(
+            psd_dir / f"{ifo}_psd.txt", np.column_stack([frequencies, psd])
+        )
 
         if gaussian:
             logging.info(f"Generating gaussian noise from psd for ifo {ifo}")

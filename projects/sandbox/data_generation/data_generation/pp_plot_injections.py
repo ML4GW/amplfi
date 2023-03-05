@@ -111,12 +111,12 @@ def main(
     datadir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
 
-    signal_file = datadir / "test_injections.h5"
+    signal_file = datadir / "pp_plot_injections.h5"
 
     if signal_file.exists() and not force_generation:
         logging.info(
-            "Signal data already exists and forced generation is off. "
-            "Not generating testing signals."
+            "PP plot injection data already exists and "
+            "forced generation is off. Not generating PP plot signals."
         )
         return signal_file
 
@@ -134,6 +134,7 @@ def main(
         ifos, frame_type, channel, sample_rate, segment_start, segment_stop
     )
 
+    df = 1 / waveform_duration
     if gaussian:
         logging.info(
             "Generating gaussian noise from psd for injection background"
@@ -191,7 +192,7 @@ def main(
     )
 
     # inject signals into randomly sampled kernels of background
-    injections = inject_into_background(
+    injections = inject_into_random_background(
         background,
         waveforms,
         kernel_size,

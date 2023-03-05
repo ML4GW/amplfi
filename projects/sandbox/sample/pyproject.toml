@@ -22,7 +22,7 @@ secondary = true
 default = false
 
 [tool.poetry.scripts]
-sample_testing_set = "sample:main"
+create-pp-plot = "pp_plot:main"
 
 [build-system]
 requires = ["poetry-core"]

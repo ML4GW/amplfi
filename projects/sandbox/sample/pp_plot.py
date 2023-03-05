@@ -17,11 +17,12 @@ from mlpe.injection.priors import sg_uniform
 from mlpe.logging import configure_logging
 
 
-def _load_preprocessor_state(preprocessor, preprocessor_dir):
-    preprocessor_path = Path(preprocessor_dir) / "preprocessor"
+def _load_preprocessor_state(
+    preprocessor: torch.nn.Module, preprocessor_dir: Path
+):
 
-    whitener_path = preprocessor_path / "whitener.pt"
-    scaler_path = preprocessor_path / "scaler.pt"
+    whitener_path = preprocessor_dir / "whitener.pt"
+    scaler_path = preprocessor_dir / "scaler.pt"
 
     preprocessor.whitener = torch.load(whitener_path)
     preprocessor.scaler = torch.load(scaler_path)
@@ -74,18 +75,20 @@ def main(
     kernel_length: float,
     fduration: float,
     inference_params: List[str],
+    preprocessor_dir: Path,
     datadir: Path,
     logdir: Path,
-    outdir: Path,
+    writedir: Path,
     device: str,
     num_samples_draw: int,
     num_plot_corner: int,
     verbose: bool = False,
 ):
     device = device or "cpu"
-    priors = sg_uniform()
 
-    configure_logging(logdir / "sample.log", verbose)
+    configure_logging(logdir / "pp_plot.log", verbose)
+
+    priors = sg_uniform()
     num_ifos = len(ifos)
     num_params = len(inference_params)
     signal_length = int((kernel_length - fduration) * sample_rate)
@@ -108,12 +111,12 @@ def main(
         scaler=standard_scaler,
     )
 
-    preprocessor = _load_preprocessor_state(preprocessor, outdir)
+    preprocessor = _load_preprocessor_state(preprocessor, preprocessor_dir)
     preprocessor = preprocessor.to(device)
 
     logging.info("Loading test data and initializing dataloader")
     test_data, test_params = _load_test_data(
-        datadir / "test_injections.h5", inference_params
+        datadir / "pp_plot_injections.h5", inference_params
     )
     test_data = torch.from_numpy(test_data).to(torch.float32)
     test_params = torch.from_numpy(test_params).to(torch.float32)
@@ -167,9 +170,11 @@ def main(
         total_sampling_time += _time
 
         # generate diagnostic posteriors
+        corner_plot_dir = writedir / "corner"
+        corner_plot_dir.mkdir(exist_ok=True, parents=True)
         if random.random() > 0.5 and num_plotted < num_plot_corner:
             scaled_corner_plot_filename = (
-                outdir / f"{num_plotted}_scaled_corner.png"
+                corner_plot_dir / f"{num_plotted}_scaled_corner.png"
             )
             res.plot_corner(
                 save=True,
@@ -178,7 +183,7 @@ def main(
             )
 
             descaled_corner_plot_filename = (
-                outdir / f"{num_plotted}_descaled_corner.png"
+                corner_plot_dir / f"{num_plotted}_descaled_corner.png"
             )
             descaled_res.plot_corner(
                 save=True,
@@ -193,8 +198,9 @@ def main(
         )
     )
     logging.info("Making pp-plot")
-    pp_plot_scaled_filename = outdir / "pp-plot-test-set-scaled.png"
-    pp_plot_filename = outdir / "pp-plot-test-set.png"
+    pp_plot_dir = writedir / "pp_plots"
+    pp_plot_scaled_filename = pp_plot_dir / "pp-plot-test-set-scaled.png"
+    pp_plot_filename = pp_plot_dir / "pp-plot-test-set.png"
 
     bilby.result.make_pp_plot(
         results,

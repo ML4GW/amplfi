@@ -1,0 +1,6 @@
+name: mlpe-bilby-analysis
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - bilby_pipe
