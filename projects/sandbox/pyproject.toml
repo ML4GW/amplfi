@@ -131,6 +131,8 @@ writedir = "${base.basedir}"
 logdir = "${base.logdir}"
 accounting_group_user = "${LIGO_USERNAME}"
 accounting_group = "${LIGO_ACCOUNTING_GROUP}"
+channel = "${base.channel}"
+sample_rate = "${base.sample_rate}"
 
 
 [tool.typeo.scripts.create-pp-plot]

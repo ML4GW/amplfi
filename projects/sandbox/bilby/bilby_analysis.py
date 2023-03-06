@@ -1,17 +1,12 @@
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import List
 
 from bilby_pipe.job_creation import generate_dag
 from bilby_pipe.main import MainInput, write_complete_config_file
 from bilby_pipe.parser import create_parser
-from bilby_pipe.utils import (
-    get_command_line_arguments,
-    log_version_information,
-    parse_args,
-)
+from bilby_pipe.utils import log_version_information, parse_args
 from typeo import scriptify
 
 from mlpe.logging import configure_logging
@@ -22,14 +17,18 @@ def main(
     datadir: Path,
     writedir: Path,
     logdir: Path,
+    channel: str,
     ifos: List[str],
     waveform: str,
     accounting_group: str,
     accounting_group_user: str,
+    sample_rate: float,
     verbose: bool = False,
 ):
 
     configure_logging(logdir / "bilby.log", verbose)
+    bilby_outdir = writedir / "bilby" / "rundir"
+    bilby_outdir.mkdir(exist_ok=True, parents=True)
 
     # create a default bilby ini file. AFAIK this is required by bilby.
     # we will overwrite the defaults by passing arguments
@@ -41,46 +40,37 @@ def main(
     ]
     subprocess.run(generate_default_ini_args)
 
+    # load in default bilby inputs from ini path
+    parser = create_parser(top_level=True)
+    args, _ = parse_args([str(default_ini_path)], parser)
+
     # construct sys.argv that bilby pipe parser will parse
     data_dict = {
-        ifo: str(datadir / "bilby" / f"{ifo}_bilby_injections.h5")
+        ifo: str(datadir / "bilby" / f"{ifo}_bilby_injections.hdf5")
         for ifo in ifos
     }
+
+    # channels are named the same as the ifos
+    channel_dict = {ifo: channel for ifo in ifos}
     psd_dict = {ifo: str(datadir / "psds" / f"{ifo}_psd.txt") for ifo in ifos}
-    bilby_outdir = writedir / "bilby" / "rundir"
-    bilby_outdir.mkdir(exist_ok=True, parents=True)
-    sys.argv = [
-        "",
-        str(default_ini_path),
-        "--accounting",
-        accounting_group,
-        "--detectors",
-        "H1",
-        "--detectors",
-        "L1",
-        "--data-dict",
-        str(data_dict),
-        "--psd-dict",
-        str(psd_dict),
-        "--frequency-domain-source-model",
-        str(waveform),
-        "--gps-file",
-        str(datadir / "bilby" / "signal_times.txt"),
-        "--outdir",
-        str(bilby_outdir),
-        "--submit",
-    ]
+
+    args.data_dict = str(data_dict).replace("'", "")
+    args.psd_dict = str(psd_dict).replace("'", "")
+    args.channel_dict = str(channel_dict).replace("'", "")
+    args.accounting = accounting_group
+    args.detectors = ifos
+    args.frequency_domain_source_model = waveform
+    args.gps_file = str(datadir / "bilby" / "signal_times.txt")
+    args.outdir = str(bilby_outdir)
+    args.submit = True
+    args.sampling_frequency = sample_rate
+    args.waveform_generator = "bilby.gw.waveform_generator.WaveformGenerator"
 
     # necessary due to weird bilby pipe behavior dealing with relative paths
-    os.chdir(bilby_outdir)
+    os.chdir(writedir / "bilby")
 
-    # create bilby pipe parser, parse command line args, and launch dag
-    parser = create_parser(top_level=True)
-    args, unknown_args = parse_args(get_command_line_arguments(), parser)
+    # launch dag
     log_version_information()
-    args.outdir = args.outdir.replace("'", "").replace('"', "")
-    inputs = MainInput(args, unknown_args)
+    inputs = MainInput(args, [])
     write_complete_config_file(parser, args, inputs)
-
-    print(inputs.outdir, inputs.initialdir)
     generate_dag(inputs)

@@ -126,7 +126,6 @@ def main(
     signal_times = np.linspace(
         buffer + waveform_duration // 2, n_samples * spacing, n_samples
     )
-    print(signal_times)
     np.savetxt(datadir / "signal_times.txt", signal_times)
     parameters["geocent_time"] = signal_times
 
@@ -145,9 +144,11 @@ def main(
         )
 
         # package into gwpy timeseries and save as hdf5 files
-        data = TimeSeries(data, dt=1 / sample_rate, t0=0)
+        data = TimeSeries(
+            data, dt=1 / sample_rate, channel=f"{ifo}:{channel}", t0=0
+        )
         data.write(
-            datadir / f"{ifo}_bilby_injections.h5",
+            datadir / f"{ifo}_bilby_injections.hdf5",
             format="hdf5",
             overwrite=True,
         )
