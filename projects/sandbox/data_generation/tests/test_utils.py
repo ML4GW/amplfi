@@ -28,5 +28,15 @@ def test_noise_from_psd(
     psd = np.ones(len(frequencies)) * 1e-46
 
     noise = noise_from_psd(psd, df, duration, sample_rate)
-
     assert len(noise) == int(duration * sample_rate)
+
+    # inverse fourier transform noise, and check for
+    # consistent power as psd
+    from scipy.fft import fft
+
+    num_samples = len(noise)
+    dt = duration / num_samples
+    noise_fft = fft(noise) * dt
+    noise_fft_abs = np.abs(noise_fft) ** 2
+
+    assert np.log10(noise_fft_abs).mean() == pytest.approx(-46, abs=1)
