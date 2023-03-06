@@ -1,28 +1,73 @@
 from typing import Iterable
 
 import gwdatafind
+import lal
+import lalsimulation
 import numpy as np
 import torch
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
-from pycbc.noise import noise_from_psd
-from pycbc.types import FrequencySeries
 
-from ml4gw.spectral import normalize_psd
 from ml4gw.utils.slicing import slice_kernels
 
 
-def gaussian_noise_from_gwpy_timeseries(
-    data: TimeSeries, df: float
-) -> TimeSeries:
-    sample_rate = 1 / data.dt.value
-    psd = normalize_psd(data, df, sample_rate)
+def noise_from_psd(
+    psd: np.ndarray,
+    df: float,
+    duration: float,
+    sample_rate: float,
+):
+    """
+    Generate noise from a given PSD. See
+    https://pycbc.org/pycbc/latest/html/_modules/pycbc/noise/gaussian.html#noise_from_psd
+    for inspiration.
 
-    length = len(data)
-    psd = FrequencySeries(psd, df)
-    data = noise_from_psd(length, 1 / sample_rate, psd)
-    data = TimeSeries(data.data, dt=sample_rate)
+    Args:
+        psd: np.ndarray of the PSD to generate noise from
+        df: frequency resolution of `psd` in Hz
+        duration: duration of the noise to generate in seconds
+        sample_rate: sample rate of the noise to generate in Hz
+    """
 
-    return data
+    # calculate length of requested timeseries in samples
+    # and create empty array to store data
+    length = int(duration * sample_rate)
+    noise_ts = np.empty(length)
+
+    # create epcoh and random seed
+    epoch = lal.LIGOTimeGPS(0, 0)
+    rng = lal.gsl_rng("ranlux", 0)
+
+    # calculate number of samples we'll generate
+    # per segment, and initialize the segment
+    delta_t = 1 / sample_rate
+    N = int(1 / delta_t / df)
+    stride = N // 2
+    segment = lal.CreateREAL8TimeSeries(
+        "", epoch, 0.0, 1.0 / sample_rate, lal.StrainUnit, N
+    )
+
+    psd_lal = lal.CreateREAL8FrequencySeries(
+        "", epoch, 0.0, df, lal.SecondUnit, len(psd)
+    )
+    psd_lal.data.data[:] = psd
+    psd_lal.data.data[0] = 0
+    psd_lal.data.data[-1] = 0
+
+    length_generated = 0
+    lalsimulation.SimNoise(segment, 0, psd_lal, rng)
+    while length_generated < length:
+        if (length_generated + stride) < length:
+            noise_ts[
+                length_generated : length_generated + stride
+            ] = segment.data.data[0:stride]
+        else:
+            noise_ts[length_generated:length] = segment.data.data[
+                0 : length - length_generated
+            ]
+
+        length_generated += stride
+        lalsimulation.SimNoise(segment, stride, psd_lal, rng)
+    return noise_ts
 
 
 def download_data(

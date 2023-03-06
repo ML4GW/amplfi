@@ -1,15 +1,17 @@
 import logging
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import h5py
 import numpy as np
-from data_generation.utils import gaussian_noise_from_gwpy_timeseries
+from data_generation.utils import noise_from_psd
 from gwdatafind import find_urls
+from gwpy.frequencyseries import FrequencySeries
 from gwpy.segments import DataQualityDict
 from gwpy.timeseries import TimeSeries
 from typeo import scriptify
 
+from ml4gw.spectral import normalize_psd
 from mlpe.logging import configure_logging
 
 
@@ -25,9 +27,10 @@ def main(
     minimum_length: float,
     datadir: Path,
     logdir: Path,
+    gaussian: bool = False,
+    psd_file: Optional[Path] = None,
     force_generation: bool = False,
     verbose: bool = False,
-    gaussian: bool = False,
 ):
     """Generates background data for training BBHnet
 
@@ -37,6 +40,12 @@ def main(
         ifos: which ifos to query data for
         outdir: where to store data
     """
+
+    if psd_file is not None and not gaussian:
+        raise ValueError(
+            "Cannot generate gaussian noise from"
+            " requested PSD when gaussian is False"
+        )
 
     # make logdir dir
     logdir.mkdir(exist_ok=True, parents=True)
@@ -118,8 +127,28 @@ def main(
 
         if gaussian:
             logging.info(f"Generating gaussian noise from psd for ifo {ifo}")
-            df = 0.5
-            data = gaussian_noise_from_gwpy_timeseries(data, df)
+
+            # TODO: what should determine this?
+            df = 1 / 8.0
+            if psd_file is not None:
+                # if user passed a psd file, load it into a FrequencySeries
+                # that ml4gw.spectral.normalize_psd can handle
+                frequencies, psd = np.loadtxt(psd_file, unpack=True)
+
+                # ml4gw expects psd to start at 0 Hz, so lets check for that
+                # TODO: implement logic that prepends 0 to psd
+                # if the passed psd doesn't start at 0
+                if frequencies[0] != 0:
+                    raise ValueError(
+                        "PSD must start at 0 Hz, not {}".format(frequencies[0])
+                    )
+                data = FrequencySeries(psd, frequencies=frequencies)
+
+            # normalize_psd can handle FrequencySeries or TimeSeries
+            psd = normalize_psd(data, df, sample_rate)
+            data = noise_from_psd(
+                psd, df, len(data) / sample_rate, sample_rate
+            )
 
         background_data[ifo] = data
 
