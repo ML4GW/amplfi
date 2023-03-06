@@ -29,6 +29,7 @@ def main(
     logdir: Path,
     gaussian: bool = False,
     psd_file: Optional[Path] = None,
+    is_psd: bool = True,
     force_generation: bool = False,
     verbose: bool = False,
 ):
@@ -134,6 +135,8 @@ def main(
                 # if user passed a psd file, load it into a FrequencySeries
                 # that ml4gw.spectral.normalize_psd can handle
                 frequencies, psd = np.loadtxt(psd_file, unpack=True)
+                if not is_psd:
+                    psd = psd**2
 
                 # ml4gw expects psd to start at 0 Hz, so lets check for that
                 # TODO: implement logic that prepends 0 to psd
