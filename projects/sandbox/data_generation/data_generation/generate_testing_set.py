@@ -7,13 +7,15 @@ import numpy as np
 import torch
 from data_generation.utils import (
     download_data,
-    gaussian_noise_from_gwpy_timeseries,
     inject_into_background,
+    noise_from_psd,
 )
+from gwpy.timeseries import TimeSeries
 from mldatafind.segments import query_segments
 from typeo import scriptify
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
+from ml4gw.spectral import normalize_psd
 from mlpe.injection import generate_gw
 from mlpe.logging import configure_logging
 
@@ -137,10 +139,12 @@ def main(
             "Generating gaussian noise from psd for injection background"
         )
         df = 1 / waveform_duration
+
         for ifo in ifos:
-            background_dict[ifo] = gaussian_noise_from_gwpy_timeseries(
-                background_dict[ifo], df
-            )
+            duration = len(background_dict[ifo]) / sample_rate
+            psd = normalize_psd(background_dict[ifo], df, sample_rate)
+            data = noise_from_psd(psd, df, duration, sample_rate)
+            background_dict[ifo] = TimeSeries(data, dt=1 / sample_rate)
 
     background = np.stack([ts.value for ts in background_dict.values()])
     background = torch.as_tensor(background)
