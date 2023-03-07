@@ -6,10 +6,7 @@ import lalsimulation
 import numpy as np
 import torch
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
-from pycbc.noise import noise_from_psd
-from pycbc.types import FrequencySeries
 
-from ml4gw.spectral import normalize_psd
 from ml4gw.utils.slicing import slice_kernels
 
 

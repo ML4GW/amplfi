@@ -32,7 +32,6 @@ def main(
     is_psd: bool = True,
     force_generation: bool = False,
     verbose: bool = False,
-    gaussian: bool = False,
 ):
     """Generates background data for training BBHnet
 
