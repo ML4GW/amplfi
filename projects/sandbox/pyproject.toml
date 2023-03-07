@@ -3,10 +3,10 @@ steps = [
     #"data_generation:generate-background",
     #"data_generation:generate-waveforms",
     #"data_generation:generate-pp-plot-injections",
-    #"data_generation:generate-bilby-injections",
+    "data_generation:generate-bilby-injections",
     "bilby:analyze-with-bilby",
-    "train:train:maf",
-    "testing:create-pp-plot:maf"
+    #"train:train:maf",
+    #"testing:create-pp-plot:maf"
 ]
 
 [tool.typeo.base]
@@ -22,6 +22,7 @@ stop = 1262620622
 test_stop = 1262751694 
 channel = "DCS-CALIB_STRAIN_CLEAN_C01"
 frame_type = "HOFT_C01"
+prior = "mlpe.injection.priors.sg_uniform"
 state_flag = "DCS-ANALYSIS_READY_C01:1"
 repository_directory = "${BASE_DIR}/model_repo/" 
 force_generation = false
@@ -55,7 +56,7 @@ sample_rate = "${base.sample_rate}"
 force_generation = "${base.force_generation}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 waveform_duration = "${base.waveform_duration}"
-prior = "mlpe.injection.priors.sg_uniform"
+prior = "${base.prior}"
 
 [tool.typeo.scripts.train]
 waveform_dataset = "${base.datadir}/signals.h5"
@@ -98,7 +99,7 @@ channel = "${base.channel}"
 start = "${base.stop}"
 stop = "${base.test_stop}" 
 sample_rate = "${base.sample_rate}"
-prior = "mlpe.injection.priors.sg_uniform"
+prior = "${base.prior}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 n_samples = 1000
 kernel_length = "${base.kernel_length}"
@@ -133,7 +134,7 @@ accounting_group_user = "${LIGO_USERNAME}"
 accounting_group = "${LIGO_ACCOUNTING_GROUP}"
 channel = "${base.channel}"
 sample_rate = "${base.sample_rate}"
-
+prior = "${base.prior}"
 
 [tool.typeo.scripts.create-pp-plot]
 ifos = "${base.ifos}"

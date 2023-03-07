@@ -1,7 +1,7 @@
 import os
 import subprocess
 from pathlib import Path
-from typing import List
+from typing import Callable, List
 
 from bilby_pipe.job_creation import generate_dag
 from bilby_pipe.main import MainInput, write_complete_config_file
@@ -20,6 +20,7 @@ def main(
     channel: str,
     ifos: List[str],
     waveform: str,
+    prior: Callable,
     accounting_group: str,
     accounting_group_user: str,
     sample_rate: float,
@@ -29,6 +30,7 @@ def main(
     configure_logging(logdir / "bilby.log", verbose)
     bilby_outdir = writedir / "bilby" / "rundir"
     bilby_outdir.mkdir(exist_ok=True, parents=True)
+    prior = prior()
 
     # create a default bilby ini file. AFAIK this is required by bilby.
     # we will overwrite the defaults by passing arguments
@@ -54,6 +56,13 @@ def main(
     channel_dict = {ifo: channel for ifo in ifos}
     psd_dict = {ifo: str(datadir / "psds" / f"{ifo}_psd.txt") for ifo in ifos}
 
+    args.plot_data = True
+    args.plot_trace = True
+    args.plot_corner = True
+    args.plot_skymap = True
+    args.enforce_signal_duration = False
+    args.default_prior = "PriorDict"
+    args.prior_dict = str(prior).replace("'", "")
     args.data_dict = str(data_dict).replace("'", "")
     args.psd_dict = str(psd_dict).replace("'", "")
     args.channel_dict = str(channel_dict).replace("'", "")
@@ -65,6 +74,7 @@ def main(
     args.submit = True
     args.sampling_frequency = sample_rate
     args.waveform_generator = "bilby.gw.waveform_generator.WaveformGenerator"
+    args.conversion_function = "noconvert"
 
     # necessary due to weird bilby pipe behavior dealing with relative paths
     os.chdir(writedir / "bilby")

@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
+import h5py
 import numpy as np
 import torch
 from data_generation.utils import (
@@ -84,7 +85,7 @@ def main(
     # instantiate prior, sample, and generate signals
     prior = prior()
     parameters = prior.sample(n_samples)
-
+    parameters["hrss"] = np.zeros(n_samples) + 8e-21
     signals = generate_gw(
         parameters,
         sample_rate,
@@ -107,7 +108,7 @@ def main(
     # phi is relative azimuthal angle between source and earth
     dec = torch.Tensor(parameters["dec"])
     psi = torch.Tensor(parameters["psi"])
-    phi = torch.Tensor(parameters["phi"])
+    phi = torch.Tensor(parameters["ra"]) - np.pi
 
     waveforms = compute_observed_strain(
         dec,
@@ -126,7 +127,9 @@ def main(
     signal_times = np.linspace(
         buffer + waveform_duration // 2, n_samples * spacing, n_samples
     )
-    np.savetxt(datadir / "signal_times.txt", signal_times)
+
+    # subtract 2 seconds to account for bilby's 2 second offset
+    np.savetxt(datadir / "signal_times.txt", signal_times - 2)
     parameters["geocent_time"] = signal_times
 
     waveforms = waveforms.numpy()
@@ -152,3 +155,8 @@ def main(
             format="hdf5",
             overwrite=True,
         )
+
+    # save parameters as hdf5 file
+    with h5py.File(datadir / "bilby_injection_parameters.hdf5", "w") as f:
+        for key, value in parameters.items():
+            f.create_dataset(key, data=value)
