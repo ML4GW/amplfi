@@ -6,6 +6,9 @@ authors = ["ethan.marx <ethan.marx@ligo.org>"]
 license = "MIT"
 include = ["data_generation/", "tests/"]
 
+[tool.pinto]
+conda = {append_base_ld_library_path = true}
+
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 "ml4gw" = {path = "../../../ml4gw/", develop = true}

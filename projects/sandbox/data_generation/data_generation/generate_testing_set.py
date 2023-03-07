@@ -5,11 +5,17 @@ from typing import Callable, Dict, List, Optional
 import h5py
 import numpy as np
 import torch
-from data_generation.utils import download_data, inject_into_background
+from data_generation.utils import (
+    download_data,
+    inject_into_background,
+    noise_from_psd,
+)
+from gwpy.timeseries import TimeSeries
 from mldatafind.segments import query_segments
 from typeo import scriptify
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
+from ml4gw.spectral import normalize_psd
 from mlpe.injection import generate_gw
 from mlpe.logging import configure_logging
 
@@ -33,6 +39,7 @@ def main(
     min_duration: float = 0,
     waveform_arguments: Optional[Dict] = None,
     parameter_conversion: Optional[Callable] = None,
+    gaussian: bool = False,
     force_generation: bool = False,
     verbose: bool = False,
 ):
@@ -47,21 +54,36 @@ def main(
     and injected into kernels sampled non-coincidentally from the background.
 
     Args:
-        ifos: List of interferometers
-        state_flag: Flag used to find times with good data quality.
-        frame_type: Frame type used for discovering data
-        channel: Channel for reading data
-        start: Start time for finding data
-        stop: Stop time for finding data
-        sample_rate: Rate at which timeseries are sampled
-        prior: Callable that instantiates a bilby prior
-        waveform: A callable compatible with bilby waveform generator
-        n_samples: Number of waveforms to sample and inject
-        kernel_length: Length in seconds of kernels produced
-        waveform_duration: length of injected waveforms
-        datadir: Path to store data
-        logdir: Path to store logs
-        min_duration: Minimum duration of segments
+        ifos:
+            List of interferometers
+        state_flag:
+            Flag used to find times with good data quality.
+        frame_type:
+            Frame type used for discovering data
+        channel:
+            Channel for reading data
+        start:
+            Start time for finding data
+        stop:
+            Stop time for finding data
+        sample_rate:
+            Rate at which timeseries are sampled
+        prior:
+            Callable that instantiates a bilby prior
+        waveform:
+            A callable compatible with bilby waveform generator
+        n_samples:
+            Number of waveforms to sample and inject
+        kernel_length:
+            Length in seconds of kernels produced
+        waveform_duration:
+            length of injected waveforms
+        datadir:
+            Path to store data
+        logdir:
+            Path to store logs
+        min_duration:
+            Minimum duration of segments
         waveform_arguments:
             Additional arguments to pass to waveform generator,
             that will ultimately get passed
@@ -72,8 +94,14 @@ def main(
             Parameter conversion to pass the bilby waveform generator.
             Typically used for converting between bilby and lalsimulation
             BBH parameters
-        force_generation: Force generation of data
-        verbose: Log verbosely
+        gaussian:
+            If True, generate gaussian noise from a psd calculated using
+            the requested period of data. This will be used as the background
+            to inject the waveforms into.
+        force_generation:
+            Force generation of data
+        verbose:
+            Log verbosely
 
     Returns signal file containiing injections and parameters
     """
@@ -105,6 +133,18 @@ def main(
     background_dict = download_data(
         ifos, frame_type, channel, sample_rate, segment_start, segment_stop
     )
+
+    if gaussian:
+        logging.info(
+            "Generating gaussian noise from psd for injection background"
+        )
+        df = 1 / waveform_duration
+
+        for ifo in ifos:
+            duration = len(background_dict[ifo]) / sample_rate
+            psd = normalize_psd(background_dict[ifo], df, sample_rate)
+            data = noise_from_psd(psd, df, duration, sample_rate)
+            background_dict[ifo] = TimeSeries(data, dt=1 / sample_rate)
 
     background = np.stack([ts.value for ts in background_dict.values()])
     background = torch.as_tensor(background)
