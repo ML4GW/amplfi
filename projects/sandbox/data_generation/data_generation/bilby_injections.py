@@ -7,14 +7,15 @@ import numpy as np
 import torch
 from data_generation.utils import (
     download_data,
-    gaussian_noise_from_gwpy_timeseries,
     inject_into_background,
+    noise_from_psd,
 )
 from gwpy.timeseries import TimeSeries
 from mldatafind.segments import query_segments
 from typeo import scriptify
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
+from ml4gw.spectral import normalize_psd
 from mlpe.injection import generate_gw
 from mlpe.logging import configure_logging
 
@@ -33,6 +34,7 @@ def main(
     stop: float,
     sample_rate: float,
     waveform_duration: float,
+    bilby_duration: float,
     buffer: float,
     datadir: Path,
     logdir: Path,
@@ -74,18 +76,22 @@ def main(
     background_dict = download_data(
         ifos, frame_type, channel, sample_rate, segment_start, segment_stop
     )
-
+    df = 1 / waveform_duration
     if gaussian:
+        logging.info(
+            "Generating gaussian noise from psd for injection background"
+        )
         df = 1 / waveform_duration
+
         for ifo in ifos:
-            background_dict[ifo] = gaussian_noise_from_gwpy_timeseries(
-                background_dict[ifo], df
-            )
+            duration = len(background_dict[ifo]) / sample_rate
+            psd = normalize_psd(background_dict[ifo], df, sample_rate)
+            data = noise_from_psd(psd, df, duration, sample_rate)
+            background_dict[ifo] = TimeSeries(data, dt=1 / sample_rate)
 
     # instantiate prior, sample, and generate signals
     prior = prior()
     parameters = prior.sample(n_samples)
-    parameters["hrss"] = np.zeros(n_samples) + 8e-21
     signals = generate_gw(
         parameters,
         sample_rate,
@@ -128,8 +134,13 @@ def main(
         buffer + waveform_duration // 2, n_samples * spacing, n_samples
     )
 
-    # subtract 2 seconds to account for bilby's 2 second offset
-    np.savetxt(datadir / "signal_times.txt", signal_times - 2)
+    # bilby requests the start time of the signals
+    # so subtract half the bilby
+    # duration which will enforce that the signal
+    # lies in the center of the kernel
+    np.savetxt(
+        datadir / "start_times.txt", signal_times - (bilby_duration / 2)
+    )
     parameters["geocent_time"] = signal_times
 
     waveforms = waveforms.numpy()
@@ -137,7 +148,6 @@ def main(
         # set start time of data to 0 for simplicity
         data.t0 = 0
         times = data.times.value
-        print(times[0], times[-1])
 
         # inject waveforms into background and specified times
         data = inject_into_background(

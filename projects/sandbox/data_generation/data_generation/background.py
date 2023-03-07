@@ -9,8 +9,6 @@ from gwdatafind import find_urls
 from gwpy.frequencyseries import FrequencySeries
 from gwpy.segments import DataQualityDict
 from gwpy.timeseries import TimeSeries
-from pycbc.noise import noise_from_psd
-from pycbc.types import FrequencySeries
 from typeo import scriptify
 
 from ml4gw.spectral import normalize_psd

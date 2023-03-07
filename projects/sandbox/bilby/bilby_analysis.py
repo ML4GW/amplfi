@@ -21,6 +21,7 @@ def main(
     ifos: List[str],
     waveform: str,
     prior: Callable,
+    bilby_duration: float,
     accounting_group: str,
     sample_rate: float,
     request_cpus: int = 1,
@@ -69,6 +70,7 @@ def main(
 
     args.plot_data = True
     args.plot_trace = True
+    args.duration = bilby_duration
     args.request_cpus = request_cpus
     args.enforce_signal_duration = False
     args.default_prior = "PriorDict"
@@ -80,7 +82,7 @@ def main(
     args.accounting = accounting_group
     args.detectors = ifos
     args.frequency_domain_source_model = waveform
-    args.gps_file = str(datadir / "bilby" / "signal_times.txt")
+    args.gps_file = str(datadir / "bilby" / "start_times.txt")
     args.outdir = str(bilby_outdir)
     args.submit = True
     args.sampling_frequency = sample_rate
