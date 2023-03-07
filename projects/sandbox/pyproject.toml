@@ -6,7 +6,7 @@ steps = [
     "data_generation:generate-bilby-injections",
     "bilby:analyze-with-bilby",
     "train:train:maf",
-    "testing:create-pp-plot:maf"
+    "test:analyze-testing-set:maf"
 ]
 
 [tool.typeo.base]
