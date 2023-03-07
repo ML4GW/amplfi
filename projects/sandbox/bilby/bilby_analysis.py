@@ -22,8 +22,10 @@ def main(
     waveform: str,
     prior: Callable,
     accounting_group: str,
-    accounting_group_user: str,
     sample_rate: float,
+    request_cpus: int = 1,
+    n_live: int = 1000,
+    n_act: int = 5,
     verbose: bool = False,
 ):
 
@@ -55,16 +57,25 @@ def main(
     # channels are named the same as the ifos
     channel_dict = {ifo: channel for ifo in ifos}
     psd_dict = {ifo: str(datadir / "psds" / f"{ifo}_psd.txt") for ifo in ifos}
+    sampler_kwargs = {
+        "sample": "rwalk",
+        "nlive": n_live,
+        "nact": n_act,
+        "naccept": n_act,
+        "check_point_plot": True,
+        "check_point_delta_t": 1800,
+        "print_method": "interval-60",
+    }
 
     args.plot_data = True
     args.plot_trace = True
-    args.plot_corner = True
-    args.plot_skymap = True
+    args.request_cpus = request_cpus
     args.enforce_signal_duration = False
     args.default_prior = "PriorDict"
     args.prior_dict = str(prior).replace("'", "")
     args.data_dict = str(data_dict).replace("'", "")
     args.psd_dict = str(psd_dict).replace("'", "")
+    args.sampler_kwargs = str(sampler_kwargs).replace("'", "")
     args.channel_dict = str(channel_dict).replace("'", "")
     args.accounting = accounting_group
     args.detectors = ifos

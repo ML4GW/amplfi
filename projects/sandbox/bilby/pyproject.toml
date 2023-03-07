@@ -16,6 +16,9 @@ bilby_pipe = "^1.0.8"
 [tool.poetry.scripts]
 analyze-with-bilby = "bilby_analysis:main"
 
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.21.3"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

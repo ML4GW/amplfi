@@ -1,12 +1,12 @@
 [tool.pinto]
 steps = [
-    #"data_generation:generate-background",
-    #"data_generation:generate-waveforms",
-    #"data_generation:generate-pp-plot-injections",
+    "data_generation:generate-background",
+    "data_generation:generate-waveforms",
+    "data_generation:generate-pp-plot-injections",
     "data_generation:generate-bilby-injections",
     "bilby:analyze-with-bilby",
-    #"train:train:maf",
-    #"testing:create-pp-plot:maf"
+    "train:train:maf",
+    "testing:create-pp-plot:maf"
 ]
 
 [tool.typeo.base]
@@ -125,6 +125,9 @@ datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 
 [tool.typeo.scripts.analyze-with-bilby]
+request_cpus = 24
+n_live = 1000
+n_act = 5
 ifos = "${base.ifos}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 datadir = "${base.datadir}"
