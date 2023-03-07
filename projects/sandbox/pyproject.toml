@@ -47,6 +47,7 @@ sample_rate = "${base.sample_rate}"
 minimum_length = 10000
 force_generation = "${base.force_generation}"
 waveform_duration = "${base.waveform_duration}" # used for delta f of psd
+gaussian = true
 
 [tool.typeo.scripts.generate-waveforms]
 datadir = "${base.datadir}"
@@ -106,8 +107,12 @@ kernel_length = "${base.kernel_length}"
 waveform_duration = "${base.waveform_duration}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
+gaussian = false
 
 [tool.typeo.scripts.generate-bilby-injections]
+n_live = 1000
+n_act = 5
+request_cpus = 24
 ifos = "${base.ifos}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
@@ -117,12 +122,13 @@ stop = "${base.test_stop}"
 sample_rate = "${base.sample_rate}"
 prior = "mlpe.injection.priors.sg_uniform"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-n_samples = 2
+n_samples = 10
 waveform_duration = "${base.waveform_duration}"
 spacing = 100
 buffer = 10
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
+gaussian = false
 
 [tool.typeo.scripts.analyze-with-bilby]
 request_cpus = 24
@@ -139,7 +145,7 @@ channel = "${base.channel}"
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
 
-[tool.typeo.scripts.create-pp-plot]
+[tool.typeo.scripts.analyze-test-set]
 ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
