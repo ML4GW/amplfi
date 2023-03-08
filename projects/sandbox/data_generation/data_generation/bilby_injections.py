@@ -42,7 +42,6 @@ def main(
     parameter_conversion: Optional[Callable] = None,
     gaussian: bool = False,
     verbose: bool = False,
-    min_duration: float = 0,
     force_generation: bool = False,
 ):
 
@@ -53,7 +52,10 @@ def main(
     logdir.mkdir(exist_ok=True, parents=True)
 
     signal_files_exist = all(
-        [Path(datadir / f"{ifo}_bilby_injections.h5").exists() for ifo in ifos]
+        [
+            Path(datadir / f"{ifo}_bilby_injections.hdf5").exists()
+            for ifo in ifos
+        ]
     )
 
     if signal_files_exist and not force_generation:
@@ -66,6 +68,24 @@ def main(
     # query the first coincident contiguous segment
     # of required minimum duration and download the data
     segment_names = [f"{ifo}:{state_flag}" for ifo in ifos]
+
+    # generate signal times based on requested spacing
+    # and save as text file for bilby
+    spacing += waveform_duration // 2
+    signal_times = np.linspace(
+        buffer + waveform_duration // 2, n_samples * spacing, n_samples
+    )
+    # bilby requests the start time of the signals
+    # so subtract half the bilby
+    # duration which will enforce that the signal
+    # lies in the center of the kernel
+    np.savetxt(
+        datadir / "start_times.txt", signal_times - (bilby_duration / 2)
+    )
+    min_duration = (
+        signal_times[-1] - signal_times[0] + waveform_duration // 2 + buffer
+    )
+
     segment_start, segment_stop = query_segments(
         segment_names,
         start,
@@ -127,20 +147,6 @@ def main(
         cross=cross,
     )
 
-    # generate signal times based on requested spacing
-    # and save as text file for bilby
-    spacing += waveform_duration // 2
-    signal_times = np.linspace(
-        buffer + waveform_duration // 2, n_samples * spacing, n_samples
-    )
-
-    # bilby requests the start time of the signals
-    # so subtract half the bilby
-    # duration which will enforce that the signal
-    # lies in the center of the kernel
-    np.savetxt(
-        datadir / "start_times.txt", signal_times - (bilby_duration / 2)
-    )
     parameters["geocent_time"] = signal_times
 
     waveforms = waveforms.numpy()
@@ -150,6 +156,7 @@ def main(
         times = data.times.value
 
         # inject waveforms into background and specified times
+        print(signal_times, times[-1])
         data = inject_into_background(
             (times, data),
             waveforms[:, i, :],

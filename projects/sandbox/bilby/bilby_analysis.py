@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 from pathlib import Path
@@ -28,10 +29,15 @@ def main(
     n_live: int = 1000,
     n_act: int = 5,
     verbose: bool = False,
+    force_generation: bool = False,
 ):
 
     configure_logging(logdir / "bilby.log", verbose)
     bilby_outdir = writedir / "bilby" / "rundir"
+    if bilby_outdir.exists() and not force_generation:
+        logging.info("Bilby output directory already exists. Skipping.")
+        return
+
     bilby_outdir.mkdir(exist_ok=True, parents=True)
     prior = prior()
 
@@ -68,8 +74,10 @@ def main(
         "print_method": "interval-60",
     }
 
+    args.overwrite_outdir = True
     args.plot_data = True
     args.plot_trace = True
+    args.plot_corner = False  # getting errors with this
     args.duration = bilby_duration
     args.request_cpus = request_cpus
     args.enforce_signal_duration = False

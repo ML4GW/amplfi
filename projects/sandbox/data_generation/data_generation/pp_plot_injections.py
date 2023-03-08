@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from data_generation.utils import (
     download_data,
-    inject_into_background,
+    inject_into_random_background,
     noise_from_psd,
 )
 from gwpy.timeseries import TimeSeries
@@ -178,7 +178,7 @@ def main(
     # phi is relative azimuthal angle between source and earth
     dec = torch.Tensor(parameters["dec"])
     psi = torch.Tensor(parameters["psi"])
-    phi = torch.Tensor(parameters["phi"])
+    phi = torch.Tensor(parameters["ra"]) - np.pi
 
     waveforms = compute_observed_strain(
         dec,

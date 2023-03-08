@@ -1,12 +1,12 @@
 [tool.pinto]
 steps = [
-    "data_generation:generate-background",
-    "data_generation:generate-waveforms",
-    "data_generation:generate-pp-plot-injections",
-    "data_generation:generate-bilby-injections",
-    "bilby:analyze-with-bilby",
-    "train:train:maf",
-    "test:analyze-testing-set:maf"
+    #"data_generation:generate-background",
+    #"data_generation:generate-waveforms",
+    #"data_generation:generate-pp-plot-injections",
+    #"data_generation:generate-bilby-injections",
+    #"bilby:analyze-with-bilby",
+    #"train:train:maf",
+    "sample:analyze-testing-set:maf"
 ]
 
 [tool.typeo.base]
@@ -32,6 +32,7 @@ fduration = 1
 waveform_duration = 8
 coupling = {num_flow_steps = 10}
 maf = {num_transforms = 10}
+bilby_duration = 4
 
 
 [tool.typeo.scripts.generate-background]
@@ -52,7 +53,7 @@ gaussian = true
 [tool.typeo.scripts.generate-waveforms]
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
-n_samples = 50000
+n_samples = 10000
 sample_rate = "${base.sample_rate}" 
 force_generation = "${base.force_generation}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
@@ -110,9 +111,7 @@ logdir = "${base.logdir}"
 gaussian = false
 
 [tool.typeo.scripts.generate-bilby-injections]
-n_live = 1000
-n_act = 5
-request_cpus = 24
+bilby_duration = "${base.bilby_duration}"
 ifos = "${base.ifos}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
@@ -122,7 +121,7 @@ stop = "${base.test_stop}"
 sample_rate = "${base.sample_rate}"
 prior = "mlpe.injection.priors.sg_uniform"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-n_samples = 10
+n_samples = 8
 waveform_duration = "${base.waveform_duration}"
 spacing = 100
 buffer = 10
@@ -131,26 +130,26 @@ logdir = "${base.logdir}"
 gaussian = false
 
 [tool.typeo.scripts.analyze-with-bilby]
-request_cpus = 24
+request_cpus = 12
 n_live = 1000
 n_act = 5
 ifos = "${base.ifos}"
+bilby_duration = "${base.bilby_duration}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 datadir = "${base.datadir}"
 writedir = "${base.basedir}"
 logdir = "${base.logdir}"
-accounting_group_user = "${LIGO_USERNAME}"
 accounting_group = "${LIGO_ACCOUNTING_GROUP}"
 channel = "${base.channel}"
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
 
-[tool.typeo.scripts.analyze-test-set]
+[tool.typeo.scripts.analyze-testing-set]
 ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
-model-state-path = "${base.basedir}/training/weights.pt"
+model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
 preprocessor_dir = "${base.basedir}/training/preprocessor"
 writedir = "${base.basedir}"
@@ -159,6 +158,7 @@ logdir = "${base.logdir}"
 num_samples_draw = 10000
 num_plot_corner = 30
 device = "cuda"
+channel = "${base.channel}"
 
 # arch parameters
 commands.coupling = "${base.coupling}"

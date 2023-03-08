@@ -22,7 +22,7 @@ secondary = true
 default = false
 
 [tool.poetry.scripts]
-analyze-testing-set = "test:main"
+analyze-testing-set = "sample:main"
 
 [build-system]
 requires = ["poetry-core"]
