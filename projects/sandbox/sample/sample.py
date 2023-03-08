@@ -93,9 +93,9 @@ def main(
     datadir: Path,
     logdir: Path,
     writedir: Path,
+    basedir: Path,
     device: str,
     num_samples_draw: int,
-    num_plot_corner: int,
     verbose: bool = False,
 ):
     device = device or "cpu"
@@ -127,7 +127,7 @@ def main(
 
     preprocessor = _load_preprocessor_state(preprocessor, preprocessor_dir)
     preprocessor = preprocessor.to(device)
-
+    """
     logging.info("Loading test data and initializing dataloader")
     test_data, test_params = _load_test_data(
         datadir / "pp_plot_injections.h5", inference_params
@@ -188,7 +188,6 @@ def main(
             total_sampling_time, total_sampling_time / num_samples_draw
         )
     )
-
     logging.info("Making pp-plot")
     pp_plot_dir = writedir / "pp_plots"
     pp_plot_scaled_filename = pp_plot_dir / "pp-plot-test-set-scaled.png"
@@ -208,7 +207,7 @@ def main(
         keys=inference_params,
     )
     logging.info("PP Plots saved in %s" % (pp_plot_dir))
-
+    """
     # TODO: this project is getting long. Should we split it up?
     # What's the best way to do this?
 
@@ -218,7 +217,7 @@ def main(
     # load in the bilby injection parameters
     params = []
     with h5py.File(datadir / "bilby" / "bilby_injection_parameters.hdf5") as f:
-        times = f["geocent_times"][:]
+        times = np.array(f["geocent_time"][:])
         for param in inference_params:
             values = f[param][:]
             # take logarithm since hrss
@@ -236,14 +235,17 @@ def main(
         with h5py.File(
             datadir / "bilby" / f"{ifo}_bilby_injections.hdf5"
         ) as f:
-            timeseries.append(f["{ifo}:{channel}"][:])
+            timeseries.append(f[f"{ifo}:{channel}"][:])
+
     timeseries = np.stack(timeseries)
 
-    start_indices = int((times - kernel_length) * sample_rate)
+    start_indices = ((times - (kernel_length // 2)) * sample_rate).astype(
+        "int64"
+    )
     end_indices = start_indices + int(kernel_length * sample_rate)
 
     for start, stop in zip(start_indices, end_indices):
-        injections.append(timeseries[start:stop])
+        injections.append(timeseries[:, start:stop])
 
     injections = np.stack(injections)
 
@@ -258,7 +260,18 @@ def main(
         pin_memory_device=device,
     )
 
-    for signal, param in test_dataloader:
+    # These results should be saved in the datadir
+    bilby_results_dir = basedir / "bilby" / "rundir" / "final_result"
+    bilby_results_paths = sorted(list(bilby_results_dir.iterdir()))
+    bilby_results = []
+    descaled_results, results = [], []
+    for (signal, param), bilby_result in zip(
+        test_dataloader, bilby_results_paths
+    ):
+        # load in the corresponding bilby result
+        bilby_result = bilby.result.Result.from_hdf5(bilby_result)
+        bilby_results.append(bilby_result)
+        # sample our model on the data
         signal = signal.to(device)
         param = param.to(device)
         strain, scaled_param = preprocessor(signal, param)
@@ -288,6 +301,7 @@ def main(
         )
         results.append(res)
 
-    # generate corner plots for sanity checking
+    # generate corner plots
     generate_corner_plots(results, writedir / "corner" / "scaled")
     generate_corner_plots(descaled_results, writedir / "corner" / "descaled")
+    generate_corner_plots(bilby_results, writedir / "corner" / "bilby")
