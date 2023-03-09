@@ -73,15 +73,15 @@ def _plot_mollview(
     # FIXME: healpy convention
     # convert ra between 0 to 360 in degs
     ra_samples += np.pi
-    ra_samples /= (2 * np.pi)
+    ra_samples /= 2 * np.pi
     ra_samples *= 360
     ra_samples_mask = (ra_samples > 0) * (ra_samples < 360)
     if ra_inj:
         ra_inj += np.pi
-        ra_inj /= (2 * np.pi)
+        ra_inj /= 2 * np.pi
         ra_inj *= 360
     # convert dec between 0 and pi in rads
-    dec_samples += (np.pi/2)
+    dec_samples += np.pi / 2
     dec_samples_mask = (dec_samples > 0) * (dec_samples < np.pi)
 
     net_mask = ra_samples_mask * dec_samples_mask
@@ -90,12 +90,13 @@ def _plot_mollview(
     dec_samples = dec_samples[net_mask].values
 
     from astropy.table import Table
+
     # dump ra and dec value for later diagnostic with ligo.skymap
-    t = Table([ra_samples, dec_samples - np.pi/2], names=('ra', 'dec'))
-    t.write(outdir / f'{idx}_ra_dec.dat', format='ascii')
+    t = Table([ra_samples, dec_samples - np.pi / 2], names=("ra", "dec"))
+    t.write(outdir / f"{idx}_ra_dec.dat", format="ascii")
 
     if dec_inj:
-        dec_inj += (np.pi/2)
+        dec_inj += np.pi / 2
 
     NSIDE = 32  # FIXME: ad-hoc choice
     NPIX = hp.nside2npix(NSIDE)
@@ -238,15 +239,19 @@ def main(
                 levels=(0.5, 0.9),
             )
             # dump descaled result as hdf5 file
-            descaled_res.save_posterior_samples(outdir / f"{num_plotted}_result.dat")
+            descaled_res.save_posterior_samples(
+                outdir / f"{num_plotted}_result.dat"
+            )
             # plot skymap for sky coordinates
             _plot_mollview(
                 descaled_res.posterior["phi"],
                 descaled_res.posterior["dec"],
                 num_plotted,
                 outdir,
-                param.cpu().numpy()[...,6],  # FIXME: ordering is that of inference params
-                param.cpu().numpy()[...,4]
+                param.cpu().numpy()[
+                    ..., 6
+                ],  # FIXME: ordering is that of inference params
+                param.cpu().numpy()[..., 4],
             )
             num_plotted += 1
 
