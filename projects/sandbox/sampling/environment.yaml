@@ -1,0 +1,6 @@
+name: mlpe-base
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - healpy

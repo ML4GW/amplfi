@@ -6,6 +6,8 @@ from typing import List
 
 import bilby
 import h5py
+import healpy as hp
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
@@ -63,6 +65,56 @@ def _cast_as_bilby_result(samples, truth, inference_params, priors):
         search_parameter_keys=inference_params,
         priors=priors,
     )
+
+
+def _plot_mollview(
+    ra_samples, dec_samples, idx, outdir, ra_inj=None, dec_inj=None
+):
+    # FIXME: healpy convention
+    # convert ra between 0 to 360 in degs
+    ra_samples += np.pi
+    ra_samples /= (2 * np.pi)
+    ra_samples *= 360
+    ra_samples_mask = (ra_samples > 0) * (ra_samples < 360)
+    if ra_inj:
+        ra_inj += np.pi
+        ra_inj /= (2 * np.pi)
+        ra_inj *= 360
+    # convert dec between 0 and pi in rads
+    dec_samples += (np.pi/2)
+    dec_samples_mask = (dec_samples > 0) * (dec_samples < np.pi)
+
+    net_mask = ra_samples_mask * dec_samples_mask
+    # keep physical points, convert to numpy array
+    ra_samples = ra_samples[net_mask].values
+    dec_samples = dec_samples[net_mask].values
+
+    from astropy.table import Table
+    # dump ra and dec value for later diagnostic with ligo.skymap
+    t = Table([ra_samples, dec_samples - np.pi/2], names=('ra', 'dec'))
+    t.write(outdir / f'{idx}_ra_dec.dat', format='ascii')
+
+    if dec_inj:
+        dec_inj += (np.pi/2)
+
+    NSIDE = 32  # FIXME: ad-hoc choice
+    NPIX = hp.nside2npix(NSIDE)
+    ipix = hp.ang2pix(NSIDE, dec_samples, ra_samples)
+    ipix = np.sort(ipix)
+    uniq, counts = np.unique(ipix, return_counts=True)
+    # empty map
+    m = np.zeros(NPIX)
+    # fill in non-zero pix with counts
+    m[np.in1d(range(NPIX), uniq)] = counts
+    # plot molleweide
+    plt.close()
+    hp.mollview(m, title=f"Skymap {idx}")
+    if ra_inj and dec_inj:
+        hp.visufunc.projscatter(
+            dec_inj, ra_inj, marker="x", color="red", s=150
+        )
+    fname = outdir / f"{idx}_mollweide_skymap.png"
+    plt.savefig(fname)
 
 
 @architecturize
@@ -184,6 +236,17 @@ def main(
                 save=True,
                 filename=descaled_corner_plot_filename,
                 levels=(0.5, 0.9),
+            )
+            # dump descaled result as hdf5 file
+            descaled_res.save_posterior_samples(outdir / f"{num_plotted}_result.dat")
+            # plot skymap for sky coordinates
+            _plot_mollview(
+                descaled_res.posterior["phi"],
+                descaled_res.posterior["dec"],
+                num_plotted,
+                outdir,
+                param.cpu().numpy()[...,6],  # FIXME: ordering is that of inference params
+                param.cpu().numpy()[...,4]
             )
             num_plotted += 1
 
