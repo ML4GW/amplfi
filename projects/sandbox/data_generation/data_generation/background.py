@@ -189,10 +189,11 @@ def main(
             )
 
         else:
+            # calculate psd so we can save it for use during bilby analysis
             frequencies = np.arange(0, sample_rate / 2 + df, df)
             psd = normalize_psd(data, df, sample_rate)
 
-        # save so that we can use it later during bilby analysis
+        # save psd
         np.savetxt(
             psd_dir / f"{ifo}_psd.txt", np.column_stack([frequencies, psd])
         )
