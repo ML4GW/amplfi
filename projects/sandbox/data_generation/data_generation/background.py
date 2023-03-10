@@ -34,13 +34,46 @@ def main(
     force_generation: bool = False,
     verbose: bool = False,
 ):
-    """Generates background data for training BBHnet
+    """Generates background data onto which injections will
+    be made to train the PE model. If `gaussian` is True,
+    the requested background segment will be used to calcualte
+    a psd from which gaussian noise will be generated. If `psd_file`
+    is passed, the psd will be used to generate the gaussian noise.
+
 
     Args:
-        start: start gpstime
-        stop: stop gpstime
-        ifos: which ifos to query data for
-        outdir: where to store data
+        start:
+            start gpstime
+        stop:
+            stop gpstime
+        ifos:
+            which ifos to query data for
+        sample_rate:
+            Frequency at which to sample the data
+        channel:
+            channel to query data from
+        frame_type:
+            frame type to query data from
+        state_flag:
+            state flag that defines good data quality
+        minimum_length:
+            minimum length of continuous, coincident segment to query
+        waveform_duration:
+            Used to calculate df for psd
+        datadir:
+            where to store the background data
+        logdir:
+            where to store the log file
+        gaussian:
+            whether to generate gaussian noise from the psd
+        psd_file:
+            path to psd file to use for generating gaussian noise
+        is_psd:
+            whether the psd file is a psd or an asd
+        force_generation:
+            Force generation of data
+        verbose:
+            log verbosely
     """
 
     if psd_file is not None and not gaussian:
@@ -49,20 +82,17 @@ def main(
             " requested PSD when gaussian is False"
         )
 
-    # make logdir dir
+    # make log and data dirs and configure logging settings
     logdir.mkdir(exist_ok=True, parents=True)
     datadir.mkdir(exist_ok=True, parents=True)
+    configure_logging(logdir / "generate_background.log", verbose)
 
-    # make psd dir and check if psds already exist
+    # make psd dir and check if all necessary data files
+    # already exist in the data directory
     psd_dir = datadir / "psds"
     psd_dir.mkdir(exist_ok=True, parents=True)
     psd_files = [Path(f"{psd_dir}/{ifo}_psd.txt") for ifo in ifos]
     psd_files_exist = all([psd_file.exists() for psd_file in psd_files])
-
-    # configure logging output file
-    configure_logging(logdir / "generate_background.log", verbose)
-
-    # check if all data paths already exist
     background_file = datadir / "background.h5"
 
     if background_file.exists() and psd_files_exist and not force_generation:
@@ -73,7 +103,7 @@ def main(
         return background_file
 
     # query segments for each ifo
-    # I think a certificate is needed for this
+    # TODO: use mldatafind
     segments = DataQualityDict.query_dqsegdb(
         [f"{ifo}:{state_flag}" for ifo in ifos],
         start,
@@ -109,7 +139,7 @@ def main(
     background_data = {}
     for ifo in ifos:
 
-        # find frame files
+        # find frame files, read in data with gwpy, and resample
         files = find_urls(
             site=ifo.strip("1"),
             frametype=f"{ifo}_{frame_type}",
@@ -123,8 +153,6 @@ def main(
             start=segment[0],
             end=segment[1],
         )
-
-        # resample
         data = data.resample(sample_rate)
 
         if np.isnan(data).any():
@@ -132,22 +160,15 @@ def main(
                 f"The background for ifo {ifo} contains NaN values"
             )
 
-        # calculate psd and save to later use in bilby analysis
+        # used for psd calculation
+        # TODO: is this the df we should use?
         df = 1 / waveform_duration
-        frequencies = np.arange(0, sample_rate / 2 + df, df)
-        psd = normalize_psd(data, df, sample_rate)
-        np.savetxt(
-            psd_dir / f"{ifo}_psd.txt", np.column_stack([frequencies, psd])
-        )
 
         if gaussian:
             logging.info(f"Generating gaussian noise from psd for ifo {ifo}")
-
-            # TODO: what should determine this?
-            df = 1 / 8.0
             if psd_file is not None:
                 # if user passed a psd file, load it into a FrequencySeries
-                # that ml4gw.spectral.normalize_psd can handle
+                # that normalize_psd can handle
                 frequencies, psd = np.loadtxt(psd_file, unpack=True)
                 if not is_psd:
                     psd = psd**2
@@ -166,6 +187,15 @@ def main(
             data = noise_from_psd(
                 psd, df, len(data) / sample_rate, sample_rate
             )
+
+        else:
+            frequencies = np.arange(0, sample_rate / 2 + df, df)
+            psd = normalize_psd(data, df, sample_rate)
+
+        # save so that we can use it later during bilby analysis
+        np.savetxt(
+            psd_dir / f"{ifo}_psd.txt", np.column_stack([frequencies, psd])
+        )
 
         background_data[ifo] = data
 
