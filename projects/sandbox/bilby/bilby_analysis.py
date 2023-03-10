@@ -57,8 +57,7 @@ def main(
 
     # construct sys.argv that bilby pipe parser will parse
     data_dict = {
-        ifo: str(datadir / "bilby" / f"{ifo}_bilby_injections.hdf5")
-        for ifo in ifos
+        ifo: str(datadir / "bilby" / "bilby_timeseries.hdf5") for ifo in ifos
     }
 
     # channels are named the same as the ifos
