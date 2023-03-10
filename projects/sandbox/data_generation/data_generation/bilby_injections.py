@@ -10,7 +10,7 @@ from data_generation.utils import (
     inject_into_background,
     noise_from_psd,
 )
-from gwpy.timeseries import TimeSeries
+from gwpy.timeseries import TimeSeries, TimeSeriesDict
 from mldatafind.segments import query_segments
 from typeo import scriptify
 
@@ -101,8 +101,6 @@ def main(
         logging.info(
             "Generating gaussian noise from psd for injection background"
         )
-        df = 1 / waveform_duration
-
         for ifo in ifos:
             duration = len(background_dict[ifo]) / sample_rate
             psd = normalize_psd(background_dict[ifo], df, sample_rate)
@@ -150,13 +148,13 @@ def main(
     parameters["geocent_time"] = signal_times
 
     waveforms = waveforms.numpy()
+    data_dict = TimeSeriesDict()
     for i, (ifo, data) in enumerate(background_dict.items()):
         # set start time of data to 0 for simplicity
         data.t0 = 0
         times = data.times.value
 
         # inject waveforms into background and specified times
-        print(signal_times, times[-1])
         data = inject_into_background(
             (times, data),
             waveforms[:, i, :],
@@ -164,15 +162,15 @@ def main(
         )
 
         # package into gwpy timeseries and save as hdf5 files
-        data = TimeSeries(
+        data_dict[ifo] = TimeSeries(
             data, dt=1 / sample_rate, channel=f"{ifo}:{channel}", t0=0
         )
-        data.write(
-            datadir / f"{ifo}_bilby_injections.hdf5",
-            format="hdf5",
-            overwrite=True,
-        )
 
+    data_dict.write(
+        datadir / "bilby_timeseries.hdf5",
+        format="hdf5",
+        overwrite=True,
+    )
     # save parameters as hdf5 file
     with h5py.File(datadir / "bilby_injection_parameters.hdf5", "w") as f:
         for key, value in parameters.items():

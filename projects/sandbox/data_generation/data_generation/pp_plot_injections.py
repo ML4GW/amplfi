@@ -139,7 +139,6 @@ def main(
         logging.info(
             "Generating gaussian noise from psd for injection background"
         )
-        df = 1 / waveform_duration
 
         for ifo in ifos:
             duration = len(background_dict[ifo]) / sample_rate
