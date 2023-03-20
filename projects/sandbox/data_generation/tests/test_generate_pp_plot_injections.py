@@ -4,7 +4,7 @@ import h5py
 import numpy as np
 import pytest
 import torch
-from data_generation.generate_testing_set import main
+from data_generation.pp_plot_injections import main
 from data_generation.utils import inject_into_background
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
 
