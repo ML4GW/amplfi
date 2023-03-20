@@ -31,6 +31,9 @@ def main(
     verbose: bool = False,
     force_generation: bool = False,
 ):
+    """
+    Launch a bilby_pipe run on a set of injections
+    """
 
     configure_logging(logdir / "bilby.log", verbose)
     bilby_outdir = writedir / "bilby" / "rundir"
