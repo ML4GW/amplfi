@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Tuple
 
 import gwdatafind
 import lal
@@ -93,7 +93,7 @@ def download_data(
     return data.resample(sample_rate)
 
 
-def inject_into_background(
+def inject_into_random_background(
     background: np.ndarray,
     waveforms: np.ndarray,
     kernel_size: int,
@@ -134,3 +134,54 @@ def inject_into_background(
     X += waveforms
 
     return X
+
+
+def inject_into_background(
+    background: Tuple[np.ndarray, np.ndarray],
+    waveforms: np.ndarray,
+    signal_times: np.ndarray,
+) -> np.ndarray:
+
+    """
+    Inject a set of signals into background data at specific times
+    Args:
+        background:
+            A tuple (t, data) of np.ndarray arrays.
+            The first tuple is an array of times.
+            The second tuple is the background strain values
+            sampled at those times.
+        waveforms:
+            An np.ndarary of shape (n_waveforms, waveform_size)
+            that contains the waveforms to inject
+        signal_times: np.ndarray,:
+            An array of times where signals will be injected. Corresponds to
+            first sample of waveforms.
+    Returns
+        A dictionary where the key is an interferometer and the value
+        is a timeseries with the signals injected
+    """
+
+    times, data = background[0].copy(), background[1].copy()
+    if len(times) != len(data):
+        raise ValueError(
+            "The times and background arrays must be the same length"
+        )
+
+    sample_rate = 1 / (times[1] - times[0])
+    # create matrix of indices of waveform_size for each waveform
+    num_waveforms, waveform_size = waveforms.shape
+    idx = np.arange(waveform_size)[None] - int(waveform_size // 2)
+    idx = np.repeat(idx, len(waveforms), axis=0)
+
+    # offset the indices of each waveform corresponding to their time offset
+    time_diffs = signal_times - times[0]
+    idx_diffs = (time_diffs * sample_rate).astype("int64")
+    idx += idx_diffs[:, None]
+
+    # flatten these indices and the signals out to 1D
+    # and then add them in-place all at once
+    idx = idx.reshape(-1)
+    waveforms = waveforms.reshape(-1)
+    data[idx] += waveforms
+
+    return data
