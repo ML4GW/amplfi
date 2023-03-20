@@ -2,9 +2,11 @@
 steps = [
     "data_generation:generate-background",
     "data_generation:generate-waveforms",
-    "data_generation:generate-testing",
+    "data_generation:generate-pp-plot-injections",
+    "data_generation:generate-bilby-injections",
+    "sample_with_bilby:sample-with-bilby",
     "train:train:maf",
-    "sampling:sample_testing_set:maf"
+    "sample_with_flow:sample-with-flow:maf"
 ]
 
 [tool.typeo.base]
@@ -13,13 +15,14 @@ datadir = "${DATA_DIR}"
 logdir = "${BASE_DIR}/log"
 sample_rate = 2048
 ifos = ['H1', 'L1']
-inference_params = ["frequency", "quality", "hrss", "phase", "dec", "psi", "phi"]
+inference_params = ["frequency", "quality", "hrss", "phase", "dec", "psi", "ra"]
 trigger_distance = 0.0
 start = 1262607622
 stop = 1262620622
-test_stop = 1262751694
+test_stop = 1262751694 
 channel = "DCS-CALIB_STRAIN_CLEAN_C01"
 frame_type = "HOFT_C01"
+prior = "mlpe.injection.priors.sg_uniform"
 state_flag = "DCS-ANALYSIS_READY_C01:1"
 repository_directory = "${BASE_DIR}/model_repo/" 
 force_generation = false
@@ -29,6 +32,7 @@ fduration = 1
 waveform_duration = 8
 coupling = {num_flow_steps = 10}
 maf = {num_transforms = 10}
+bilby_duration = 4
 
 
 [tool.typeo.scripts.generate-background]
@@ -43,16 +47,18 @@ ifos = "${base.ifos}"
 sample_rate = "${base.sample_rate}" 
 minimum_length = 10000
 force_generation = "${base.force_generation}"
+waveform_duration = "${base.waveform_duration}" # used for delta f of psd
+gaussian = true
 
 [tool.typeo.scripts.generate-waveforms]
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
-n_samples = 50000
+n_samples = 10000
 sample_rate = "${base.sample_rate}" 
 force_generation = "${base.force_generation}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 waveform_duration = "${base.waveform_duration}"
-prior = "mlpe.injection.priors.sg_uniform"
+prior = "${base.prior}"
 
 [tool.typeo.scripts.train]
 waveform_dataset = "${base.datadir}/signals.h5"
@@ -87,7 +93,7 @@ valid_stride = 0.0625
 commands.maf = "${base.maf}"
 
 
-[tool.typeo.scripts.generate-testing]
+[tool.typeo.scripts.generate-pp-plot-injections]
 ifos = "${base.ifos}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
@@ -95,27 +101,64 @@ channel = "${base.channel}"
 start = "${base.stop}"
 stop = "${base.test_stop}" 
 sample_rate = "${base.sample_rate}"
-prior = "mlpe.injection.priors.sg_uniform"
+prior = "${base.prior}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 n_samples = 1000
 kernel_length = "${base.kernel_length}"
 waveform_duration = "${base.waveform_duration}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
+gaussian = false
 
-[tool.typeo.scripts.sample_testing_set]
+[tool.typeo.scripts.generate-bilby-injections]
+bilby_duration = "${base.bilby_duration}"
+ifos = "${base.ifos}"
+state_flag = "${base.state_flag}"
+frame_type = "${base.frame_type}"
+channel = "${base.channel}"
+start = "${base.stop}"
+stop = "${base.test_stop}"
+sample_rate = "${base.sample_rate}"
+prior = "mlpe.injection.priors.sg_uniform"
+waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
+n_samples = 8
+waveform_duration = "${base.waveform_duration}"
+spacing = 100
+buffer = 10
+datadir = "${base.datadir}"
+logdir = "${base.logdir}"
+gaussian = false
+
+[tool.typeo.scripts.sample-with-bilby]
+request_cpus = 12
+n_live = 1000
+n_act = 5
+ifos = "${base.ifos}"
+bilby_duration = "${base.bilby_duration}"
+waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
+datadir = "${base.datadir}"
+writedir = "${base.datadir}"
+logdir = "${base.logdir}"
+accounting_group = "${LIGO_ACCOUNTING_GROUP}"
+channel = "${base.channel}"
+sample_rate = "${base.sample_rate}"
+prior = "${base.prior}"
+
+[tool.typeo.scripts.sample-with-flow]
 ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
-model-state-path = "${base.basedir}/training/weights.pt"
+model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
+preprocessor_dir = "${base.basedir}/training/preprocessor"
+writedir = "${base.basedir}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 num_samples_draw = 10000
-num_plot_corner = 30
 device = "cuda"
-outdir = "${base.basedir}/training"
+channel = "${base.channel}"
+basedir = "${base.basedir}"
 
 # arch parameters
 commands.coupling = "${base.coupling}"
