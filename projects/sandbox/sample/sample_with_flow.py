@@ -6,77 +6,19 @@ from typing import List
 import bilby
 import h5py
 import numpy as np
-import pandas as pd
 import torch
+from utils import (
+    cast_samples_as_bilby_result,
+    generate_corner_plots,
+    load_preprocessor_state,
+    load_test_data,
+)
 
 from ml4gw.transforms import ChannelWiseScaler
 from mlpe.architectures import architecturize
 from mlpe.data.transforms import Preprocessor
 from mlpe.injection.priors import sg_uniform
 from mlpe.logging import configure_logging
-
-
-def _load_preprocessor_state(
-    preprocessor: torch.nn.Module, preprocessor_dir: Path
-):
-
-    whitener_path = preprocessor_dir / "whitener.pt"
-    scaler_path = preprocessor_dir / "scaler.pt"
-
-    preprocessor.whitener = torch.load(whitener_path)
-    preprocessor.scaler = torch.load(scaler_path)
-    return preprocessor
-
-
-def _load_test_data(testing_path: Path, inference_params: List[str]):
-    with h5py.File(testing_path, "r") as f:
-        signals = f["injections"][:]
-        params = []
-        for param in inference_params:
-            values = f[param][:]
-            # take logarithm since hrss
-            # spans large magnitude range
-            if param == "hrss":
-                values = np.log10(values)
-            params.append(values)
-
-        params = np.vstack(params).T
-    return signals, params
-
-
-def _cast_as_bilby_result(samples, truth, inference_params, priors):
-    """Cast samples as bilby Result object"""
-    # samples shape (1, num_samples, num_params)
-    # inference_params shape (1, num_params)
-    samples = samples[0]
-    truth = truth[0]
-    injections = {k: float(v) for k, v in zip(inference_params, truth)}
-
-    posterior = dict()
-    for idx, k in enumerate(inference_params):
-        posterior[k] = samples.T[idx].flatten()
-    posterior = pd.DataFrame(posterior)
-    return bilby.result.Result(
-        label="test_data",
-        injection_parameters=injections,
-        posterior=posterior,
-        search_parameter_keys=inference_params,
-        priors=priors,
-    )
-
-
-def generate_corner_plots(
-    results: List[bilby.core.result.Result], writedir: Path
-):
-
-    writedir.mkdir(exist_ok=True, parents=True)
-    for i, result in enumerate(results):
-        filename = writedir / f"corner_{i}.png"
-        result.plot_corner(
-            save=True,
-            filename=filename,
-            levels=(0.5, 0.9),
-        )
 
 
 @architecturize
@@ -125,11 +67,11 @@ def main(
         scaler=standard_scaler,
     )
 
-    preprocessor = _load_preprocessor_state(preprocessor, preprocessor_dir)
+    preprocessor = load_preprocessor_state(preprocessor, preprocessor_dir)
     preprocessor = preprocessor.to(device)
-    """
+
     logging.info("Loading test data and initializing dataloader")
-    test_data, test_params = _load_test_data(
+    test_data, test_params = load_test_data(
         datadir / "pp_plot_injections.h5", inference_params
     )
     test_data = torch.from_numpy(test_data).to(torch.float32)
@@ -164,17 +106,17 @@ def main(
             descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
         _time = time() - _time
 
-        descaled_res = _cast_as_bilby_result(
-            descaled_samples.cpu().numpy(),
-            param.cpu().numpy(),
+        descaled_res = cast_samples_as_bilby_result(
+            descaled_samples.cpu().numpy()[0],
+            param.cpu().numpy()[0],
             inference_params,
             priors,
         )
         descaled_results.append(descaled_res)
 
-        res = _cast_as_bilby_result(
-            samples.cpu().numpy(),
-            scaled_param.cpu().numpy(),
+        res = cast_samples_as_bilby_result(
+            samples.cpu().numpy()[0],
+            scaled_param.cpu().numpy()[0],
             inference_params,
             priors,
         )
@@ -188,6 +130,7 @@ def main(
             total_sampling_time, total_sampling_time / num_samples_draw
         )
     )
+
     logging.info("Making pp-plot")
     pp_plot_dir = writedir / "pp_plots"
     pp_plot_scaled_filename = pp_plot_dir / "pp-plot-test-set-scaled.png"
@@ -207,7 +150,7 @@ def main(
         keys=inference_params,
     )
     logging.info("PP Plots saved in %s" % (pp_plot_dir))
-    """
+
     # TODO: this project is getting long. Should we split it up?
     # What's the best way to do this?
 
@@ -285,17 +228,17 @@ def main(
             descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
         _time = time() - _time
 
-        descaled_res = _cast_as_bilby_result(
-            descaled_samples.cpu().numpy(),
-            param.cpu().numpy(),
+        descaled_res = cast_samples_as_bilby_result(
+            descaled_samples.cpu().numpy()[0],
+            param.cpu().numpy()[0],
             inference_params,
             priors,
         )
         descaled_results.append(descaled_res)
 
-        res = _cast_as_bilby_result(
-            samples.cpu().numpy(),
-            scaled_param.cpu().numpy(),
+        res = cast_samples_as_bilby_result(
+            samples.cpu().numpy()[0],
+            scaled_param.cpu().numpy()[0],
             inference_params,
             priors,
         )

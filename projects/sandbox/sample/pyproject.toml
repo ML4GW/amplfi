@@ -7,13 +7,17 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
+typeo = {git = "https://github.com/ML4GW/typeo.git"}
 torch = {version = "^1.12", source = "torch"}
+
 "mlpe.data" = {path = "../../../libs/data", develop  = true}
 "mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
-
 "ml4gw" = {path = "../../../ml4gw", develop = true}
+
+bilby = "^2.0.0"
+bilby_pipe = "^1.0.8"
 
 [[tool.poetry.source]]
 name = "torch"
@@ -22,7 +26,8 @@ secondary = true
 default = false
 
 [tool.poetry.scripts]
-analyze-testing-set = "sample:main"
+sample-testing-with-flow = "sample_with_flow:main"
+sample-testing-with-bilby = "sample_with_bilby:main"
 
 [build-system]
 requires = ["poetry-core"]
