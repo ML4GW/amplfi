@@ -3,9 +3,7 @@ from unittest.mock import patch
 import h5py
 import numpy as np
 import pytest
-import torch
 from data_generation.pp_plot_injections import main
-from data_generation.utils import inject_into_background
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
 
 from mlpe.injection.priors import sg_uniform
@@ -32,39 +30,7 @@ def n_samples(request):
     return request.param
 
 
-def test_inject_into_background(ifos, sample_rate, kernel_length):
-
-    # dummy 1000 seconds of background
-    background = torch.zeros((len(ifos), sample_rate * 1000))
-
-    n_waveforms = 100
-    waveforms = []
-    for i in range(len(ifos)):
-
-        waveform = [
-            np.zeros(4 * kernel_length * sample_rate) + j * (-1) ** i
-            for j in range(n_waveforms)
-        ]
-        waveforms.append(waveform)
-
-    waveforms = np.stack(waveforms)
-
-    waveforms = waveforms.transpose(1, 0, 2)
-
-    waveforms = torch.as_tensor(waveforms)
-
-    kernel_size = int(sample_rate * kernel_length)
-
-    injections = inject_into_background(
-        background,
-        waveforms,
-        kernel_size,
-    )
-
-    assert injections.shape == (n_waveforms, len(ifos), kernel_size)
-
-
-def test_generate_test_set(
+def test_generate_pp_plot_injections(
     ifos, sample_rate, kernel_length, n_samples, datadir, logdir
 ):
 
@@ -76,11 +42,11 @@ def test_generate_test_set(
         background_dict[ifo] = TimeSeries(data=np.zeros(n_background_samples))
 
     query_patch = patch(
-        "data_generation.generate_testing_set.query_segments",
+        "data_generation.pp_plot_injections.query_segments",
         return_value=[[0, 1000]],
     )
     download_patch = patch(
-        "data_generation.generate_testing_set.download_data",
+        "data_generation.pp_plot_injections.download_data",
         return_value=background_dict,
     )
 
