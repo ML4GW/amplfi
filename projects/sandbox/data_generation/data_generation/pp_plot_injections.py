@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from data_generation.utils import (
     download_data,
-    inject_into_background,
+    inject_into_random_background,
     noise_from_psd,
 )
 from gwpy.timeseries import TimeSeries
@@ -111,12 +111,12 @@ def main(
     datadir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
 
-    signal_file = datadir / "test_injections.h5"
+    signal_file = datadir / "pp_plot_injections.h5"
 
     if signal_file.exists() and not force_generation:
         logging.info(
-            "Signal data already exists and forced generation is off. "
-            "Not generating testing signals."
+            "PP plot injection data already exists and "
+            "forced generation is off. Not generating PP plot signals."
         )
         return signal_file
 
@@ -134,11 +134,11 @@ def main(
         ifos, frame_type, channel, sample_rate, segment_start, segment_stop
     )
 
+    df = 1 / waveform_duration
     if gaussian:
         logging.info(
             "Generating gaussian noise from psd for injection background"
         )
-        df = 1 / waveform_duration
 
         for ifo in ifos:
             duration = len(background_dict[ifo]) / sample_rate
@@ -177,7 +177,7 @@ def main(
     # phi is relative azimuthal angle between source and earth
     dec = torch.Tensor(parameters["dec"])
     psi = torch.Tensor(parameters["psi"])
-    phi = torch.Tensor(parameters["phi"])
+    phi = torch.Tensor(parameters["ra"]) - np.pi
 
     waveforms = compute_observed_strain(
         dec,
@@ -191,7 +191,7 @@ def main(
     )
 
     # inject signals into randomly sampled kernels of background
-    injections = inject_into_background(
+    injections = inject_into_random_background(
         background,
         waveforms,
         kernel_size,
