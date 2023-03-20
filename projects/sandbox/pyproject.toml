@@ -1,12 +1,12 @@
 [tool.pinto]
 steps = [
-    #"data_generation:generate-background",
-    #"data_generation:generate-waveforms",
-    #"data_generation:generate-pp-plot-injections",
-    #"data_generation:generate-bilby-injections",
-    #"bilby:analyze-with-bilby",
-    #"train:train:maf",
-    "sample:analyze-testing-set:maf"
+    "data_generation:generate-background",
+    "data_generation:generate-waveforms",
+    "data_generation:generate-pp-plot-injections",
+    "data_generation:generate-bilby-injections",
+    "sample_with_bilby:sample-with-bilby",
+    "train:train:maf",
+    "sample_with_flow:sample-with-flow:maf"
 ]
 
 [tool.typeo.base]
@@ -129,7 +129,7 @@ datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 gaussian = false
 
-[tool.typeo.scripts.analyze-with-bilby]
+[tool.typeo.scripts.sample-with-bilby]
 request_cpus = 12
 n_live = 1000
 n_act = 5
@@ -144,7 +144,7 @@ channel = "${base.channel}"
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
 
-[tool.typeo.scripts.analyze-testing-set]
+[tool.typeo.scripts.sample-with-flow]
 ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
 sample_rate = "${base.sample_rate}"
