@@ -4,7 +4,6 @@ steps = [
     "data_generation:generate-waveforms",
     "data_generation:generate-pp-plot-injections",
     "data_generation:generate-bilby-injections",
-    "sample_with_bilby:sample-with-bilby",
     "train:train:maf",
     "sample_with_flow:sample-with-flow:maf"
 ]
@@ -128,21 +127,6 @@ buffer = 10
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 gaussian = false
-
-[tool.typeo.scripts.sample-with-bilby]
-request_cpus = 12
-n_live = 1000
-n_act = 5
-ifos = "${base.ifos}"
-bilby_duration = "${base.bilby_duration}"
-waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-datadir = "${base.datadir}"
-writedir = "${base.datadir}"
-logdir = "${base.logdir}"
-accounting_group = "${LIGO_ACCOUNTING_GROUP}"
-channel = "${base.channel}"
-sample_rate = "${base.sample_rate}"
-prior = "${base.prior}"
 
 [tool.typeo.scripts.sample-with-flow]
 ifos = "${base.ifos}"
