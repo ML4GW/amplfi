@@ -196,7 +196,7 @@ def ra_from_phi(phi: Union[np.ndarray, float], gpstime: float) -> float:
 
     # get the sidereal time at the observation time
     t = Time(gpstime, format="gps", scale="utc")
-    t.sidereal_time("mean", "greenwich").to("rad")
+    gmst = t.sidereal_time("mean", "greenwich").to("rad")
 
     if isinstance(phi, float):
         phi = np.array([phi])
@@ -205,4 +205,25 @@ def ra_from_phi(phi: Union[np.ndarray, float], gpstime: float) -> float:
     mask = phi < 0
     phi[mask] += 2 * np.pi
 
-    return (phi + t.rad) % (2 * np.pi)
+    return (phi + gmst) % (2 * np.pi)
+
+
+def phi_from_ra(ra: Union[np.ndarray, float], gpstime: float) -> float:
+
+    # get the sidereal time at the observation time
+    t = Time(gpstime, format="gps", scale="utc")
+    gmst = t.sidereal_time("mean", "greenwich").to("rad")
+
+    if isinstance(ra, float):
+        ra = np.array([ra])
+
+    # calculate the relative azimuthal angle in the range [0, 2pi]
+    phi = ra - gmst
+    mask = phi < 0
+    phi[mask] += 2 * np.pi
+
+    # convert phi from range [0, 2pi] to [-pi, pi]
+    mask = phi > np.pi
+    phi[mask] -= 2 * np.pi
+
+    return phi

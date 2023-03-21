@@ -177,6 +177,11 @@ def main(
     # phi is relative azimuthal angle between source and earth
     dec = torch.Tensor(parameters["dec"])
     psi = torch.Tensor(parameters["psi"])
+
+    # The "correct" conversion here doesnt matter
+    # since we arent comparing with bilby
+    # Just putting phi in the range [-pi, pi]
+    # so that it is consistent with the training set
     phi = torch.Tensor(parameters["ra"]) - np.pi
 
     waveforms = compute_observed_strain(

@@ -9,6 +9,7 @@ from data_generation.utils import (
     download_data,
     inject_into_background,
     noise_from_psd,
+    phi_from_ra,
 )
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
 from mldatafind.segments import query_segments
@@ -75,6 +76,7 @@ def main(
     signal_times = np.linspace(
         buffer + waveform_duration // 2, n_samples * spacing, n_samples
     )
+
     # bilby requests the start time of the signals
     # so subtract half the bilby
     # duration which will enforce that the signal
@@ -108,8 +110,10 @@ def main(
             background_dict[ifo] = TimeSeries(data, dt=1 / sample_rate)
 
     # instantiate prior, sample, and generate signals
-    prior = prior()
+    prior = prior(phi=True)
     parameters = prior.sample(n_samples)
+    parameters["geocent_time"] = signal_times
+
     signals = generate_gw(
         parameters,
         sample_rate,
@@ -132,7 +136,11 @@ def main(
     # phi is relative azimuthal angle between source and earth
     dec = torch.Tensor(parameters["dec"])
     psi = torch.Tensor(parameters["psi"])
-    phi = torch.Tensor(parameters["ra"]) - np.pi
+    phi = [
+        phi_from_ra(ra, time)
+        for ra, time in zip(parameters["ra"], parameters["geocent_time"])
+    ]
+    parameters["phi"] = phi
 
     waveforms = compute_observed_strain(
         dec,
@@ -144,8 +152,6 @@ def main(
         plus=plus,
         cross=cross,
     )
-
-    parameters["geocent_time"] = signal_times
 
     waveforms = waveforms.numpy()
     data_dict = TimeSeriesDict()
