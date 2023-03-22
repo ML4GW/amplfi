@@ -9,7 +9,6 @@ from data_generation.utils import (
     download_data,
     inject_into_background,
     noise_from_psd,
-    phi_from_ra,
 )
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
 from mldatafind.segments import query_segments
@@ -18,6 +17,7 @@ from typeo import scriptify
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
 from ml4gw.spectral import normalize_psd
 from mlpe.injection import generate_gw
+from mlpe.injection.utils import phi_from_ra
 from mlpe.logging import configure_logging
 
 
