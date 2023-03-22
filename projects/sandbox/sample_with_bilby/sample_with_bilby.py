@@ -16,7 +16,6 @@ from mlpe.logging import configure_logging
 @scriptify
 def main(
     datadir: Path,
-    writedir: Path,
     logdir: Path,
     channel: str,
     ifos: List[str],
@@ -36,7 +35,7 @@ def main(
     """
 
     configure_logging(logdir / "bilby.log", verbose)
-    bilby_outdir = writedir / "bilby" / "rundir"
+    bilby_outdir = datadir / "bilby" / "rundir"
     if bilby_outdir.exists() and not force_generation:
         logging.info("Bilby output directory already exists. Skipping.")
         return
@@ -45,8 +44,7 @@ def main(
     prior = prior()
 
     # create a default bilby ini file. AFAIK this is required by bilby.
-    # we will overwrite the defaults by passing arguments
-    # at the command line below
+    # we will overwrite the defaults by passing arguments via "args.argument"
     default_ini_path = datadir / "bilby" / "default.ini"
     generate_default_ini_args = [
         "bilby_pipe_write_default_ini",
@@ -100,7 +98,7 @@ def main(
     args.conversion_function = "noconvert"
 
     # necessary due to weird bilby pipe behavior dealing with relative paths
-    os.chdir(writedir / "bilby")
+    os.chdir(datadir / "bilby")
 
     # launch dag
     log_version_information()

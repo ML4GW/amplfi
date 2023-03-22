@@ -18,6 +18,7 @@ from ml4gw.transforms import ChannelWiseScaler
 from mlpe.architectures import architecturize
 from mlpe.data.transforms import Preprocessor
 from mlpe.injection.priors import sg_uniform
+from mlpe.injection.utils import ra_from_phi
 from mlpe.logging import configure_logging
 
 
@@ -174,10 +175,9 @@ def main(
     # load in the timeseries data and crop around the injection times
     timeseries = []
     injections = []
-    for ifo in ifos:
-        with h5py.File(
-            datadir / "bilby" / f"{ifo}_bilby_injections.hdf5"
-        ) as f:
+
+    with h5py.File(datadir / "bilby" / "bilby_timeseries.hdf5") as f:
+        for ifo in ifos:
             timeseries.append(f[f"{ifo}:{channel}"][:])
 
     timeseries = np.stack(timeseries)
@@ -206,14 +206,18 @@ def main(
     # These results should be saved in the datadir
     bilby_results_dir = basedir / "bilby" / "rundir" / "final_result"
     bilby_results_paths = sorted(list(bilby_results_dir.iterdir()))
-    bilby_results = []
-    descaled_results, results = [], []
-    for (signal, param), bilby_result in zip(
-        test_dataloader, bilby_results_paths
+
+    # get index of phi samples to use later when converting to ra
+    phi_index = inference_params.index("phi")
+
+    bilby_results, descaled_results, results = [], [], []
+    for (signal, param), bilby_result, geocent_time in zip(
+        test_dataloader, bilby_results_paths, times
     ):
         # load in the corresponding bilby result
         bilby_result = bilby.result.Result.from_hdf5(bilby_result)
         bilby_results.append(bilby_result)
+
         # sample our model on the data
         signal = signal.to(device)
         param = param.to(device)
@@ -226,8 +230,14 @@ def main(
                 samples[0].transpose(1, 0), reverse=True
             )
             descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
+            samples = samples.cpu().numpy()
+            descaled_samples = descaled_samples.cpu().numpy()
+
         _time = time() - _time
 
+        descaled_samples[:, phi_index] = ra_from_phi(
+            descaled_samples[:, phi_index], geocent_time
+        )
         descaled_res = cast_samples_as_bilby_result(
             descaled_samples.cpu().numpy()[0],
             param.cpu().numpy()[0],
