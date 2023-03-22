@@ -10,6 +10,7 @@ from gwpy.frequencyseries import FrequencySeries
 from gwpy.segments import DataQualityDict
 from gwpy.timeseries import TimeSeries
 from typeo import scriptify
+from mldatafind.authenticate import authenticate
 
 from ml4gw.spectral import normalize_psd
 from mlpe.logging import configure_logging
@@ -41,7 +42,7 @@ def main(
         ifos: which ifos to query data for
         outdir: where to store data
     """
-
+    authenticate()
     if psd_file is not None and not gaussian:
         raise ValueError(
             "Cannot generate gaussian noise from"
