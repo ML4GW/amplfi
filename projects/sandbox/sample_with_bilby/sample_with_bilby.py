@@ -1,6 +1,8 @@
 import logging
 import os
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Callable, List
 
@@ -8,10 +10,8 @@ from bilby_pipe.job_creation import generate_dag
 from bilby_pipe.main import MainInput, write_complete_config_file
 from bilby_pipe.parser import create_parser
 from bilby_pipe.utils import log_version_information, parse_args
-import shutil
 from typeo import scriptify
-import sys
-import os
+
 from mlpe.logging import configure_logging
 
 
@@ -62,7 +62,7 @@ def main(
 
     # construct sys.argv that bilby pipe parser will parse
     data_dict = {
-        ifo: str(datadir / "bilby" / "bilby_timeseries.hdf5") for ifo in ifos
+        ifo: str(datadir / "bilby" / f"{ifo}_timeseries.hdf5") for ifo in ifos
     }
 
     # channels are named the same as the ifos
@@ -109,6 +109,7 @@ def main(
     inputs = MainInput(args, [])
     write_complete_config_file(parser, args, inputs)
     generate_dag(inputs)
+
 
 if __name__ == "__main__":
     main()

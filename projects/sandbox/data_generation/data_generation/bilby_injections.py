@@ -10,7 +10,7 @@ from data_generation.utils import (
     inject_into_background,
     noise_from_psd,
 )
-from gwpy.timeseries import TimeSeries, TimeSeriesDict
+from gwpy.timeseries import TimeSeries
 from mldatafind.segments import query_segments
 from typeo import scriptify
 
@@ -52,9 +52,10 @@ def main(
     datadir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
 
-    signal_file = Path(datadir / f"bilby_timeseries.hdf5")
-    
-    if signal_file.exists() and not force_generation:
+    signal_files = [Path(datadir / f"{ifo}_timeseries.hdf5") for ifo in ifos]
+    signal_files_exist = [signal_file.exists() for signal_file in signal_files]
+
+    if signal_files_exist and not force_generation:
         logging.info(
             "Bilby timeseries already exists and forced generation is off. "
             "Not generating bilby timeseries."
@@ -129,16 +130,18 @@ def main(
     # dec is declination
     # psi is polarization angle
     # phi is relative azimuthal angle between source and earth
-    phi = np.array([
-        phi_from_ra(ra, time)
-        for ra, time in zip(parameters["ra"], parameters["geocent_time"])
-    ]).flatten()
- 
+    phi = np.array(
+        [
+            phi_from_ra(ra, time)
+            for ra, time in zip(parameters["ra"], parameters["geocent_time"])
+        ]
+    ).flatten()
+
     parameters["phi"] = phi
     dec = torch.Tensor(parameters["dec"])
     psi = torch.Tensor(parameters["psi"])
     phi = torch.Tensor(phi)
-   
+
     waveforms = compute_observed_strain(
         dec,
         psi,
@@ -151,7 +154,7 @@ def main(
     )
 
     waveforms = waveforms.numpy()
-    data_dict = TimeSeriesDict()
+
     for i, (ifo, data) in enumerate(background_dict.items()):
         # set start time of data to 0 for simplicity
         data.t0 = 0
@@ -165,15 +168,15 @@ def main(
         )
 
         # package into gwpy timeseries and save as hdf5 files
-        data_dict[ifo] = TimeSeries(
+        data = TimeSeries(
             data, dt=1 / sample_rate, channel=f"{ifo}:{channel}", t0=0
         )
+        data.write(
+            datadir / f"{ifo}_timeseries.hdf5",
+            format="hdf5",
+            overwrite=True,
+        )
 
-    data_dict.write(
-        datadir / "bilby_timeseries.hdf5",
-        format="hdf5",
-        overwrite=True,
-    )
     # save parameters as hdf5 file
     with h5py.File(datadir / "bilby_injection_parameters.hdf5", "w") as f:
         for key, value in parameters.items():
