@@ -8,15 +8,10 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 typeo = {git = "https://github.com/ML4GW/typeo.git"}
-
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
+"mlpe.injection" = {path = "../../../libs/injection", develop = true}
 bilby = "^2.0.0"
 bilby_pipe = "^1.0.8"
-
-[[tool.poetry.source]]
-name = "torch"
-url = "https://download.pytorch.org/whl/cu116"
-secondary = true
-default = false
 
 [tool.poetry.scripts]
 sample-with-bilby = "sample_with_bilby:main"

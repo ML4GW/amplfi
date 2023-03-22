@@ -47,7 +47,6 @@ ifos = "${base.ifos}"
 sample_rate = "${base.sample_rate}" 
 minimum_length = 10000
 force_generation = "${base.force_generation}"
-waveform_duration = "${base.waveform_duration}" # used for delta f of psd
 gaussian = true
 
 [tool.typeo.scripts.generate-waveforms]
@@ -93,7 +92,7 @@ valid_stride = 0.0625
 commands.maf = "${base.maf}"
 
 
-[tool.typeo.scripts.generate-pp-plot-injections]
+[tool.typeo.scripts.generate-flow-injections]
 ifos = "${base.ifos}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
@@ -137,12 +136,12 @@ ifos = "${base.ifos}"
 bilby_duration = "${base.bilby_duration}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 datadir = "${base.datadir}"
-writedir = "${base.datadir}"
 logdir = "${base.logdir}"
 accounting_group = "${LIGO_ACCOUNTING_GROUP}"
 channel = "${base.channel}"
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
+force_generation = true
 
 [tool.typeo.scripts.sample-with-flow]
 ifos = "${base.ifos}"

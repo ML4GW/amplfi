@@ -52,14 +52,9 @@ def main(
     datadir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
 
-    signal_files_exist = all(
-        [
-            Path(datadir / f"{ifo}_bilby_injections.hdf5").exists()
-            for ifo in ifos
-        ]
-    )
-
-    if signal_files_exist and not force_generation:
+    signal_file = Path(datadir / f"bilby_timeseries.hdf5")
+    
+    if signal_file.exists() and not force_generation:
         logging.info(
             "Bilby timeseries already exists and forced generation is off. "
             "Not generating bilby timeseries."
@@ -134,14 +129,16 @@ def main(
     # dec is declination
     # psi is polarization angle
     # phi is relative azimuthal angle between source and earth
-    dec = torch.Tensor(parameters["dec"])
-    psi = torch.Tensor(parameters["psi"])
-    phi = [
+    phi = np.array([
         phi_from_ra(ra, time)
         for ra, time in zip(parameters["ra"], parameters["geocent_time"])
-    ]
+    ]).flatten()
+ 
     parameters["phi"] = phi
-
+    dec = torch.Tensor(parameters["dec"])
+    psi = torch.Tensor(parameters["psi"])
+    phi = torch.Tensor(phi)
+   
     waveforms = compute_observed_strain(
         dec,
         psi,

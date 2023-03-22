@@ -12,7 +12,7 @@ def ra_from_phi(phi: Union[np.ndarray, float], gpstime: float) -> float:
 
     # get the sidereal time at the observation time
     t = Time(gpstime, format="gps", scale="utc")
-    gmst = t.sidereal_time("mean", "greenwich").to("rad")
+    gmst = t.sidereal_time("mean", "greenwich").to("rad").value
 
     if isinstance(phi, float):
         phi = np.array([phi])
@@ -28,7 +28,7 @@ def phi_from_ra(ra: Union[np.ndarray, float], gpstime: float) -> float:
 
     # get the sidereal time at the observation time
     t = Time(gpstime, format="gps", scale="utc")
-    gmst = t.sidereal_time("mean", "greenwich").to("rad")
+    gmst = t.sidereal_time("mean", "greenwich").to("rad").value
 
     if isinstance(ra, float):
         ra = np.array([ra])

@@ -8,8 +8,10 @@ from bilby_pipe.job_creation import generate_dag
 from bilby_pipe.main import MainInput, write_complete_config_file
 from bilby_pipe.parser import create_parser
 from bilby_pipe.utils import log_version_information, parse_args
+import shutil
 from typeo import scriptify
-
+import sys
+import os
 from mlpe.logging import configure_logging
 
 
@@ -36,6 +38,7 @@ def main(
 
     configure_logging(logdir / "bilby.log", verbose)
     bilby_outdir = datadir / "bilby" / "rundir"
+    # TODO: check that the results dir contains all of the results
     if bilby_outdir.exists() and not force_generation:
         logging.info("Bilby output directory already exists. Skipping.")
         return
@@ -46,8 +49,9 @@ def main(
     # create a default bilby ini file. AFAIK this is required by bilby.
     # we will overwrite the defaults by passing arguments via "args.argument"
     default_ini_path = datadir / "bilby" / "default.ini"
+    os.environ["PATH"] = ":".join(sys.path)
     generate_default_ini_args = [
-        "bilby_pipe_write_default_ini",
+        shutil.which("bilby_pipe_write_default_ini"),
         f"{default_ini_path}",
     ]
     subprocess.run(generate_default_ini_args)
@@ -105,3 +109,6 @@ def main(
     inputs = MainInput(args, [])
     write_complete_config_file(parser, args, inputs)
     generate_dag(inputs)
+
+if __name__ == "__main__":
+    main()
