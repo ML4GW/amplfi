@@ -23,7 +23,7 @@ pytest = "^7.2.0"
 
 [tool.poetry.scripts]
 generate-background = "data_generation.background:main"
-generate-pp-plot-injections = "data_generation.pp_plot_injections:main"
+generate-flow-injections = "data_generation.flow_injections:main"
 generate-bilby-injections = "data_generation.bilby_injections:main"
 generate-waveforms = "data_generation.waveforms:main"
 
