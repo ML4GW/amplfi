@@ -22,9 +22,10 @@ typeo = {git = "https://github.com/ML4GW/typeo.git"}
 pytest = "^7.2.0"
 
 [tool.poetry.scripts]
-generate-background = "data_generation.generate_background:main"
-generate-testing = "data_generation.generate_testing_set:main"
-generate-waveforms = "data_generation.generate_waveforms:main"
+generate-background = "data_generation.background:main"
+generate-pp-plot-injections = "data_generation.pp_plot_injections:main"
+generate-bilby-injections = "data_generation.bilby_injections:main"
+generate-waveforms = "data_generation.waveforms:main"
 
 [build-system]
 requires = ["poetry-core"]
