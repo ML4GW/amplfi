@@ -30,7 +30,7 @@ def n_samples(request):
     return request.param
 
 
-def test_generate_pp_plot_injections(
+def test_flow_injections(
     ifos, sample_rate, kernel_length, n_samples, datadir, logdir
 ):
 
@@ -42,11 +42,11 @@ def test_generate_pp_plot_injections(
         background_dict[ifo] = TimeSeries(data=np.zeros(n_background_samples))
 
     query_patch = patch(
-        "data_generation.pp_plot_injections.query_segments",
+        "data_generation.flow_injections.query_segments",
         return_value=[[0, 1000]],
     )
     download_patch = patch(
-        "data_generation.pp_plot_injections.download_data",
+        "data_generation.flow_injections.download_data",
         return_value=background_dict,
     )
 
