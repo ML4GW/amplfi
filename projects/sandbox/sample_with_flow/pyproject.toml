@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "sample_with_flow"
+version = "0.1.0"
+description = "Produce posterior samples of injections with our network"
+authors = ["ethan.marx <ethan.marx@ligo.org>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "sample_with_flow"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+torch = {version = "^1.12", source = "torch"}
+
+"mlpe.data" = {path = "../../../libs/data", develop  = true}
+"mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
+"mlpe.logging" = {path = "../../../libs/logging", develop = true}
+"mlpe.injection" = {path = "../../../libs/injection", develop = true}
+"ml4gw" = {path = "../../../ml4gw", develop = true}
+
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu116"
+secondary = true
+default = false
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
