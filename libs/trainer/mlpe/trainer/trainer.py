@@ -268,6 +268,8 @@ def train(
             scaler,
             lr_scheduler,
         )
+        print(train_loss, valid_loss)
+        print("\n")
 
         history["train_loss"].append(train_loss.cpu().item())
 

@@ -68,7 +68,7 @@ def main(
     **kwargs
 ):
 
-    configure_logging(logdir / "train.log", verbose)
+    configure_logging(verbose=verbose)
     num_ifos = len(ifos)
     num_params = len(inference_params)
 
@@ -149,7 +149,7 @@ def main(
     torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
     torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
 
-    logging.info("Constructing validation dataloader")
+    logging.debug("Constructing validation dataloader")
     # construct validation dataset
     # from validation injector
     valid_dataset = None

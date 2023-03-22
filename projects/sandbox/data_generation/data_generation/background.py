@@ -26,7 +26,7 @@ def main(
     frame_type: str,
     state_flag: str,
     minimum_length: float,
-    waveform_duration: float,
+    df: float,
     datadir: Path,
     logdir: Path,
     gaussian: bool = False,
@@ -59,8 +59,8 @@ def main(
             state flag that defines good data quality
         minimum_length:
             minimum length of continuous, coincident segment to query
-        waveform_duration:
-            Used to calculate df for psd
+        df:
+            Used to calculate psd
         datadir:
             where to store the background data
         logdir:
@@ -161,10 +161,7 @@ def main(
                 f"The background for ifo {ifo} contains NaN values"
             )
 
-        # used for psd calculation
-        # TODO: is this the df we should use?
-        df = 1 / waveform_duration
-
+        frequencies = np.arange(0, sample_rate / 2 + df, df)
         if gaussian:
             logging.info(f"Generating gaussian noise from psd for ifo {ifo}")
             if psd_file is not None:
@@ -191,7 +188,6 @@ def main(
 
         else:
             # calculate psd so we can save it for use during bilby analysis
-            frequencies = np.arange(0, sample_rate / 2 + df, df)
             psd = normalize_psd(data, df, sample_rate)
 
         # save psd

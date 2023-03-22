@@ -10,7 +10,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-bilby = "^2.0"
+bilby = "<=2.0"
 lalsuite = "^7.4"
 
 [tool.poetry.dev-dependencies]
