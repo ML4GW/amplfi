@@ -110,7 +110,7 @@ def main(
             background_dict[ifo] = TimeSeries(data, dt=1 / sample_rate)
 
     # instantiate prior, sample, and generate signals
-    prior = prior(phi=True)
+    prior = prior()
     parameters = prior.sample(n_samples)
     parameters["geocent_time"] = signal_times
 

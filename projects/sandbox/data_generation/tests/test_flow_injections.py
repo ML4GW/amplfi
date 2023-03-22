@@ -3,7 +3,7 @@ from unittest.mock import patch
 import h5py
 import numpy as np
 import pytest
-from data_generation.pp_plot_injections import main
+from data_generation.flow_injections import main
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
 
 from mlpe.injection.priors import sg_uniform
