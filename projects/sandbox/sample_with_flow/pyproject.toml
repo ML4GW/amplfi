@@ -4,11 +4,9 @@ version = "0.1.0"
 description = "Produce posterior samples of injections with our network"
 authors = ["ethan.marx <ethan.marx@ligo.org>"]
 license = "MIT"
-readme = "README.md"
-packages = [{include = "sample_with_flow"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.8,<3.11"
 
 torch = {version = "^1.12", source = "torch"}
 
@@ -17,6 +15,10 @@ torch = {version = "^1.12", source = "torch"}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
 "ml4gw" = {path = "../../../ml4gw", develop = true}
+ligo-skymap = "^1.0.7"
+
+[tool.poetry.scripts]
+sample-with-flow = "sample_with_flow:main"
 
 [[tool.poetry.source]]
 name = "torch"

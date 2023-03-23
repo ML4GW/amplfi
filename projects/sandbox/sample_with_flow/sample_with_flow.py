@@ -7,6 +7,8 @@ import bilby
 import h5py
 import numpy as np
 import torch
+from bilby.core.prior import Uniform
+from gwpy.timeseries import TimeSeries
 from utils import (
     cast_samples_as_bilby_result,
     generate_corner_plots,
@@ -75,6 +77,7 @@ def main(
     test_data, test_params = load_test_data(
         datadir / "pp_plot_injections.h5", inference_params
     )
+
     test_data = torch.from_numpy(test_data).to(torch.float32)
     test_params = torch.from_numpy(test_params).to(torch.float32)
 
@@ -93,6 +96,9 @@ def main(
     descaled_results = []
     total_sampling_time = 0.0
 
+    priors["phi"] = Uniform(
+        name="phi", minimum=0, maximum=2 * np.pi, latex_label="phi"
+    )
     for signal, param in test_dataloader:
         signal = signal.to(device)
         param = param.to(device)
@@ -176,9 +182,11 @@ def main(
     timeseries = []
     injections = []
 
-    with h5py.File(datadir / "bilby" / "bilby_timeseries.hdf5") as f:
-        for ifo in ifos:
-            timeseries.append(f[f"{ifo}:{channel}"][:])
+    for ifo in ifos:
+        data = TimeSeries.read(
+            datadir / "bilby" / f"{ifo}_timeseries.hdf5", format="hdf5"
+        )
+        timeseries.append(data.value)
 
     timeseries = np.stack(timeseries)
 
@@ -203,25 +211,41 @@ def main(
         pin_memory_device=device,
     )
 
-    # These results should be saved in the datadir
-    bilby_results_dir = basedir / "bilby" / "rundir" / "final_result"
+    bilby_results_dir = datadir / "bilby" / "rundir" / "final_result"
     bilby_results_paths = sorted(list(bilby_results_dir.iterdir()))
 
     # get index of phi samples to use later when converting to ra
     phi_index = inference_params.index("phi")
+    inference_params[phi_index] = "ra"
+    skymap_outdir = basedir / "bilby_skymaps"
+    skymap_outdir.mkdir(exist_ok=True)
 
     bilby_results, descaled_results, results = [], [], []
-    for (signal, param), bilby_result, geocent_time in zip(
-        test_dataloader, bilby_results_paths, times
+    for i, ((signal, param), bilby_result, geocent_time) in enumerate(
+        zip(test_dataloader, bilby_results_paths, times)
     ):
-        # load in the corresponding bilby result
-        bilby_result = bilby.result.Result.from_hdf5(bilby_result)
-        bilby_results.append(bilby_result)
+
+        if i == 5:
+            break
 
         # sample our model on the data
         signal = signal.to(device)
         param = param.to(device)
         strain, scaled_param = preprocessor(signal, param)
+        param = param.cpu().numpy()[0]
+
+        # load in the corresponding bilby result
+        bilby_result = bilby.result.Result.from_pickle(bilby_result)
+        param[phi_index] = ra_from_phi(param[phi_index], geocent_time)
+        bilby_result.injection_parameters = {
+            k: float(v) for k, v in zip(inference_params, param)
+        }
+        bilby_result.label = f"bilby_{i}"
+
+        bilby_result.outdir = basedir / "bilby_skymaps"
+        bilby_result.plot_skymap(maxpts=5000)
+        bilby_result.outdir = skymap_outdir
+        bilby_results.append(bilby_result)
 
         _time = time()
         with torch.no_grad():
@@ -230,31 +254,29 @@ def main(
                 samples[0].transpose(1, 0), reverse=True
             )
             descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
-            samples = samples.cpu().numpy()
-            descaled_samples = descaled_samples.cpu().numpy()
+            samples = samples.cpu().numpy()[0]
+            descaled_samples = descaled_samples.cpu().numpy()[0]
 
         _time = time() - _time
 
         descaled_samples[:, phi_index] = ra_from_phi(
             descaled_samples[:, phi_index], geocent_time
         )
+
         descaled_res = cast_samples_as_bilby_result(
-            descaled_samples.cpu().numpy()[0],
-            param.cpu().numpy()[0],
-            inference_params,
-            priors,
+            descaled_samples, param, inference_params, priors, label="flow"
         )
         descaled_results.append(descaled_res)
 
         res = cast_samples_as_bilby_result(
-            samples.cpu().numpy()[0],
+            samples,
             scaled_param.cpu().numpy()[0],
             inference_params,
             priors,
+            label="flow",
         )
         results.append(res)
 
     # generate corner plots
-    generate_corner_plots(results, writedir / "corner" / "scaled")
-    generate_corner_plots(descaled_results, writedir / "corner" / "descaled")
-    generate_corner_plots(bilby_results, writedir / "corner" / "bilby")
+    results = np.column_stack((descaled_results, bilby_results))
+    generate_corner_plots(results, writedir / "corner")

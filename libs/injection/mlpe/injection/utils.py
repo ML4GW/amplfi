@@ -14,8 +14,7 @@ def ra_from_phi(phi: Union[np.ndarray, float], gpstime: float) -> float:
     t = Time(gpstime, format="gps", scale="utc")
     gmst = t.sidereal_time("mean", "greenwich").to("rad").value
 
-    if isinstance(phi, float):
-        phi = np.array([phi])
+    phi = np.array([phi])
 
     # convert phi from range [-pi, pi] to [0, 2pi]
     mask = phi < 0

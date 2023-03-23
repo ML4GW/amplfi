@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
 
 import bilby
 import h5py
@@ -41,21 +41,22 @@ def cast_samples_as_bilby_result(
     samples: np.ndarray,
     truth: np.ndarray,
     inference_params: List[str],
-    priors: bilby.core.prior.Priordict,
+    priors: "bilby.core.prior.Priordict",
+    label: str,
 ):
     """Cast posterior samples as bilby Result object"""
     # samples shape (1, num_samples, num_params)
     # inference_params shape (1, num_params)
-    samples = samples[0]
-    truth = truth[0]
+
     injections = {k: float(v) for k, v in zip(inference_params, truth)}
 
     posterior = dict()
     for idx, k in enumerate(inference_params):
         posterior[k] = samples.T[idx].flatten()
     posterior = pd.DataFrame(posterior)
+
     return bilby.result.Result(
-        label="test_data",
+        label=label,
         injection_parameters=injections,
         posterior=posterior,
         search_parameter_keys=inference_params,
@@ -64,11 +65,13 @@ def cast_samples_as_bilby_result(
 
 
 def generate_corner_plots(
-    results: List[bilby.core.result.Result], writedir: Path
+    results: List[Tuple[bilby.core.result.Result]], writedir: Path
 ):
-    for i, result in enumerate(results):
+    for i, results in enumerate(results):
         filename = writedir / f"corner_{i}.png"
-        result.plot_corner(
+        bilby.result.plot_multiple(
+            results,
+            parameters=["frequency", "quality", "ra", "dec"],
             save=True,
             filename=filename,
             levels=(0.5, 0.9),

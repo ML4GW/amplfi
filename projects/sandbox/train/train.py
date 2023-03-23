@@ -25,13 +25,16 @@ def load_background(background_path: Path, ifos):
 
 
 def load_signals(waveform_dataset: Path, parameter_names: List[str]):
-
+    """
+    Load in signals and intrinsic parameters.
+    If no intrinsic parameters are requested, return None.
+    """
     with h5py.File(waveform_dataset, "r") as f:
         signals = f["signals"][:]
 
         # TODO: how do we ensure order
         # of parameters throughout pipeline?
-        data = []
+        intrinsic = []
         for param in parameter_names:
             if param not in EXTRINSIC_DISTS.keys():
                 values = f[param][:]
@@ -39,9 +42,12 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
                 # spans large magnitude range
                 if param == "hrss":
                     values = np.log10(values)
-                data.append(values)
+                intrinsic.append(values)
 
-        intrinsic = np.row_stack(data)
+        if intrinsic:
+            intrinsic = np.row_stack(intrinsic)
+        else:
+            intrinsic = None
 
     return signals, intrinsic
 
@@ -87,27 +93,38 @@ def main(
 
     # note: we pass the transpose the intrinsic parameters here because
     # the ml4gw transforms expects an array of shape (n_signals, n_params)
+
     injector, valid_injector = prepare_augmentation(
         signals,
-        intrinsic.transpose(1, 0),
         ifos,
         valid_frac,
         sample_rate,
         trigger_distance,
         highpass,
+        intrinsic,
     )
 
     injector.to(device, waveforms=True)
 
     # construct samples of extrinsic parameters
     # if they were passed as inference params
-    # so they can be fit to standard scaler
+    # so they can be fit to standard scaler.
     n_signals = len(signals)
 
+    # if no intrinsic parameters are requested,
+    # set parameters to empty list,
+    # otherwise, set to list of intrinsic parameters
+    parameters = []
+    if intrinsic is not None:
+        parameters = list(intrinsic)
+
+    # append extrinsic parameters to list to be fit
     for param, dist in EXTRINSIC_DISTS.items():
         if param in inference_params:
             samples = dist(n_signals)
-            intrinsic = np.row_stack([intrinsic, samples])
+            parameters.append(samples)
+
+    parameters = np.row_stack(parameters)
 
     # create full training dataloader
     train_dataset = PEInMemoryDataset(
@@ -139,7 +156,7 @@ def main(
     # the ml4gw ChannelWiseScaler expects an array of shape
     # (n_params, n_signals), so we pass the untransposed
     # intrinsic parameters here
-    preprocessor.scaler.fit(intrinsic)
+    preprocessor.scaler.fit(parameters)
     preprocessor.scaler.to(device)
 
     # TODO: this light preprocessor wrapper can probably be removed

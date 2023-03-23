@@ -12,6 +12,7 @@ typeo = {git = "https://github.com/ML4GW/typeo.git"}
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
 bilby = "^2.0.0"
 bilby_pipe = "^1.0.8"
+ligo-skymap = "^1.0.7"
 
 [tool.poetry.scripts]
 sample-with-bilby = "sample_with_bilby:main"

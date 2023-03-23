@@ -53,7 +53,9 @@ def main(
     logdir.mkdir(exist_ok=True, parents=True)
 
     signal_files = [Path(datadir / f"{ifo}_timeseries.hdf5") for ifo in ifos]
-    signal_files_exist = [signal_file.exists() for signal_file in signal_files]
+    signal_files_exist = all(
+        [signal_file.exists() for signal_file in signal_files]
+    )
 
     if signal_files_exist and not force_generation:
         logging.info(

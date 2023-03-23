@@ -29,10 +29,10 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
         self.embedding_net = NChannelDenseEmbedding(
             self.n_ifos,
             self.strain_dim,
-            50,
+            128,
             activation=self.activation,
-            hidden_layer_size=100,
-            num_hidden_layers=2,
+            hidden_layer_size=256,
+            num_hidden_layers=4,
         )
 
         super().__init__(
