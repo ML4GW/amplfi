@@ -71,7 +71,7 @@ def generate_corner_plots(
         filename = writedir / f"corner_{i}.png"
         bilby.result.plot_multiple(
             results,
-            parameters=["frequency", "quality", "ra", "dec"],
+            parameters=["ra", "dec", "psi"],
             save=True,
             filename=filename,
             levels=(0.5, 0.9),

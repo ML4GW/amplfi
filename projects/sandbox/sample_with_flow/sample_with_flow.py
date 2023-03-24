@@ -118,6 +118,7 @@ def main(
             param.cpu().numpy()[0],
             inference_params,
             priors,
+            label="flow",
         )
         descaled_results.append(descaled_res)
 
@@ -126,6 +127,7 @@ def main(
             scaled_param.cpu().numpy()[0],
             inference_params,
             priors,
+            label="flow",
         )
         results.append(res)
 
@@ -217,16 +219,11 @@ def main(
     # get index of phi samples to use later when converting to ra
     phi_index = inference_params.index("phi")
     inference_params[phi_index] = "ra"
-    skymap_outdir = basedir / "bilby_skymaps"
-    skymap_outdir.mkdir(exist_ok=True)
 
     bilby_results, descaled_results, results = [], [], []
     for i, ((signal, param), bilby_result, geocent_time) in enumerate(
         zip(test_dataloader, bilby_results_paths, times)
     ):
-
-        if i == 5:
-            break
 
         # sample our model on the data
         signal = signal.to(device)
@@ -236,15 +233,13 @@ def main(
 
         # load in the corresponding bilby result
         bilby_result = bilby.result.Result.from_pickle(bilby_result)
+        # convert phi to ra
         param[phi_index] = ra_from_phi(param[phi_index], geocent_time)
+        # set the ground truth parameters
         bilby_result.injection_parameters = {
             k: float(v) for k, v in zip(inference_params, param)
         }
         bilby_result.label = f"bilby_{i}"
-
-        bilby_result.outdir = basedir / "bilby_skymaps"
-        bilby_result.plot_skymap(maxpts=5000)
-        bilby_result.outdir = skymap_outdir
         bilby_results.append(bilby_result)
 
         _time = time()
@@ -277,6 +272,6 @@ def main(
         )
         results.append(res)
 
-    # generate corner plots
+    # generate corner plots of the results on top of each other
     results = np.column_stack((descaled_results, bilby_results))
     generate_corner_plots(results, writedir / "corner")
