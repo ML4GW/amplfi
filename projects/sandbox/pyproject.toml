@@ -30,7 +30,7 @@ highpass = 32
 fduration = 1
 waveform_duration = 8
 coupling = {num_flow_steps = 10}
-maf = {num_transforms = 10}
+maf = {num_transforms = 20, num_blocks = 4}
 bilby_duration = 4
 
 
@@ -77,7 +77,7 @@ batch_size = 512
 batches_per_epoch = 200
 max_epochs = 300
 
-lr = 4e-3
+lr = 1e-3
 
 early_stop = 30
 
