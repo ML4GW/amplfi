@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import h5py
 import numpy as np
@@ -9,10 +9,13 @@ from utils import EXTRINSIC_DISTS, prepare_augmentation, split
 from validation import make_validation_dataset
 
 from ml4gw.transforms import ChannelWiseScaler
+from mlpe.architectures import embeddings, flows
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.transforms import Preprocessor
 from mlpe.logging import configure_logging
-from mlpe.trainer import trainify
+from mlpe.trainer import train
+from typeo import scriptify
+from typeo.utils import make_dummy
 
 
 def load_background(background_path: Path, ifos):
@@ -52,10 +55,25 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
     return signals, intrinsic
 
 
-@trainify
+@scriptify(
+    kwargs=make_dummy(
+        train,
+        exclude=[
+            "train_dataset",
+            "valid_dataset",
+            "preprocessor",
+            "flow",
+            "embedding",
+        ],
+    ),
+    flow=flows,
+    embedding=embeddings,
+)
 def main(
     background_path: Path,
     waveform_dataset: Path,
+    flow: Callable,
+    embedding: Callable,
     inference_params: List[str],
     ifos: List[str],
     sample_rate: float,
@@ -182,4 +200,13 @@ def main(
         )
 
     logging.info("Launching training")
-    return train_dataset, valid_dataset, preprocessor
+
+    train(
+        flow,
+        embedding,
+        kwargs["outdir"],
+        train_dataset,
+        valid_dataset,
+        preprocessor,
+        **kwargs
+    )

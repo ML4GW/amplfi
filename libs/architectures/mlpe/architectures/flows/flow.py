@@ -4,8 +4,6 @@ from typing import Callable
 import torch
 from nflows import distributions, transforms
 
-from mlpe.architectures.embeddings import Flattener
-
 
 class NormalizingFlow(ABC):
     def __init__(
@@ -14,7 +12,7 @@ class NormalizingFlow(ABC):
         n_ifos: int,
         strain_dim: int,
         num_flow_steps: int,
-        embedding_net: torch.nn.Module = Flattener(),
+        embedding_net: torch.nn.Module = None,
     ):
         """
         Base class for normalizing flow models.
@@ -31,9 +29,6 @@ class NormalizingFlow(ABC):
                 The number of interferometers
             num_flow_steps:
                 The number of flow blocks to use in the normalizing flow
-            embedding_net:
-                The embedding network for transforming strain
-                before passing to the normalizing flow.
         """
         self._flow = None
         self.param_dim = param_dim
@@ -80,5 +75,7 @@ class NormalizingFlow(ABC):
     @property
     def flow(self):
         if self._flow is None:
-            self.build_flow()
+            raise ValueError(
+                "Flow is not built. Call build_flow before accessing flow"
+            )
         return self._flow

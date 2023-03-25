@@ -100,7 +100,8 @@ def train_for_one_epoch(
 
 
 def train(
-    architecture: Callable,
+    flow: Callable,
+    embedding: Callable,
     outdir: Path,
     # data params
     train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
@@ -197,10 +198,12 @@ def train(
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
-    # instantiate the architecture
-    flow_obj = architecture((param_dim, n_ifos, strain_dim))
-    # build the flow
-    flow_obj.build_flow()
+    # instantiate the flow and the embedding
+    embedding = embedding(n_ifos)
+    flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
+
+    # build the flow, passing the embedding network
+    flow_obj.build_flow(embedding)
     # send to neural net to device
     flow_obj.to_device(device)
     # if we passed a module for preprocessing,

@@ -1,21 +1,20 @@
 from dataclasses import dataclass
-from typing import Callable, Tuple
+from pathlib import Path
+from typing import Callable, Optional, Tuple
 
 import nflows.nn.nets as nn_
 import torch
 from nflows import distributions, transforms, utils
 from nflows.flows import Flow
 
-from mlpe.architectures.embeddings import Flattener
 from mlpe.architectures.flows.flow import NormalizingFlow
 
 
 @dataclass
 class CouplingFlow(NormalizingFlow):
-
     shape: Tuple[int, int, int]
-    num_flow_steps: int
-    embedding_net: torch.nn.Module = Flattener()
+    embedding_net: torch.nn.Module
+    num_transforms: int
     hidden_dim: int = 512
     num_transform_blocks: int = 2
     dropout_probability: float = 0.0
@@ -34,7 +33,7 @@ class CouplingFlow(NormalizingFlow):
             self.param_dim,
             self.n_ifos,
             self.strain_dim,
-            self.num_flow_steps,
+            self.num_transforms,
             self.embedding_net,
         )
 
@@ -76,11 +75,10 @@ class CouplingFlow(NormalizingFlow):
     def distribution(self):
         return distributions.StandardNormal((self.param_dim,))
 
-    def build_flow(self, state_dict=None):
+    def build_flow(self, state_dict: Optional[Path] = None):
         """
         Constructs the normalizing flow model
         """
-
         self.transform = transforms.CompositeTransform(
             [
                 transforms.CompositeTransform(

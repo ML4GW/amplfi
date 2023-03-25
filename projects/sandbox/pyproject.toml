@@ -90,10 +90,14 @@ use_amp = false
 valid_frac = 0.25
 valid_stride = 0.0625
 
-# arch parameters
-#commands.coupling = "${base.coupling}"
-commands.maf = "${base.maf}"
+# flow subcommand
+[tool.typeo.scripts.train.flow]
+coupling = "${base.coupling}"
+maf = "${base.maf}"
 
+# embedding subcommand
+[tool.typeo.scripts.train.embedding]
+dense = "${base.dense}"
 
 [tool.typeo.scripts.generate-flow-injections]
 ifos = "${base.ifos}"
