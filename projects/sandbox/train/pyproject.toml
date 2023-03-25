@@ -12,6 +12,7 @@ torch = {version = "^1.12", source = "torch"}
 "mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "ml4gw" = {path = "../../../ml4gw", develop = true}
+typeo = {path = "../../../typeo", develop = true}
 
 [[tool.poetry.source]]
 name = "torch"
