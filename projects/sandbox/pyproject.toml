@@ -30,8 +30,10 @@ kernel_length = 2
 highpass = 32
 fduration = 1
 waveform_duration = 8
-coupling = {num_flow_steps = 15}
-maf = {num_transforms = 15}
+
+coupling = {num_flow_steps = 10}
+maf = {num_transforms = 10, num_blocks = 2}
+
 bilby_duration = 4
 
 
