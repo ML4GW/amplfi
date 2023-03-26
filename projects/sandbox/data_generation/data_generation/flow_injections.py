@@ -183,6 +183,7 @@ def main(
     # Just putting phi in the range [-pi, pi]
     # so that it is consistent with the training set
     phi = torch.Tensor(parameters["ra"]) - np.pi
+    parameters["phi"] = phi
 
     waveforms = compute_observed_strain(
         dec,

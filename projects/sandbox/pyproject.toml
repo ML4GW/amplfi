@@ -2,8 +2,9 @@
 steps = [
     "data_generation:generate-background",
     "data_generation:generate-waveforms",
-    "data_generation:generate-pp-plot-injections",
+    "data_generation:generate-flow-injections",
     "data_generation:generate-bilby-injections",
+    "sample_with_bilby:sample-with-bilby",
     "train:train:maf",
     "sample_with_flow:sample-with-flow:maf"
 ]
@@ -14,7 +15,7 @@ datadir = "${DATA_DIR}"
 logdir = "${BASE_DIR}/log"
 sample_rate = 2048
 ifos = ['H1', 'L1']
-inference_params = ["frequency", "quality", "hrss", "phase", "dec", "psi", "ra"]
+inference_params = ["dec", "psi", "phi"]
 trigger_distance = 0.0
 start = 1262607622
 stop = 1262620622
@@ -29,8 +30,10 @@ kernel_length = 2
 highpass = 32
 fduration = 1
 waveform_duration = 8
+
 coupling = {num_flow_steps = 10}
-maf = {num_transforms = 20, num_blocks = 4}
+maf = {num_transforms = 10, num_blocks = 2}
+
 bilby_duration = 4
 
 
@@ -46,7 +49,7 @@ ifos = "${base.ifos}"
 sample_rate = "${base.sample_rate}" 
 minimum_length = 10000
 force_generation = "${base.force_generation}"
-waveform_duration = "${base.waveform_duration}" # used for delta f of psd
+df = 0.125
 gaussian = true
 
 [tool.typeo.scripts.generate-waveforms]
@@ -92,7 +95,7 @@ valid_stride = 0.0625
 commands.maf = "${base.maf}"
 
 
-[tool.typeo.scripts.generate-pp-plot-injections]
+[tool.typeo.scripts.generate-flow-injections]
 ifos = "${base.ifos}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
@@ -127,6 +130,21 @@ buffer = 10
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 gaussian = false
+
+[tool.typeo.scripts.sample-with-bilby]
+request_cpus = 24
+n_live = 256
+n_act = 5
+ifos = "${base.ifos}"
+bilby_duration = "${base.bilby_duration}"
+waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
+datadir = "${base.datadir}"
+logdir = "${base.logdir}"
+accounting_group = "${LIGO_ACCOUNTING_GROUP}"
+channel = "${base.channel}"
+sample_rate = "${base.sample_rate}"
+prior = "${base.prior}"
+force_generation = false
 
 [tool.typeo.scripts.sample-with-flow]
 ifos = "${base.ifos}"
