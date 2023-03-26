@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from time import time
-from typing import List, Callable
+from typing import Callable, List
 
 import bilby
 import h5py
@@ -17,12 +17,13 @@ from utils import (
 )
 
 from ml4gw.transforms import ChannelWiseScaler
-from mlpe.architectures import flows, embeddings
+from mlpe.architectures import embeddings, flows
 from mlpe.data.transforms import Preprocessor
 from mlpe.injection.priors import sg_uniform
 from mlpe.injection.utils import ra_from_phi
 from mlpe.logging import configure_logging
 from typeo import scriptify
+
 
 @scriptify(
     flow=flows,
@@ -57,7 +58,6 @@ def main(
     embedding = embedding((n_ifos, strain_dim))
     flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
     flow_obj.build_flow()
-    print(flow_obj.flow)
     flow_obj.set_weights_from_state_dict(model_state)
     flow_obj.to_device(device)
 
@@ -72,7 +72,9 @@ def main(
         scaler=standard_scaler,
     )
 
-    preprocessor = load_preprocessor_state(preprocessor, outdir)
+    preprocessor = load_preprocessor_state(
+        preprocessor, outdir / "training" / "preprocessor"
+    )
     preprocessor = preprocessor.to(device)
 
     logging.info("Loading test data and initializing dataloader")
@@ -141,6 +143,7 @@ def main(
         )
     )
     logging.info("Making pp-plot")
+    pp_plot_dir = outdir / "pp-plot"
     pp_plot_scaled_filename = outdir / "pp-plot-test-set-scaled.png"
     pp_plot_filename = outdir / "pp-plot-test-set.png"
 

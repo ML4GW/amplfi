@@ -1,38 +1,25 @@
 [tool.poetry]
 name = "sample_with_flow"
-<<<<<<< HEAD
 version = "0.1.0"
-description = "Produce posterior samples of injections with our network"
-authors = ["ethan.marx <ethan.marx@ligo.org>"]
-=======
-version = "0.0.0"
+authors = ["Deep Chatterjee <deep.chatterjee@ligo.org>", "ethan.marx <ethan.marx@ligo.org>"]
 description = "Generate samples from testing set, get diagnostic plots"
-authors = ["Deep Chatterjee <deep.chatterjee@ligo.org>"]
->>>>>>> bbefa6d (pallow embedding to be passed in config)
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-<<<<<<< HEAD
 
 torch = {version = "^1.12", source = "torch"}
 
-=======
-torch = {version = "^1.12", source = "torch"}
->>>>>>> bbefa6d (pallow embedding to be passed in config)
 "mlpe.data" = {path = "../../../libs/data", develop  = true}
 "mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
 "ml4gw" = {path = "../../../ml4gw", develop = true}
-<<<<<<< HEAD
+typeo = {path = "../../../typeo", develop = true}
 ligo-skymap = "^1.0.7"
 
 [tool.poetry.scripts]
 sample-with-flow = "sample_with_flow:main"
-=======
-typeo = {path = "../../../typeo", develop = true}
->>>>>>> bbefa6d (pallow embedding to be passed in config)
 
 [[tool.poetry.source]]
 name = "torch"
@@ -40,12 +27,6 @@ url = "https://download.pytorch.org/whl/cu116"
 secondary = true
 default = false
 
-<<<<<<< HEAD
-=======
-[tool.poetry.scripts]
-sample-with-flow = "sample_with_flow:main"
-
->>>>>>> bbefa6d (pallow embedding to be passed in config)
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -167,7 +167,7 @@ def main(
         fduration,
         scaler=standard_scaler,
     )
-    print(device)
+
     preprocessor.whitener.fit(kernel_length, *background)
     preprocessor.whitener.to(device)
 

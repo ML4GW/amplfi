@@ -5,8 +5,8 @@ steps = [
     "data_generation:generate-flow-injections",
     "data_generation:generate-bilby-injections",
     "sample_with_bilby:sample-with-bilby",
-    "train:train:maf",
-    "sample_with_flow:sample-with-flow:maf"
+    "train:train:maf:dense",
+    "sample_with_flow:sample-with-flow:maf:dense"
 ]
 
 [tool.typeo.base]
@@ -161,14 +161,11 @@ sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
 model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
-preprocessor_dir = "${base.basedir}/training/preprocessor"
-writedir = "${base.basedir}"
+outdir = "${base.basedir}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 num_samples_draw = 10000
 device = "cuda"
-channel = "${base.channel}"
-basedir = "${base.basedir}"
 
 
 # flow subcommand
