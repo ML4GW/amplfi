@@ -36,6 +36,7 @@ def train_for_one_epoch(
         optimizer.zero_grad(set_to_none=True)  # reset gradient
 
         with torch.autocast("cuda", enabled=False):
+
             loss = -flow.log_prob(parameters, context=strain)
         train_loss += loss.detach().sum()
         loss = loss.mean()
@@ -198,12 +199,13 @@ def train(
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
-    # instantiate the flow and the embedding
-    embedding = embedding(n_ifos)
+    # instantiate the embedding and pass to flow
+    print(n_ifos, param_dim, strain_dim)
+    embedding = embedding((n_ifos, strain_dim))
     flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
 
-    # build the flow, passing the embedding network
-    flow_obj.build_flow(embedding)
+    # build the flow
+    flow_obj.build_flow()
     # send to neural net to device
     flow_obj.to_device(device)
     # if we passed a module for preprocessing,

@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from time import time
-from typing import List
+from typing import List, Callable
 
 import bilby
 import h5py
@@ -17,67 +17,68 @@ from utils import (
 )
 
 from ml4gw.transforms import ChannelWiseScaler
-from mlpe.architectures import architecturize
+from mlpe.architectures import flows, embeddings
 from mlpe.data.transforms import Preprocessor
 from mlpe.injection.priors import sg_uniform
 from mlpe.injection.utils import ra_from_phi
 from mlpe.logging import configure_logging
+from typeo import scriptify
 
-
-@architecturize
+@scriptify(
+    flow=flows,
+    embedding=embeddings,
+)
 def main(
-    architecture: callable,
+    flow: Callable,
+    embedding: Callable,
     model_state_path: Path,
     ifos: List[str],
-    channel: str,
     sample_rate: float,
     kernel_length: float,
     fduration: float,
     inference_params: List[str],
-    preprocessor_dir: Path,
     datadir: Path,
     logdir: Path,
-    writedir: Path,
-    basedir: Path,
+    outdir: Path,
     device: str,
     num_samples_draw: int,
     verbose: bool = False,
 ):
     device = device or "cpu"
-
-    configure_logging(logdir / "pp_plot.log", verbose)
-
     priors = sg_uniform()
-    num_ifos = len(ifos)
-    num_params = len(inference_params)
-    signal_length = int((kernel_length - fduration) * sample_rate)
+
+    configure_logging(logdir / "sample.log", verbose)
+    n_ifos = len(ifos)
+    param_dim = len(inference_params)
+    strain_dim = int((kernel_length - fduration) * sample_rate)
 
     logging.info("Initializing model and setting weights from trained state")
     model_state = torch.load(model_state_path)
-    flow_obj = architecture((num_params, num_ifos, signal_length))
+    embedding = embedding((n_ifos, strain_dim))
+    flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
     flow_obj.build_flow()
-    flow_obj.to_device(device)
+    print(flow_obj.flow)
     flow_obj.set_weights_from_state_dict(model_state)
+    flow_obj.to_device(device)
 
     logging.info(
         "Initializing preprocessor and setting weights from trained state"
     )
-    standard_scaler = ChannelWiseScaler(num_params)
+    standard_scaler = ChannelWiseScaler(param_dim)
     preprocessor = Preprocessor(
-        num_ifos,
+        n_ifos,
         sample_rate,
         fduration,
         scaler=standard_scaler,
     )
 
-    preprocessor = load_preprocessor_state(preprocessor, preprocessor_dir)
+    preprocessor = load_preprocessor_state(preprocessor, outdir)
     preprocessor = preprocessor.to(device)
 
     logging.info("Loading test data and initializing dataloader")
     test_data, test_params = load_test_data(
         datadir / "pp_plot_injections.h5", inference_params
     )
-
     test_data = torch.from_numpy(test_data).to(torch.float32)
     test_params = torch.from_numpy(test_params).to(torch.float32)
 
@@ -139,11 +140,9 @@ def main(
             total_sampling_time, total_sampling_time / num_samples_draw
         )
     )
-
     logging.info("Making pp-plot")
-    pp_plot_dir = writedir / "pp_plots"
-    pp_plot_scaled_filename = pp_plot_dir / "pp-plot-test-set-scaled.png"
-    pp_plot_filename = pp_plot_dir / "pp-plot-test-set.png"
+    pp_plot_scaled_filename = outdir / "pp-plot-test-set-scaled.png"
+    pp_plot_filename = outdir / "pp-plot-test-set.png"
 
     bilby.result.make_pp_plot(
         results,
@@ -274,4 +273,4 @@ def main(
 
     # generate corner plots of the results on top of each other
     results = np.column_stack((descaled_results, bilby_results))
-    generate_corner_plots(results, writedir / "corner")
+    generate_corner_plots(results, outdir / "corner")

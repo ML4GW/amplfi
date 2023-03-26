@@ -92,7 +92,8 @@ def main(
     **kwargs
 ):
 
-    configure_logging(verbose=verbose)
+    logdir.mkdir(exist_ok=True, parents=True)
+    configure_logging(logdir / "train.log", verbose)
     num_ifos = len(ifos)
     num_params = len(inference_params)
 
@@ -166,7 +167,7 @@ def main(
         fduration,
         scaler=standard_scaler,
     )
-
+    print(device)
     preprocessor.whitener.fit(kernel_length, *background)
     preprocessor.whitener.to(device)
 
@@ -204,9 +205,10 @@ def main(
     train(
         flow,
         embedding,
-        kwargs["outdir"],
+        outdir,
         train_dataset,
         valid_dataset,
         preprocessor,
+        device=device,
         **kwargs
     )

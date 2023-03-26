@@ -1,10 +1,10 @@
 import inspect
 
-from mlpe.architectures.embeddings import Flattener, NChannelDenseEmbedding
+from mlpe.architectures.embeddings import DenseEmbedding, Flattener
 from mlpe.architectures.flows import CouplingFlow, MaskedAutoRegressiveFlow
 
 
-# This is a decorator that takes a flow and returns a function that
+# this is a decorator that takes a flow and returns a function that
 # takes the same arguments as the flow, but with the first
 # two arguments (the shape and embedding) removed.
 # This is used to wrap the architectures in
@@ -24,10 +24,18 @@ def _wrap_flow(arch):
     return func
 
 
+# this is a decorator that takes an embedding and returns a function that
+# takes the same arguments as the embedding, but with the first two
+# arguments (the number of ifos and the parameter dimension) removed.
+# This is used to wrap the architectures in
+# this file so that they can be used as a callable in the config file.
+# This callable will then be called with the number of ifos and the
+# parameter dimension as the first two arguments to instantiate the
+# embedding
 def _wrap_embedding(arch):
     def func(*args, **kwargs):
-        def f(n_ifos):
-            return arch(n_ifos, *args, **kwargs)
+        def f(shape):
+            return arch(shape, *args, **kwargs)
 
         return f
 
@@ -43,5 +51,5 @@ flows = {
 }
 embeddings = {
     "flattener": _wrap_embedding(Flattener),
-    "dense": _wrap_embedding(NChannelDenseEmbedding),
+    "dense": _wrap_embedding(DenseEmbedding),
 }
