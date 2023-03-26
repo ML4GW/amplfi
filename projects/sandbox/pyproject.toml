@@ -4,14 +4,9 @@ steps = [
     "data_generation:generate-waveforms",
     "data_generation:generate-flow-injections",
     "data_generation:generate-bilby-injections",
-<<<<<<< HEAD
     "sample_with_bilby:sample-with-bilby",
     "train:train:maf",
     "sample_with_flow:sample-with-flow:maf"
-=======
-    "train:train:maf:dense",
-    "sample_with_flow:sample-with-flow:maf:dense"
->>>>>>> bbefa6d (pallow embedding to be passed in config)
 ]
 
 [tool.typeo.base]
@@ -20,13 +15,9 @@ datadir = "${DATA_DIR}"
 logdir = "${BASE_DIR}/log"
 sample_rate = 2048
 ifos = ['H1', 'L1']
-<<<<<<< HEAD
-inference_params = ["dec", "psi", "phi"]
-=======
 # note: order of extrinisic parameters mst be dec, psi, phi due to how
 # the ml4gw RandomWaveformInjections class returns parameters 
 inference_params = ["frequency", "quality", "hrss", "phase", "dec", "psi", "phi"]
->>>>>>> bbefa6d (pallow embedding to be passed in config)
 trigger_distance = 0.0
 start = 1262607622
 stop = 1262620622
@@ -170,12 +161,14 @@ sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
 model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
-outdir = "${base.basedir}/training/"
+preprocessor_dir = "${base.basedir}/training/preprocessor"
+writedir = "${base.basedir}"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 num_samples_draw = 10000
 device = "cuda"
-num_plot_corner = 10
+channel = "${base.channel}"
+basedir = "${base.basedir}"
 
 
 # flow subcommand
