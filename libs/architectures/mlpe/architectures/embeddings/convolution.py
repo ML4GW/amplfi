@@ -158,11 +158,10 @@ class NChannelDenseEmbedding(nn.Module):
     ) -> None:
         super().__init__()
         self.N = N
-        self.activation = kwargs.get("activation", torch.relu)
         self.embeddings = nn.ModuleList(
             [DenseEmbedding(in_shape, out_shape, **kwargs) for _ in range(N)]
         )
-        self.final_layer = nn.Linear(N * out_shape, out_shape)
+        self.final_layer = DenseEmbedding(N * out_shape, out_shape, **kwargs)
 
     def forward(self, x):
         embedded_vals = []
@@ -171,5 +170,4 @@ class NChannelDenseEmbedding(nn.Module):
 
         x_concat = torch.concat(embedded_vals, dim=1)
         x_concat = self.final_layer(x_concat)
-        x_concat = self.activation(x_concat)
         return x_concat
