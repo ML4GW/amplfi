@@ -78,7 +78,7 @@ highpass = 32
 trigger_distance = "${base.trigger_distance}"
 batch_size = 512
 batches_per_epoch = 200
-max_epochs = 300
+max_epochs = 350
 
 lr = 1e-3
 
