@@ -111,7 +111,7 @@ def main(
     datadir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
 
-    signal_file = datadir / "pp_plot_injections.h5"
+    signal_file = datadir / "flow_injections.h5"
 
     if signal_file.exists() and not force_generation:
         logging.info(
