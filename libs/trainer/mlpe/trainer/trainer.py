@@ -95,6 +95,9 @@ def train_for_one_epoch(
     else:
         valid_loss = None
 
+    current_lr = optimizer.param_groups[0]["lr"]
+    msg += f", current LR = {current_lr:.3e}"
+
     logging.info(msg)
     return train_loss, valid_loss, duration, throughput
 
