@@ -2,7 +2,7 @@
 steps = [
     "data_generation:generate-background",
     "data_generation:generate-waveforms",
-    "data_generation:generate-pp-plot-injections",
+    "data_generation:generate-flow-injections",
     "data_generation:generate-bilby-injections",
     "train:train:maf",
     "sample_with_flow:sample-with-flow:maf"
@@ -16,9 +16,9 @@ sample_rate = 2048
 ifos = ['H1', 'L1']
 inference_params = ["frequency", "quality", "hrss", "phase", "dec", "psi", "ra"]
 trigger_distance = 0.0
-start = 1262607622
-stop = 1262620622
-test_stop = 1262751694 
+start = 1262044818
+stop = 1262088018
+test_stop = 1262100018
 channel = "DCS-CALIB_STRAIN_CLEAN_C01"
 frame_type = "HOFT_C01"
 prior = "mlpe.injection.priors.sg_uniform"
@@ -92,7 +92,7 @@ valid_stride = 0.0625
 commands.maf = "${base.maf}"
 
 
-[tool.typeo.scripts.generate-pp-plot-injections]
+[tool.typeo.scripts.generate-flow-injections]
 ifos = "${base.ifos}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
@@ -102,7 +102,7 @@ stop = "${base.test_stop}"
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-n_samples = 1000
+n_samples = 5000
 kernel_length = "${base.kernel_length}"
 waveform_duration = "${base.waveform_duration}"
 datadir = "${base.datadir}"
