@@ -91,7 +91,7 @@ valid_frac = 0.25
 valid_stride = 0.0625
 
 # arch parameters
-#commands.coupling = "${base.coupling}"
+commands.coupling = "${base.coupling}"
 commands.maf = "${base.maf}"
 
 
