@@ -60,6 +60,9 @@ def main(
     flow_obj.build_flow()
     flow_obj.set_weights_from_state_dict(model_state)
     flow_obj.to_device(device)
+    # set flow to eval mode
+    flow = flow_obj.flow
+    # flow.eval()
 
     logging.info(
         "Initializing preprocessor and setting weights from trained state"
@@ -100,8 +103,9 @@ def main(
     total_sampling_time = 0.0
 
     priors["phi"] = Uniform(
-        name="phi", minimum=0, maximum=2 * np.pi, latex_label="phi"
+        name="phi", minimum=-np.pi, maximum=np.pi, latex_label="phi"
     )
+
     for signal, param in test_dataloader:
         signal = signal.to(device)
         param = param.to(device)
@@ -109,7 +113,7 @@ def main(
 
         _time = time()
         with torch.no_grad():
-            samples = flow_obj.flow.sample(num_samples_draw, context=strain)
+            samples = flow.sample(num_samples_draw, context=strain)
             descaled_samples = preprocessor.scaler(
                 samples[0].transpose(1, 0), reverse=True
             )
@@ -246,7 +250,7 @@ def main(
 
         _time = time()
         with torch.no_grad():
-            samples = flow_obj.flow.sample(num_samples_draw, context=strain)
+            samples = flow.sample(num_samples_draw, context=strain)
             descaled_samples = preprocessor.scaler(
                 samples[0].transpose(1, 0), reverse=True
             )
@@ -275,5 +279,7 @@ def main(
         results.append(res)
 
     # generate corner plots of the results on top of each other
-    results = np.column_stack((descaled_results, bilby_results))
+    results = np.column_stack(
+        (descaled_results, bilby_results),
+    )
     generate_corner_plots(results, outdir / "corner")

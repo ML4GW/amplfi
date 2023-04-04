@@ -67,12 +67,13 @@ def cast_samples_as_bilby_result(
 def generate_corner_plots(
     results: List[Tuple[bilby.core.result.Result]], writedir: Path
 ):
-    for i, results in enumerate(results):
+
+    for i, result in enumerate(results):
         filename = writedir / f"corner_{i}.png"
         bilby.result.plot_multiple(
-            results,
-            parameters=["ra", "dec", "psi"],
+            result,
             save=True,
             filename=filename,
             levels=(0.5, 0.9),
+            parameters=result[1].injection_parameters,
         )

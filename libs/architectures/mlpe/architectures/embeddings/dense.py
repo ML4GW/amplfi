@@ -20,7 +20,7 @@ class BasicBlock(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
 
         out = self.layer(x)
-        out = self.norm(out)
+        # out = self.norm(out)
         out = self.activation(out)
 
         return out

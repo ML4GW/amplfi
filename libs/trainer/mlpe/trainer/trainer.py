@@ -200,7 +200,6 @@ def train(
     logging.info("Building and initializing model")
 
     # instantiate the embedding and pass to flow
-    print(n_ifos, param_dim, strain_dim)
     embedding = embedding((n_ifos, strain_dim))
     flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
 
@@ -273,8 +272,6 @@ def train(
             scaler,
             lr_scheduler,
         )
-        print(train_loss, valid_loss)
-        print("\n")
 
         history["train_loss"].append(train_loss.cpu().item())
 
