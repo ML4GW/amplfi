@@ -1,4 +1,4 @@
-name: mlpe-base
+name: mlpe-datagen
 channels:
   - conda-forge
 dependencies:
