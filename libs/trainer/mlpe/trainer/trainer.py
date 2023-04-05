@@ -103,7 +103,8 @@ def train_for_one_epoch(
 
 
 def train(
-    architecture: Callable,
+    flow: Callable,
+    embedding: Callable,
     outdir: Path,
     # data params
     train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
@@ -200,12 +201,13 @@ def train(
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
-    # instantiate the architecture
-    flow_obj = architecture((param_dim, n_ifos, strain_dim))
-    # build the flow
+    # instantiate the embedding network, pass it to the flow
+    # object, and then build the flow
+    embedding = embedding((n_ifos, strain_dim))
+    flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
     flow_obj.build_flow()
-    # send to neural net to device
     flow_obj.to_device(device)
+
     # if we passed a module for preprocessing,
     # include it in the model so that the weights
     # get exported along with everything else
@@ -271,8 +273,6 @@ def train(
             scaler,
             lr_scheduler,
         )
-        print(train_loss, valid_loss)
-        print("\n")
 
         history["train_loss"].append(train_loss.cpu().item())
 
