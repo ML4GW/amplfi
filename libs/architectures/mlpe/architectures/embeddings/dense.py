@@ -65,7 +65,7 @@ class NChannelDenseEmbedding(nn.Module):
         self.embeddings = nn.ModuleList(
             [DenseEmbedding(in_shape, out_shape, **kwargs) for _ in range(N)]
         )
-        self.final_layer = nn.Linear(N * out_shape, out_shape)
+        self.final_layer = DenseEmbedding(N * out_shape, out_shape, **kwargs)
 
     def forward(self, x):
         embedded_vals = []
@@ -93,7 +93,7 @@ class BasicBlock(torch.nn.Module):
     def forward(self, x: Tensor) -> Tensor:
 
         out = self.layer(x)
-        # out = self.norm(out)
+        out = self.norm(out)
         out = self.activation(out)
 
         return out
