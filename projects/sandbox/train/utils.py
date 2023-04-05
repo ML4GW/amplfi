@@ -55,7 +55,7 @@ def prepare_augmentation(
 
         # if we've passed intrinsic parameters,
         # split them into validation and training
-        if intrinsic:
+        if intrinsic is not None:
             intrinsic = intrinsic.transpose(1, 0)
             intrinsic, valid_intrinsic = split(intrinsic, 1 - valid_frac, 0)
         # otherwise, set valid_intrinsic to None

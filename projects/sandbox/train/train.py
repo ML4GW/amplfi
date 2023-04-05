@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import h5py
 import numpy as np
@@ -9,10 +9,13 @@ from utils import EXTRINSIC_DISTS, prepare_augmentation, split
 from validation import make_validation_dataset
 
 from ml4gw.transforms import ChannelWiseScaler
+from mlpe.architectures import embeddings, flows
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.transforms import Preprocessor
 from mlpe.logging import configure_logging
-from mlpe.trainer import trainify
+from mlpe.trainer import train
+from typeo import scriptify
+from typeo.utils import make_dummy
 
 
 def load_background(background_path: Path, ifos):
@@ -52,10 +55,25 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
     return signals, intrinsic
 
 
-@trainify
+@scriptify(
+    kwargs=make_dummy(
+        train,
+        exclude=[
+            "train_dataset",
+            "valid_dataset",
+            "preprocessor",
+            "flow",
+            "embedding",
+        ],
+    ),
+    flow=flows,
+    embedding=embeddings,
+)
 def main(
     background_path: Path,
     waveform_dataset: Path,
+    flow: Callable,
+    embedding: Callable,
     inference_params: List[str],
     ifos: List[str],
     sample_rate: float,
@@ -74,9 +92,9 @@ def main(
     **kwargs
 ):
 
-    configure_logging(verbose=verbose)
-    num_ifos = len(ifos)
-    num_params = len(inference_params)
+    logdir.mkdir(exist_ok=True, parents=True)
+    configure_logging(logdir / "train.log", verbose)
+    param_dim = len(inference_params)
 
     # load in background of shape (n_ifos, n_samples) and split into training
     # and validation if valid_frac specified
@@ -141,9 +159,9 @@ def main(
     logging.info("Preparing preprocessors")
     # create preprocessor out of whitening transform
     # for strain data, and standard scaler for parameters
-    standard_scaler = ChannelWiseScaler(num_params)
+    standard_scaler = ChannelWiseScaler(param_dim)
     preprocessor = Preprocessor(
-        num_ifos,
+        param_dim,
         sample_rate,
         fduration,
         scaler=standard_scaler,
@@ -182,4 +200,13 @@ def main(
         )
 
     logging.info("Launching training")
-    return train_dataset, valid_dataset, preprocessor
+    train(
+        flow,
+        embedding,
+        outdir,
+        train_dataset,
+        valid_dataset,
+        preprocessor,
+        device=device,
+        **kwargs
+    )
