@@ -4,7 +4,7 @@ https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
 but with 1d convolutions and arbitrary kernel sizes
 """
 
-from typing import Callable, List, Literal, Optional
+from typing import Callable, List, Literal, Optional, Tuple
 
 import torch
 import torch.nn as nn
@@ -290,7 +290,7 @@ class ResNet(nn.Module):
 
     def __init__(
         self,
-        num_ifos: int,
+        num_ifos: Tuple[int, int],
         context_dim: int,
         layers: List[int],
         kernel_size: int = 3,
@@ -302,6 +302,10 @@ class ResNet(nn.Module):
         norm_groups: Optional[int] = None,
     ) -> None:
         super().__init__()
+
+        # hack since other embedding require both n_ifos and strain
+        # to initialize
+        num_ifos, _ = num_ifos
         self._norm_layer = get_norm_layer(norm_groups)
 
         self.inplanes = 64
