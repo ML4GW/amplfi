@@ -1,4 +1,6 @@
 [tool.pinto]
+# note: until pinto update gets in, any steps
+# that have subcommands will fail (e.g. training and sampling)
 steps = [
     "data_generation:generate-background",
     "data_generation:generate-waveforms",
@@ -30,11 +32,15 @@ kernel_length = 2
 highpass = 32
 fduration = 1
 waveform_duration = 8
+bilby_duration = 4
 
+# flow subcommands
 coupling = {num_flow_steps = 10}
 maf = {num_transforms = 10, num_blocks = 2}
 
-bilby_duration = 4
+# embedding subcommands
+dense = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
+resnet = {context_dim = 50, layers = [1, 1], norm_groups = 2}
 
 
 [tool.typeo.scripts.generate-background]
@@ -90,9 +96,15 @@ use_amp = false
 valid_frac = 0.25
 valid_stride = 0.0625
 
-# arch parameters
-commands.coupling = "${base.coupling}"
-commands.maf = "${base.maf}"
+# flow subcommand
+[tool.typeo.scripts.train.flow]
+coupling = "${base.coupling}"
+maf = "${base.maf}"
+
+# embedding subcommand
+[tool.typeo.scripts.train.embedding]
+dense = "${base.dense}"
+resnet = "${base.resnet}"
 
 
 [tool.typeo.scripts.generate-flow-injections]
@@ -162,6 +174,12 @@ device = "cuda"
 channel = "${base.channel}"
 basedir = "${base.basedir}"
 
-# arch parameters
-commands.coupling = "${base.coupling}"
-commands.maf = "${base.maf}"
+# flow subcommand
+[tool.typeo.scripts.sample-with-flow.flow]
+maf = "${base.maf}"
+coupling = "${base.coupling}"
+
+# embedding subcommand
+[tool.typeo.scripts.sample-with-flow.embedding]
+dense = "${base.dense}"
+resnet = "${base.resnet}"
