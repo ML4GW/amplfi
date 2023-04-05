@@ -14,6 +14,7 @@ from utils import (
     generate_corner_plots,
     load_preprocessor_state,
     load_test_data,
+    plot_mollview,
 )
 
 from ml4gw.transforms import ChannelWiseScaler
@@ -142,6 +143,8 @@ def main(
 
     logging.info("Making pp-plot")
     pp_plot_dir = writedir / "pp_plots"
+    skymap_dir = writedir / "skymaps"
+    skymap_dir.mkdir(exist_ok=True, parents=True)
     pp_plot_scaled_filename = pp_plot_dir / "pp-plot-test-set-scaled.png"
     pp_plot_filename = pp_plot_dir / "pp-plot-test-set.png"
 
@@ -261,7 +264,15 @@ def main(
         descaled_res = cast_samples_as_bilby_result(
             descaled_samples, param, inference_params, priors, label="flow"
         )
+
         descaled_results.append(descaled_res)
+
+        plot_mollview(
+            descaled_res.posterior["ra"].to_numpy(),
+            descaled_res.posterior["dec"].to_numpy(),
+            truth=(param[6], param[4]),
+            outfile=skymap_dir / f"mollview_{i}.png",
+        )
 
         res = cast_samples_as_bilby_result(
             samples,
