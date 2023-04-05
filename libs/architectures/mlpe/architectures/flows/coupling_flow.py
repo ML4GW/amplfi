@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, Optional, Tuple
+from pathlib import Path
+from typing import Callable, Optional, Tuple
 
 import nflows.nn.nets as nn_
 import torch
@@ -7,9 +8,6 @@ from nflows import distributions, transforms, utils
 from nflows.flows import Flow
 
 from mlpe.architectures.flows.flow import NormalizingFlow
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 @dataclass
