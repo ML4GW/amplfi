@@ -54,18 +54,22 @@ class NChannelDenseEmbedding(nn.Module):
 
     def __init__(
         self,
-        N,
-        in_shape,
-        out_shape,
+        shape: Tuple[int, int],
+        context_dim: int,
         **kwargs,
     ) -> None:
         super().__init__()
-        self.N = N
+        n_ifos, in_features = shape
         self.activation = kwargs.get("activation", torch.relu)
         self.embeddings = nn.ModuleList(
-            [DenseEmbedding(in_shape, out_shape, **kwargs) for _ in range(N)]
+            [
+                DenseEmbedding(in_features, context_dim, **kwargs)
+                for _ in range(n_ifos)
+            ]
         )
-        self.final_layer = DenseEmbedding(N * out_shape, out_shape, **kwargs)
+        self.final_layer = DenseEmbedding(
+            n_ifos * context_dim, context_dim, **kwargs
+        )
 
     def forward(self, x):
         embedded_vals = []
