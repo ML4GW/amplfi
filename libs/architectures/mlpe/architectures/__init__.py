@@ -57,6 +57,6 @@ flows = {
 embeddings = {
     "flattener": _wrap_embedding(Flattener),
     "dense": _wrap_embedding(NChannelDenseEmbedding),
-    "coherent-dense": _wrap_embedding(CoherentDenseEmbedding),
+    "coherent": _wrap_embedding(CoherentDenseEmbedding),
     "resnet": _wrap_embedding(ResNet),
 }

@@ -95,6 +95,7 @@ def main(
     logdir.mkdir(exist_ok=True, parents=True)
     configure_logging(logdir / "train.log", verbose)
     param_dim = len(inference_params)
+    n_ifos = len(ifos)
 
     # load in background of shape (n_ifos, n_samples) and split into training
     # and validation if valid_frac specified
@@ -161,7 +162,7 @@ def main(
     # for strain data, and standard scaler for parameters
     standard_scaler = ChannelWiseScaler(param_dim)
     preprocessor = Preprocessor(
-        param_dim,
+        n_ifos,
         sample_rate,
         fduration,
         scaler=standard_scaler,

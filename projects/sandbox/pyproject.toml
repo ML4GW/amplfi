@@ -17,7 +17,9 @@ datadir = "${DATA_DIR}"
 logdir = "${BASE_DIR}/log"
 sample_rate = 2048
 ifos = ['H1', 'L1']
-inference_params = ["dec", "psi", "phi"]
+# note: due to how ml4gw returns extrinsic parameters, the ordering of dec, psi, phi is important,
+# and these parameters should be at the end. We should find a way to make this more robust.
+inference_params = ["frequency", "quality", "hrss", "phase", "dec", "psi", "phi"]
 trigger_distance = 0.0
 start = 1262044818
 stop = 1262088018
@@ -40,6 +42,7 @@ maf = {num_transforms = 10, num_blocks = 2}
 
 # embedding subcommands
 dense = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
+coherent = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
 resnet = {context_dim = 50, layers = [1, 1], norm_groups = 2}
 
 
@@ -61,7 +64,7 @@ gaussian = true
 [tool.typeo.scripts.generate-waveforms]
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
-n_samples = 10000
+n_samples = 50000
 sample_rate = "${base.sample_rate}" 
 force_generation = "${base.force_generation}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
@@ -104,6 +107,7 @@ maf = "${base.maf}"
 # embedding subcommand
 [tool.typeo.scripts.train.embedding]
 dense = "${base.dense}"
+coherent = "${base.coherent}"
 resnet = "${base.resnet}"
 
 
@@ -182,4 +186,5 @@ coupling = "${base.coupling}"
 # embedding subcommand
 [tool.typeo.scripts.sample-with-flow.embedding]
 dense = "${base.dense}"
+coherent = "${base.coherent}"
 resnet = "${base.resnet}"
