@@ -73,12 +73,14 @@ class NormalizingFlow(ABC):
 
     @property
     def context_dim(self):
-        sample_tensor = torch.zeros((1, self.n_ifos, self.strain_dim))
-        context_dim = self.embedding_net(sample_tensor).shape[-1]
+        dummy_tensor = torch.zeros((1, self.n_ifos, self.strain_dim))
+        context_dim = self.embedding_net(dummy_tensor).shape[-1]
         return context_dim
 
     @property
     def flow(self):
         if self._flow is None:
-            self.build_flow()
+            raise ValueError(
+                "Flow is not built. Call build_flow before accessing flow"
+            )
         return self._flow

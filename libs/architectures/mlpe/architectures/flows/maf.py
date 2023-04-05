@@ -9,13 +9,13 @@ from nflows.transforms.autoregressive import (
     MaskedAffineAutoregressiveTransform,
 )
 
-from mlpe.architectures.embeddings import NChannelDenseEmbedding
 from mlpe.architectures.flows.flow import NormalizingFlow
 
 
 @dataclass
 class MaskedAutoRegressiveFlow(NormalizingFlow):
     shape: Tuple[int, int, int]
+    embedding_net: torch.nn.Module
     num_transforms: int = 10
     hidden_features: int = 50
     num_blocks: int = 2
@@ -25,20 +25,12 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
 
     def __post_init__(self):
         self.param_dim, self.n_ifos, self.strain_dim = self.shape
-        # FIXME: port to project config; remove hardcoding
-        self.embedding_net = NChannelDenseEmbedding(
-            self.n_ifos,
-            self.strain_dim,
-            50,
-            activation=self.activation,
-            hidden_layer_size=100,
-            num_hidden_layers=2,
-        )
 
         super().__init__(
             self.param_dim,
             self.n_ifos,
             self.strain_dim,
+            embedding_net=self.embedding_net,
             num_flow_steps=self.num_transforms,
             embedding_net=self.embedding_net,
         )
@@ -65,7 +57,7 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
 
     def build_flow(self):
         transforms = []
-        for idx in range(self.num_transforms):
+        for _ in range(self.num_transforms):
             transforms.extend(self.transform_block())
 
         transform = CompositeTransform(transforms)
