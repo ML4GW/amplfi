@@ -32,7 +32,6 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
             self.strain_dim,
             embedding_net=self.embedding_net,
             num_flow_steps=self.num_transforms,
-            embedding_net=self.embedding_net,
         )
 
     def transform_block(self):
