@@ -41,7 +41,7 @@ max_epochs = 500
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
-maf = {num_transforms = 10, num_blocks = 2}
+maf = {num_transforms = 10, num_blocks = 2, use_batch_norm = true}
 
 # embedding subcommands
 dense = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
