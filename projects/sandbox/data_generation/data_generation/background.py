@@ -10,10 +10,10 @@ from gwpy.frequencyseries import FrequencySeries
 from gwpy.segments import DataQualityDict
 from gwpy.timeseries import TimeSeries
 from mldatafind.authenticate import authenticate
-from typeo import scriptify
 
 from ml4gw.spectral import normalize_psd
 from mlpe.logging import configure_logging
+from typeo import scriptify
 
 
 @scriptify

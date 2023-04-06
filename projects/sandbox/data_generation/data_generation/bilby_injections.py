@@ -12,13 +12,13 @@ from data_generation.utils import (
 )
 from gwpy.timeseries import TimeSeries
 from mldatafind.segments import query_segments
-from typeo import scriptify
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
 from ml4gw.spectral import normalize_psd
 from mlpe.injection import generate_gw
 from mlpe.injection.utils import phi_from_ra
 from mlpe.logging import configure_logging
+from typeo import scriptify
 
 
 @scriptify

@@ -10,9 +10,9 @@ from bilby_pipe.job_creation import generate_dag
 from bilby_pipe.main import MainInput, write_complete_config_file
 from bilby_pipe.parser import create_parser
 from bilby_pipe.utils import log_version_information, parse_args
-from typeo import scriptify
 
 from mlpe.logging import configure_logging
+from typeo import scriptify
 
 
 @scriptify
