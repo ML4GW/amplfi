@@ -36,6 +36,9 @@ fduration = 1
 waveform_duration = 8
 bilby_duration = 4
 
+batches_per_epoch = 200
+max_epochs = 500
+
 # flow subcommands
 coupling = {num_flow_steps = 10}
 maf = {num_transforms = 10, num_blocks = 2}
@@ -43,8 +46,7 @@ maf = {num_transforms = 10, num_blocks = 2}
 # embedding subcommands
 dense = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
 coherent = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
-resnet = {context_dim = 50, layers = [1, 1], norm_groups = 2}
-
+resnet = {context_dim = 128, layers = [2, 2], norm_groups = 8}
 
 [tool.typeo.scripts.generate-background]
 datadir = "${base.datadir}"
@@ -77,7 +79,6 @@ background_path = "${base.datadir}/background.h5"
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
 inference_params = "${base.inference_params}"
-optimizer_fn = "torch.optim.Adam"
 
 ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
@@ -86,10 +87,8 @@ fduration = "${base.fduration}"
 highpass = 32 
 trigger_distance = "${base.trigger_distance}"
 batch_size = 512
-batches_per_epoch = 200
-max_epochs = 350
-
-lr = 1e-3
+batches_per_epoch = "${base.batches_per_epoch}"
+max_epochs = "${base.max_epochs}"
 
 early_stop = 30
 
@@ -109,6 +108,14 @@ maf = "${base.maf}"
 dense = "${base.dense}"
 coherent = "${base.coherent}"
 resnet = "${base.resnet}"
+
+# scheduler subcommand
+[tool.typeo.scripts.train.optimizer]
+adam = {lr = 1e-4}
+
+# optimizer subcommand
+[tool.typeo.scripts.train.scheduler]
+onecycle = {max_lr = 1e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 200, steps_per_epoch = "${base.batches_per_epoch}" }
 
 
 [tool.typeo.scripts.generate-flow-injections]

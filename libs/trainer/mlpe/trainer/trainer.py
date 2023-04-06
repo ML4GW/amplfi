@@ -105,6 +105,8 @@ def train_for_one_epoch(
 def train(
     flow: Callable,
     embedding: Callable,
+    optimizer: Callable,
+    scheduler: Callable,
     outdir: Path,
     # data params
     train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
@@ -113,11 +115,6 @@ def train(
     # optimization params
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
-    lr: float = 1e-3,
-    optimizer_fn: Callable = torch.optim.Adam,
-    optimizer_kwargs: dict = dict(weight_decay=0),
-    scheduler_fn: Callable = torch.optim.lr_scheduler.CosineAnnealingLR,
-    scheduler_kwargs: dict = dict(eta_min=1e-5, T_max=10000),
     early_stop: Optional[int] = None,
     # misc params
     device: Optional[str] = None,
@@ -230,10 +227,8 @@ def train(
     logging.info("Initializing loss and optimizer")
 
     # TODO: Allow different loss functions or optimizers to be passed?
-    optimizer = optimizer_fn(
-        flow_obj.flow.parameters(), lr=lr, **optimizer_kwargs
-    )
-    lr_scheduler = scheduler_fn(optimizer, **scheduler_kwargs)
+    optimizer = optimizer(flow_obj.flow.parameters())
+    lr_scheduler = scheduler(optimizer)
 
     # start training
     torch.backends.cudnn.benchmark = True
