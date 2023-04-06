@@ -17,6 +17,10 @@ def _wrap_scheduler(scheduler):
     return func
 
 
+# typeo requires type hints to parse arguments from the command line.
+# this is a thin wrapper that type hints torch scheduler arguments.
+# if there is an argument you wish to specify from the command line,
+# you must add it here.
 class OneCycleLR(torch.optim.lr_scheduler.OneCycleLR):
     def __init__(
         self,

@@ -9,13 +9,7 @@ from mlpe.architectures.embeddings import (
 from mlpe.architectures.flows import CouplingFlow, MaskedAutoRegressiveFlow
 
 
-# this is a decorator that takes a flow and returns a function that
-# takes the same arguments as the flow, but with the first
-# two arguments (the shape and embedding) removed.
-# This is used to wrap the architectures in
-# this file so that they can be used as a callable in the config file.
-# This callable willthen be called with the shape and embedding
-# as the first two arguments to instantiate the flow
+# see the comment in the `embeddings` dict below for an explanation of this
 def _wrap_flow(arch):
     def func(*args, **kwargs):
         def f(shape, embedding):
@@ -29,22 +23,33 @@ def _wrap_flow(arch):
     return func
 
 
-# this is a decorator that takes an embedding and returns a function that
-# takes the same arguments as the embedding, but with the first two
-# arguments (the number of ifos and the parameter dimension) removed.
-# This is used to wrap the architectures in
-# this file so that they can be used as a callable in the config file.
-# This callable will then be called with the number of ifos and the
-# parameter dimension as the first two arguments to instantiate the
-# embedding
-def _wrap_embedding(arch):
+# this is a decorator that takes an embedding
+# and returns a function `func` whose
+# arguments are the same arguments as the embedding,
+# but with the first argument
+# (the "shape", i.e. number of ifos and the parameter dimension) removed.
+
+# This allows us to specify the embedding
+# as a callable in a function signature,
+# and expose the embedding's arguments at the command line.
+
+# When typeo parses the config file, it will call the function `func` with the
+# arguments specified in the config file. `func` returns another function `f`,
+# which has the embeddings arguments passed to it.
+
+# This function `f` will then be called with the shape as the first argument
+# and will instantiate the embedding.
+# All of embeddings arguments are automatically passed to `f`.
+
+
+def _wrap_embedding(embedding):
     def func(*args, **kwargs):
         def f(shape):
-            return arch(shape, *args, **kwargs)
+            return embedding(shape, *args, **kwargs)
 
         return f
 
-    params = inspect.signature(arch).parameters
+    params = inspect.signature(embedding).parameters
     params = list(params.values())[1:]
     func.__signature__ = inspect.Signature(params)
     return func

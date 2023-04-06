@@ -4,11 +4,6 @@ from typing import Iterable
 import torch
 
 
-# this is a decorator that takes an optimizer and returns a function that
-# takes the same arguments as the optimizer, but with the first argument
-# (the parameters) removed.
-# This is used to wrap the optimizers in
-# this file so that they can be used as a callable in the config file.
 def _wrap_optimizer(optimizer):
     def func(*args, **kwargs):
         def f(parameters):
@@ -22,8 +17,10 @@ def _wrap_optimizer(optimizer):
     return func
 
 
-# small wrapper to type hint for typeo;
-# if there is a parameter
+# typeo requires type hints to parse arguments from the command line.
+# this is a thin wrapper that type hints torch.optim.Adam arguments.
+# if there is an argument you wish to specify from the command line,
+# you must add it here.
 class Adam(torch.optim.Adam):
     def __init__(
         self,
