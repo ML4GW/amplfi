@@ -13,7 +13,7 @@ from mlpe.architectures import embeddings, flows
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.transforms import Preprocessor
 from mlpe.logging import configure_logging
-from mlpe.trainer import train
+from mlpe.trainer import optimizers, schedulers, train
 from typeo import scriptify
 from typeo.utils import make_dummy
 
@@ -59,21 +59,27 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
     kwargs=make_dummy(
         train,
         exclude=[
+            "flow",
+            "embedding",
+            "optimizer",
+            "scheduler",
             "train_dataset",
             "valid_dataset",
             "preprocessor",
-            "flow",
-            "embedding",
         ],
     ),
     flow=flows,
     embedding=embeddings,
+    optimizer=optimizers,
+    scheduler=schedulers,
 )
 def main(
     background_path: Path,
     waveform_dataset: Path,
     flow: Callable,
     embedding: Callable,
+    optimizer: Callable,
+    scheduler: Callable,
     inference_params: List[str],
     ifos: List[str],
     sample_rate: float,
@@ -204,6 +210,8 @@ def main(
     train(
         flow,
         embedding,
+        optimizer,
+        scheduler,
         outdir,
         train_dataset,
         valid_dataset,
