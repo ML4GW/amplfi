@@ -14,7 +14,7 @@ class DenseEmbedding(torch.nn.Module):
         out_features,
         hidden_layer_size=100,
         num_hidden_layers=3,
-        activation=torch.relu,
+        activation=torch.nn.functional.relu,
     ) -> None:
         super().__init__()
         self.in_features = in_features
@@ -56,19 +56,21 @@ class NChannelDenseEmbedding(nn.Module):
         self,
         shape: Tuple[int, int],
         context_dim: int,
-        **kwargs,
+        activation: Callable = torch.nn.functional.relu,
     ) -> None:
         super().__init__()
         n_ifos, in_features = shape
-        self.activation = kwargs.get("activation", torch.relu)
+        self.activation = activation
         self.embeddings = nn.ModuleList(
             [
-                DenseEmbedding(in_features, context_dim, **kwargs)
+                DenseEmbedding(
+                    in_features, context_dim, activation=self.activation
+                )
                 for _ in range(n_ifos)
             ]
         )
         self.final_layer = DenseEmbedding(
-            n_ifos * context_dim, context_dim, **kwargs
+            n_ifos * context_dim, context_dim, activation=self.activation
         )
 
     def forward(self, x):
@@ -128,12 +130,12 @@ class CoherentDenseEmbedding(torch.nn.Module):
         context_dim: int,
         hidden_layer_size: int,
         num_hidden_layers: int,
+        activation: torch.nn.functional.relu,
     ) -> None:
         super().__init__()
         n_ifos, in_features = shape
+        self.activation = activation
 
-        # TODO: make activation a parameter; typeo was having trouble here
-        self.activation = torch.nn.functional.relu
         self.initial_layer = nn.Linear(in_features, hidden_layer_size)
         self.hidden_layers = nn.Sequential(
             *[
