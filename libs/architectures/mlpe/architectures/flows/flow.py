@@ -60,14 +60,14 @@ class NormalizingFlow(ABC):
     def set_weights_from_state_dict(self, state_dict):
         if self._flow is None:
             raise ValueError(
-                "Flow is not built. Call build_flow before setting weights"
+                "Flow is not built. Call build_flow() before setting weights"
             )
         self._flow.load_state_dict(state_dict)
 
     def to_device(self, device):
         if self._flow is None:
             raise ValueError(
-                "Flow is not built. Call build_flow before sending to device"
+                "Flow is not built. Call build_flow() before sending to device"
             )
         self._flow = self._flow.to(device)
 
@@ -80,7 +80,5 @@ class NormalizingFlow(ABC):
     @property
     def flow(self):
         if self._flow is None:
-            raise ValueError(
-                "Flow is not built. Call build_flow before accessing flow"
-            )
+            self.build_flow()
         return self._flow
