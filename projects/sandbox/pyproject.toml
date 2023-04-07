@@ -42,12 +42,12 @@ max_epochs = 500
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
-maf = {num_transforms = 15, num_blocks = 2, use_batch_norm = true}
+maf = {num_transforms = 6, num_blocks = 2, use_batch_norm = true}
 
 # embedding subcommands
 dense = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
 coherent = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
-resnet = {context_dim = 128, layers = [2, 2], norm_groups = 2}
+resnet = {context_dim = 50, layers = [2, 2], norm_groups = 8}
 
 [tool.typeo.scripts.generate-background]
 datadir = "${base.datadir}"
@@ -93,9 +93,10 @@ max_epochs = "${base.max_epochs}"
 
 early_stop = 150
 
+use_amp = true
+profile = true
 device = "cuda"
 profile = false
-use_amp = false
 valid_frac = 0.25
 valid_stride = 0.0625
 
