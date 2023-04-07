@@ -278,10 +278,10 @@ def main(
         descaled_results.append(descaled_res)
 
         plot_mollview(
-            descaled_res.posterior["ra"].to_numpy(),
-            descaled_res.posterior["dec"].to_numpy(),
+            descaled_res.posterior["ra"].to_numpy().copy(),
+            descaled_res.posterior["dec"].to_numpy().copy(),
             truth=(param[6], param[4]),
-            outfile=skymap_dir / f"mollview_{i}.png",
+            outpath=skymap_dir / f"mollview_{i}.png",
         )
 
         res = cast_samples_as_bilby_result(
@@ -294,5 +294,5 @@ def main(
         results.append(res)
 
     # generate corner plots of the results on top of each other
-    results = np.column_stack((descaled_results, bilby_results))
-    generate_corner_plots(results, basedir / "corner")
+    # results = np.column_stack((descaled_results, bilby_results))
+    generate_corner_plots(descaled_results, basedir / "corner")
