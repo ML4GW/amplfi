@@ -67,12 +67,25 @@ def cast_samples_as_bilby_result(
 
 
 def generate_corner_plots(
+    results: List[bilby.core.result.Result], writedir: Path
+):
+    for i, result in enumerate(results):
+        filename = writedir / f"corner_{i}.png"
+        result.plot_corner(
+            parameters=result.injection_parameters,
+            save=True,
+            filename=filename,
+            levels=(0.5, 0.9),
+        )
+
+
+def generate_overlapping_corner_plots(
     results: List[Tuple[bilby.core.result.Result]], writedir: Path
 ):
-    for i, results in enumerate(results):
+    for i, result in enumerate(results):
         filename = writedir / f"corner_{i}.png"
         bilby.result.plot_multiple(
-            results,
+            result,
             parameters=["ra", "dec", "psi"],
             save=True,
             filename=filename,
@@ -103,8 +116,8 @@ def plot_mollview(
     dec_samples_mask = (dec_samples > 0) * (dec_samples < np.pi)
 
     net_mask = ra_samples_mask * dec_samples_mask
-    ra_samples = ra_samples[net_mask].values
-    dec_samples = dec_samples[net_mask].values
+    ra_samples = ra_samples[net_mask]
+    dec_samples = dec_samples[net_mask]
 
     # calculate number of samples in each pixel
     NPIX = hp.nside2npix(nside)
@@ -121,6 +134,7 @@ def plot_mollview(
     fig = hp.mollview(m)
     if truth is not None:
         ra_inj, dec_inj = truth
+        dec_inj += np.pi / 2
         hp.visufunc.projscatter(
             dec_inj, ra_inj, marker="x", color="red", s=150
         )

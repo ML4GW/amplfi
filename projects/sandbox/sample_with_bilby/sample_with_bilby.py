@@ -83,7 +83,7 @@ def main(
     args.plot_trace = True
     args.plot_corner = False  # getting errors with this
     args.plot_skymap = True
-    args.result_format = "pickle"
+    # args.result_format = "pickle"
     args.duration = bilby_duration
     args.request_cpus = request_cpus
     args.enforce_signal_duration = False

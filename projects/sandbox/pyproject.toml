@@ -36,8 +36,9 @@ fduration = 1
 waveform_duration = 8
 bilby_duration = 4
 
+# training parameters
 batches_per_epoch = 300
-max_epochs = 1000
+max_epochs = 500
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
@@ -46,7 +47,7 @@ maf = {num_transforms = 15, num_blocks = 2, use_batch_norm = true}
 # embedding subcommands
 dense = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
 coherent = {context_dim = 50, hidden_layer_size = 128, num_hidden_layers = 2}
-resnet = {context_dim = 128, layers = [2, 2, 2, 2], norm_groups = 8}
+resnet = {context_dim = 128, layers = [2, 2], norm_groups = 2}
 
 [tool.typeo.scripts.generate-background]
 datadir = "${base.datadir}"
@@ -90,7 +91,7 @@ batch_size = 512
 batches_per_epoch = "${base.batches_per_epoch}"
 max_epochs = "${base.max_epochs}"
 
-early_stop = 1000
+early_stop = 150
 
 device = "cuda"
 profile = false
@@ -111,11 +112,11 @@ resnet = "${base.resnet}"
 
 # scheduler subcommand
 [tool.typeo.scripts.train.optimizer]
-adam = {lr = 1e-4}
+adam = {lr = 1e-4, weight_decay = 1e-4}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
-onecycle = {max_lr = 3e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 200, steps_per_epoch = "${base.batches_per_epoch}" }
+onecycle = {max_lr = 5e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 100, steps_per_epoch = "${base.batches_per_epoch}" }
 
 
 [tool.typeo.scripts.generate-flow-injections]
@@ -128,7 +129,7 @@ stop = "${base.test_stop}"
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-n_samples = 5000
+n_samples = 1000
 kernel_length = "${base.kernel_length}"
 waveform_duration = "${base.waveform_duration}"
 datadir = "${base.datadir}"
@@ -176,14 +177,10 @@ sample_rate = "${base.sample_rate}"
 fduration = "${base.fduration}"
 model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
-preprocessor_dir = "${base.basedir}/training/preprocessor"
-writedir = "${base.basedir}"
+basedir = "${base.basedir}"
 datadir = "${base.datadir}"
-logdir = "${base.logdir}"
 num_samples_draw = 10000
 device = "cuda"
-channel = "${base.channel}"
-basedir = "${base.basedir}"
 
 # flow subcommand
 [tool.typeo.scripts.sample-with-flow.flow]
