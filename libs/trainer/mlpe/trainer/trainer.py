@@ -28,17 +28,19 @@ def train_for_one_epoch(
     start_time = time.time()
     flow.train()
     device = next(flow.parameters()).device
-
+    print(scaler is not None)
     for strain, parameters in train_dataset:
         if preprocessor is not None:
             strain, parameters = preprocessor(strain, parameters)
 
         optimizer.zero_grad(set_to_none=True)  # reset gradient
 
-        with torch.autocast("cuda", enabled=False):
+        with torch.autocast("cuda", enabled=scaler is not None):
             loss = -flow.log_prob(parameters, context=strain)
+
         train_loss += loss.detach().sum()
         loss = loss.mean()
+
         samples_seen += len(parameters)
 
         if scaler is not None:

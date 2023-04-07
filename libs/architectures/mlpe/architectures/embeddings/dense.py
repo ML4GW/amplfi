@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Tuple
 
 import torch
 import torch.nn as nn
@@ -56,11 +56,10 @@ class NChannelDenseEmbedding(nn.Module):
         self,
         shape: Tuple[int, int],
         context_dim: int,
-        activation: Callable = torch.nn.functional.relu,
     ) -> None:
         super().__init__()
         n_ifos, in_features = shape
-        self.activation = activation
+        self.activation = torch.nn.functional.relu
         self.embeddings = nn.ModuleList(
             [
                 DenseEmbedding(
@@ -89,10 +88,9 @@ class BasicBlock(torch.nn.Module):
         self,
         size: int,
         n_channels: int,
-        activation: Callable = torch.relu,
     ):
         super().__init__()
-        self.activation = activation
+        self.activation = torch.nn.functional.relu
         self.layer = nn.Linear(size, size)
         self.norm = nn.BatchNorm1d(n_channels)
 
@@ -130,11 +128,10 @@ class CoherentDenseEmbedding(torch.nn.Module):
         context_dim: int,
         hidden_layer_size: int,
         num_hidden_layers: int,
-        activation: torch.nn.functional.relu,
     ) -> None:
         super().__init__()
         n_ifos, in_features = shape
-        self.activation = activation
+        self.activation = torch.nn.functional.relu
 
         self.initial_layer = nn.Linear(in_features, hidden_layer_size)
         self.hidden_layers = nn.Sequential(
