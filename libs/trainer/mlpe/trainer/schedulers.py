@@ -1,20 +1,8 @@
-import inspect
 from typing import Optional
 
 import torch
 
-
-def _wrap_scheduler(scheduler):
-    def func(*args, **kwargs):
-        def f(optimizer):
-            return scheduler(optimizer, *args, **kwargs)
-
-        return f
-
-    params = inspect.signature(scheduler).parameters
-    params = list(params.values())[1:]
-    func.__signature__ = inspect.Signature(params)
-    return func
+from mlpe.trainer import _wrap_callable
 
 
 # typeo requires type hints to parse arguments from the command line.
@@ -45,4 +33,4 @@ class OneCycleLR(torch.optim.lr_scheduler.OneCycleLR):
         )
 
 
-schedulers = {"onecycle": _wrap_scheduler(OneCycleLR)}
+schedulers = {"onecycle": _wrap_callable(OneCycleLR)}
