@@ -15,12 +15,12 @@ class CouplingFlow(NormalizingFlow):
 
     shape: Tuple[int, int, int]
     embedding_net: torch.nn.Module
-    num_flow_steps: int
+    num_transforms: int
     hidden_dim: int = 512
     num_transform_blocks: int = 2
     dropout_probability: float = 0.0
     activation: Callable = torch.nn.functional.relu
-    use_batch_norm: bool = False
+    use_batch_norm: bool = True
     num_bins: int = 8
     tails: str = "linear"
     tail_bound: float = 1.0
@@ -86,7 +86,7 @@ class CouplingFlow(NormalizingFlow):
                 transforms.CompositeTransform(
                     [self.transform_block(i), self.linear_block()]
                 )
-                for i in range(self.num_flow_steps)
+                for i in range(self.num_transforms)
             ]
             + [self.linear_block()]
         )

@@ -8,6 +8,7 @@ from nflows.transforms import CompositeTransform, RandomPermutation
 from nflows.transforms.autoregressive import (
     MaskedAffineAutoregressiveTransform,
 )
+from nflows.transforms.normalization import BatchNorm
 
 from mlpe.architectures.flows.flow import NormalizingFlow
 
@@ -16,16 +17,16 @@ from mlpe.architectures.flows.flow import NormalizingFlow
 class MaskedAutoRegressiveFlow(NormalizingFlow):
     shape: Tuple[int, int, int]
     embedding_net: torch.nn.Module
-    num_transforms: int = 10
+    num_transforms: int
     hidden_features: int = 50
     num_blocks: int = 2
     activation: Callable = torch.tanh
-    use_batch_norm: bool = False
+    use_batch_norm: bool = True
     use_residual_blocks: bool = True
+    batch_norm_between_layers: bool = True
 
     def __post_init__(self):
         self.param_dim, self.n_ifos, self.strain_dim = self.shape
-
         super().__init__(
             self.param_dim,
             self.n_ifos,
@@ -37,6 +38,7 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
     def transform_block(self):
         """Returns the single block of the MAF"""
         single_block = [
+            RandomPermutation(features=self.param_dim),
             MaskedAffineAutoregressiveTransform(
                 features=self.param_dim,
                 hidden_features=self.hidden_features,
@@ -46,8 +48,9 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
                 use_batch_norm=self.use_batch_norm,
                 use_residual_blocks=self.use_residual_blocks,
             ),
-            RandomPermutation(features=self.param_dim),
         ]
+        if self.batch_norm_between_layers:
+            single_block.append(BatchNorm(features=self.param_dim))
         return single_block
 
     def distribution(self):
