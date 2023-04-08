@@ -28,7 +28,6 @@ def train_for_one_epoch(
     start_time = time.time()
     flow.train()
     device = next(flow.parameters()).device
-    print(scaler is not None)
     for strain, parameters in train_dataset:
         if preprocessor is not None:
             strain, parameters = preprocessor(strain, parameters)
