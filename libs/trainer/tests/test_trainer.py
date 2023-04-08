@@ -84,7 +84,7 @@ def test_train_one_epoch(n_features):
             train_dataset,
             valid_dataset,
         )
-        print(train_loss, valid_loss)
+
     samples = (
         torch.flatten(flow.sample(100, torch.Tensor([[0]]))).detach().numpy()
     )
