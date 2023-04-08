@@ -1,20 +1,8 @@
-import inspect
 from typing import Iterable
 
 import torch
 
-
-def _wrap_optimizer(optimizer):
-    def func(*args, **kwargs):
-        def f(parameters):
-            return optimizer(parameters, *args, **kwargs)
-
-        return f
-
-    params = inspect.signature(optimizer).parameters
-    params = list(params.values())[1:]
-    func.__signature__ = inspect.Signature(params)
-    return func
+from mlpe.trainer import _wrap_callable
 
 
 # typeo requires type hints to parse arguments from the command line.
@@ -31,4 +19,4 @@ class Adam(torch.optim.Adam):
         super().__init__(parameters, lr=lr, weight_decay=weight_decay)
 
 
-optimizers = {"adam": _wrap_optimizer(Adam)}
+optimizers = {"adam": _wrap_callable(Adam)}
