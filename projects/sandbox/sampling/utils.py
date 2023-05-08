@@ -9,21 +9,35 @@ import numpy as np
 import pandas as pd
 import torch
 
+from ml4gw.transforms import ChannelWiseScaler
+from mlpe.data.transforms import Preprocessor
+from mlpe.injection.utils import phi_from_ra
+
 
 # TODO: add this function to preprocessor module class
 def load_preprocessor_state(
-    preprocessor: torch.nn.Module, preprocessor_dir: Path
+    preprocessor_dir: Path, param_dim, n_ifos, fduration, sample_rate, device
 ):
-
+    standard_scaler = ChannelWiseScaler(param_dim)
+    preprocessor = Preprocessor(
+        n_ifos,
+        sample_rate,
+        fduration,
+        scaler=standard_scaler,
+    )
     whitener_path = preprocessor_dir / "whitener.pt"
     scaler_path = preprocessor_dir / "scaler.pt"
 
     preprocessor.whitener = torch.load(whitener_path)
     preprocessor.scaler = torch.load(scaler_path)
+
+    preprocessor = preprocessor.to(device)
     return preprocessor
 
 
-def load_test_data(testing_path: Path, inference_params: List[str]):
+def initialize_data_loader(
+    testing_path: Path, inference_params: List[str], device
+):
     with h5py.File(testing_path, "r") as f:
         signals = f["injections"][:]
         params = []
@@ -36,7 +50,17 @@ def load_test_data(testing_path: Path, inference_params: List[str]):
             params.append(values)
 
         params = np.vstack(params).T
-    return signals, params
+    test_data = torch.from_numpy(signals).to(torch.float32)
+    test_params = torch.from_numpy(params).to(torch.float32)
+
+    test_dataset = torch.utils.data.TensorDataset(test_data, test_params)
+    test_dataloader = torch.utils.data.DataLoader(
+        test_dataset,
+        pin_memory=False if device == "cpu" else True,
+        batch_size=1,
+        pin_memory_device=device,
+    )
+    return test_dataloader, params
 
 
 def cast_samples_as_bilby_result(
@@ -142,3 +166,76 @@ def plot_mollview(
     plt.savefig(outpath)
 
     return fig
+
+
+def load_and_initialize_flow(
+    flow, embedding, model_state_path, n_ifos, strain_dim, param_dim, device
+):
+    model_state = torch.load(model_state_path)
+    embedding = embedding((n_ifos, strain_dim))
+    flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
+    flow_obj.build_flow()
+    flow_obj.set_weights_from_state_dict(model_state)
+    flow_obj.to_device(device)
+
+    flow = flow_obj.flow
+    return flow
+
+
+def draw_samples_from_model(
+    test_dataloader,
+    flow_obj,
+    preprocessor,
+    inference_params,
+    num_samples_draw,
+    priors,
+    device,
+    label="testing_samples",
+):
+    result_list = []
+    for signal, param in test_dataloader:
+        signal = signal.to(device)
+        param = param.to(device)
+        strain, scaled_param = preprocessor(signal, param)
+        with torch.no_grad():
+            samples = flow_obj.flow.sample(num_samples_draw, context=strain)
+            descaled_samples = preprocessor.scaler(
+                samples[0].transpose(1, 0), reverse=True
+            )
+            descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
+            descaled_res = cast_samples_as_bilby_result(
+                descaled_samples.cpu().numpy()[0],
+                param.cpu().numpy()[0],
+                inference_params,
+                priors,
+                label=label,
+            )
+        result_list.append(descaled_res)
+
+    return result_list
+
+
+def load_and_sort_bilby_results_from_dynesty(
+    inference_params, parameters, bilby_result_dir
+):
+    bilby_results = []
+    paths = sorted(list(bilby_result_dir.iterdir()))
+    for idx, (path, param) in enumerate(zip(paths, parameters)):
+        bilby_result = bilby.result.Result.from_pickle(path)
+        bilby_result.injection_parameters = {
+            k: float(v) for k, v in zip(inference_params, param)
+        }
+        bilby_result.label = f"bilby_{idx}"
+        bilby_results.append(bilby_result)
+    return bilby_results
+
+
+def add_phi_to_bilby_results(results):
+    """Attach phi w.r.t. GMST to the bilby results"""
+    results_with_phi = []
+    for res in results:
+        res["phi"] = phi_from_ra(
+            res["ra"], res.injection_parameters["geocent_time"]
+        )
+        results_with_phi.append(res)
+    return results_with_phi
