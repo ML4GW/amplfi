@@ -38,8 +38,8 @@ waveform_duration = 8
 bilby_duration = 4
 
 # training parameters
-batches_per_epoch = 100
-max_epochs = 10
+batches_per_epoch = 300
+max_epochs = 200
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
@@ -114,11 +114,11 @@ resnet = "${base.resnet}"
 
 # scheduler subcommand
 [tool.typeo.scripts.train.optimizer]
-adam = {lr = 1e-4, weight_decay = 1e-4}
+adam = {lr = 1e-4, weight_decay = 1e-5}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
-onecycle = {max_lr = 1e-5, epochs = "${base.max_epochs}", lr_ramp_epochs = 1, steps_per_epoch = "${base.batches_per_epoch}" }
+onecycle = {max_lr = 1e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 80, steps_per_epoch = "${base.batches_per_epoch}" }
 
 
 [tool.typeo.scripts.generate-flow-injections]
