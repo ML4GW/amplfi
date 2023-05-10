@@ -188,8 +188,10 @@ def main(
     # save preprocessor
     preprocess_dir = outdir / "preprocessor"
     preprocess_dir.mkdir(exist_ok=True, parents=True)
-    torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
-    torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
+    torch.save(
+        preprocessor.whitener.state_dict(), preprocess_dir / "whitener.pt"
+    )
+    torch.save(preprocessor.scaler.state_dict(), preprocess_dir / "scaler.pt")
 
     logging.debug("Constructing validation dataloader")
     # construct validation dataset

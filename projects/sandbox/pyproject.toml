@@ -6,9 +6,10 @@ steps = [
     "data_generation:generate-waveforms",
     "data_generation:generate-flow-injections",
     "data_generation:generate-bilby-injections",
-    "sample_with_bilby:sample-with-bilby",
+    "analyze_with_bilby:analyze-with-bilby",
     "train:train:maf:resnet",
-    "sample_with_flow:sample-with-flow:maf:resnet"
+    "sampling:sample-with-flow:maf:resnet",
+    "sampling:sample-and-compare-with-bilby:maf:resnet"
 ]
 
 [tool.typeo.base]
@@ -38,7 +39,7 @@ bilby_duration = 4
 
 # training parameters
 batches_per_epoch = 300
-max_epochs = 1000
+max_epochs = 200
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
@@ -113,11 +114,11 @@ resnet = "${base.resnet}"
 
 # scheduler subcommand
 [tool.typeo.scripts.train.optimizer]
-adam = {lr = 1e-4, weight_decay = 1e-4}
+adam = {lr = 1e-4, weight_decay = 1e-5}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
-onecycle = {max_lr = 2e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 200, steps_per_epoch = "${base.batches_per_epoch}" }
+onecycle = {max_lr = 1e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 80, steps_per_epoch = "${base.batches_per_epoch}" }
 
 
 [tool.typeo.scripts.generate-flow-injections]
@@ -140,6 +141,7 @@ gaussian = false
 [tool.typeo.scripts.generate-bilby-injections]
 bilby_duration = "${base.bilby_duration}"
 ifos = "${base.ifos}"
+kernel_length = "${base.kernel_length}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
 channel = "${base.channel}"
@@ -148,7 +150,7 @@ stop = "${base.test_stop}"
 sample_rate = "${base.sample_rate}"
 prior = "mlpe.injection.priors.sg_uniform"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-n_samples = 8
+n_samples = 1
 waveform_duration = "${base.waveform_duration}"
 spacing = 100
 buffer = 10
@@ -156,7 +158,7 @@ datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 gaussian = false
 
-[tool.typeo.scripts.sample-with-bilby]
+[tool.typeo.scripts.analyze-with-bilby]
 request_cpus = 24
 n_live = 256
 n_act = 5
@@ -179,24 +181,9 @@ fduration = "${base.fduration}"
 model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
 basedir = "${base.basedir}"
-datadir = "${base.datadir}"
-testing_set = "${base.datadir}/flow_test_injections.h5"
+testing_set = "${base.datadir}/flow_injections.h5"
 num_samples_draw = 10000
 num_plot_corner = 20
-device = "cuda"
-
-[tool.typeo.scripts.sample-and-compare-with-bilby]
-ifos = "${base.ifos}"
-kernel_length = "${base.kernel_length}"
-sample_rate = "${base.sample_rate}"
-fduration = "${base.fduration}"
-model_state_path = "${base.basedir}/training/weights.pt"
-inference_params = "${base.inference_params}"
-basedir = "${base.basedir}"
-datadir = "${base.datadir}"
-testing_set = "${base.datadir}/bilby_injections.hdf5"
-bilby_result_dir = "${base.datadir}/bilby/rundir/"
-num_samples_draw = 10000
 device = "cuda"
 
 # flow subcommand
@@ -206,6 +193,31 @@ coupling = "${base.coupling}"
 
 # embedding subcommand
 [tool.typeo.scripts.sample-with-flow.embedding]
+dense = "${base.dense}"
+coherent = "${base.coherent}"
+resnet = "${base.resnet}"
+
+
+[tool.typeo.scripts.sample-and-compare-with-bilby]
+ifos = "${base.ifos}"
+kernel_length = "${base.kernel_length}"
+sample_rate = "${base.sample_rate}"
+fduration = "${base.fduration}"
+model_state_path = "${base.basedir}/training/weights.pt"
+inference_params = "${base.inference_params}"
+basedir = "${base.basedir}"
+testing_set = "${base.datadir}/bilby/bilby_injections.hdf5"
+bilby_result_dir = "${base.datadir}/bilby/rundir/final_result"
+num_samples_draw = 10000
+device = "cuda"
+
+# flow subcommand
+[tool.typeo.scripts.sample-and-compare-with-bilby.flow]
+maf = "${base.maf}"
+coupling = "${base.coupling}"
+
+# embedding subcommand
+[tool.typeo.scripts.sample-and-compare-with-bilby.embedding]
 dense = "${base.dense}"
 coherent = "${base.coherent}"
 resnet = "${base.resnet}"

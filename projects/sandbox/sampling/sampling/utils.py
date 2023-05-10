@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import bilby
 import h5py
@@ -16,7 +16,12 @@ from mlpe.injection.utils import phi_from_ra
 
 # TODO: add this function to preprocessor module class
 def load_preprocessor_state(
-    preprocessor_dir: Path, param_dim, n_ifos, fduration, sample_rate, device
+    preprocessor_dir: Path,
+    param_dim: int,
+    n_ifos: int,
+    fduration: float,
+    sample_rate: float,
+    device: str,
 ):
     standard_scaler = ChannelWiseScaler(param_dim)
     preprocessor = Preprocessor(
@@ -28,15 +33,17 @@ def load_preprocessor_state(
     whitener_path = preprocessor_dir / "whitener.pt"
     scaler_path = preprocessor_dir / "scaler.pt"
 
-    preprocessor.whitener = torch.load(whitener_path)
-    preprocessor.scaler = torch.load(scaler_path)
+    preprocessor.whitener.load_state_dict(torch.load(whitener_path))
+    preprocessor.scaler.load_state_dict(torch.load(scaler_path))
 
     preprocessor = preprocessor.to(device)
     return preprocessor
 
 
 def initialize_data_loader(
-    testing_path: Path, inference_params: List[str], device
+    testing_path: Path,
+    inference_params: List[str],
+    device: str,
 ):
     with h5py.File(testing_path, "r") as f:
         signals = f["injections"][:]
@@ -50,17 +57,17 @@ def initialize_data_loader(
             params.append(values)
 
         params = np.vstack(params).T
-    test_data = torch.from_numpy(signals).to(torch.float32)
-    test_params = torch.from_numpy(params).to(torch.float32)
+    injections = torch.from_numpy(signals).to(torch.float32)
+    params = torch.from_numpy(params).to(torch.float32)
 
-    test_dataset = torch.utils.data.TensorDataset(test_data, test_params)
-    test_dataloader = torch.utils.data.DataLoader(
-        test_dataset,
+    dataset = torch.utils.data.TensorDataset(injections, params)
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
         pin_memory=False if device == "cpu" else True,
         batch_size=1,
         pin_memory_device=device,
     )
-    return test_dataloader, params
+    return dataloader, params
 
 
 def cast_samples_as_bilby_result(
@@ -169,7 +176,13 @@ def plot_mollview(
 
 
 def load_and_initialize_flow(
-    flow, embedding, model_state_path, n_ifos, strain_dim, param_dim, device
+    flow: Callable,
+    embedding: Callable,
+    model_state_path: Path,
+    n_ifos: int,
+    strain_dim: int,
+    param_dim: int,
+    device: str,
 ):
     model_state = torch.load(model_state_path)
     embedding = embedding((n_ifos, strain_dim))
@@ -183,22 +196,22 @@ def load_and_initialize_flow(
 
 
 def draw_samples_from_model(
-    test_dataloader,
-    flow_obj,
-    preprocessor,
-    inference_params,
-    num_samples_draw,
-    priors,
-    device,
-    label="testing_samples",
+    test_dataloader: torch.utils.data.DataLoader,
+    flow: torch.nn.Module,
+    preprocessor: torch.nn.Module,
+    inference_params: List[str],
+    num_samples_draw: int,
+    priors: dict,
+    device: str,
+    label: str = "testing_samples",
 ):
-    result_list = []
+    results = []
     for signal, param in test_dataloader:
         signal = signal.to(device)
         param = param.to(device)
         strain, scaled_param = preprocessor(signal, param)
         with torch.no_grad():
-            samples = flow_obj.flow.sample(num_samples_draw, context=strain)
+            samples = flow.sample(num_samples_draw, context=strain)
             descaled_samples = preprocessor.scaler(
                 samples[0].transpose(1, 0), reverse=True
             )
@@ -210,18 +223,20 @@ def draw_samples_from_model(
                 priors,
                 label=label,
             )
-        result_list.append(descaled_res)
+        results.append(descaled_res)
 
-    return result_list
+    return results
 
 
 def load_and_sort_bilby_results_from_dynesty(
-    inference_params, parameters, bilby_result_dir
+    bilby_result_dir: Path,
+    inference_params: List[str],
+    parameters: np.ndarray,
 ):
     bilby_results = []
     paths = sorted(list(bilby_result_dir.iterdir()))
     for idx, (path, param) in enumerate(zip(paths, parameters)):
-        bilby_result = bilby.result.Result.from_pickle(path)
+        bilby_result = bilby.core.result.read_in_result(path)
         bilby_result.injection_parameters = {
             k: float(v) for k, v in zip(inference_params, param)
         }
@@ -230,12 +245,12 @@ def load_and_sort_bilby_results_from_dynesty(
     return bilby_results
 
 
-def add_phi_to_bilby_results(results):
+def add_phi_to_bilby_results(results: List[bilby.core.result.Result]):
     """Attach phi w.r.t. GMST to the bilby results"""
     results_with_phi = []
     for res in results:
-        res["phi"] = phi_from_ra(
-            res["ra"], res.injection_parameters["geocent_time"]
+        res.posterior["phi"] = phi_from_ra(
+            res.posterior["ra"], res.injection_parameters["geocent_time"]
         )
         results_with_phi.append(res)
     return results_with_phi

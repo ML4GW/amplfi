@@ -76,10 +76,6 @@ def train_for_one_epoch(
         samples_seen = 0
 
         flow.eval()
-
-        # reason mixed precision is not used here?
-        # since no gradient calculation that requires
-        # higher precision?
         with torch.no_grad():
             for strain, parameters in valid_dataset:
                 strain, parameters = strain.to(device), parameters.to(device)
@@ -182,16 +178,27 @@ def train(
     # infer the dimension of the parameters
     # and the context from the batch
     strain, parameters = next(iter(train_dataset))
+    valid_strain, valid_parameters = next(iter(valid_dataset))
+    valid_strain, valid_parameters = valid_strain.to(
+        device
+    ), valid_parameters.to(device)
     with h5py.File(outdir / "raw_batch.h5", "w") as f:
         f["strain"] = strain.cpu().numpy()
         f["parameters"] = parameters.cpu().numpy()
+        f["valid_strain"] = valid_strain.cpu().numpy()
+        f["valid_parameters"] = valid_parameters.cpu().numpy()
 
     if preprocessor is not None:
         strain, parameters = preprocessor(strain, parameters)
+        valid_strain, valid_parameters = preprocessor(
+            valid_strain, valid_parameters
+        )
 
     with h5py.File(outdir / "batch.h5", "w") as f:
         f["strain"] = strain.cpu().numpy()
         f["parameters"] = parameters.cpu().numpy()
+        f["valid_strain"] = valid_strain.cpu().numpy()
+        f["valid_parameters"] = valid_parameters.cpu().numpy()
 
     param_dim = parameters.shape[-1]
     _, n_ifos, strain_dim = strain.shape

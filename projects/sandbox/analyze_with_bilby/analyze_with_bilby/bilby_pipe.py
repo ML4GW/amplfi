@@ -29,6 +29,7 @@ def main(
     request_cpus: int = 1,
     n_live: int = 1000,
     n_act: int = 5,
+    submit: bool = True,
     verbose: bool = False,
     force_generation: bool = False,
 ):
@@ -98,7 +99,7 @@ def main(
     args.frequency_domain_source_model = waveform
     args.gps_file = str(datadir / "bilby" / "start_times.txt")
     args.outdir = str(bilby_outdir)
-    args.submit = True
+    args.submit = submit
     args.sampling_frequency = sample_rate
     args.waveform_generator = "bilby.gw.waveform_generator.WaveformGenerator"
     args.conversion_function = "noconvert"

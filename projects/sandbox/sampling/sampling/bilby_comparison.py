@@ -1,18 +1,19 @@
 import logging
-import pickle
-import random
+from math import pi
 from pathlib import Path
 from time import time
 from typing import Callable, List
 
-import bilby
-import numpy as np
 from bilby.core.prior import Uniform
-from utils import (
+from sampling.utils import (
+    add_phi_to_bilby_results,
     draw_samples_from_model,
+    generate_corner_plots,
     initialize_data_loader,
     load_and_initialize_flow,
+    load_and_sort_bilby_results_from_dynesty,
     load_preprocessor_state,
+    plot_mollview,
 )
 
 from mlpe.architectures import embeddings, flows
@@ -34,12 +35,10 @@ def main(
     kernel_length: float,
     fduration: float,
     inference_params: List[str],
-    datadir: Path,
     basedir: Path,
     testing_set: Path,
     device: str,
     num_samples_draw: int,
-    num_plot_corner: int,
     bilby_result_dir: Path = None,
     verbose: bool = False,
 ):
@@ -50,7 +49,7 @@ def main(
 
     priors = sg_uniform()
     priors["phi"] = Uniform(
-        name="phi", minimum=-np.pi, maximum=np.pi, latex_label="phi"
+        name="phi", minimum=-pi, maximum=pi, latex_label="phi"
     )  # FIXME: remove when prior is moved to using torch tools
     n_ifos = len(ifos)
     param_dim = len(inference_params)
@@ -58,10 +57,15 @@ def main(
 
     logging.info("Initializing model and setting weights from trained state")
     flow = load_and_initialize_flow(
-        model_state_path, n_ifos, strain_dim, param_dim, device
+        flow,
+        embedding,
+        model_state_path,
+        n_ifos,
+        strain_dim,
+        param_dim,
+        device,
     )
     flow.eval()  # set flow to eval mode
-
     logging.info(
         "Initializing preprocessor and setting weights from trained state"
     )
@@ -69,12 +73,10 @@ def main(
     preprocessor = load_preprocessor_state(
         preprocessor_dir, param_dim, n_ifos, fduration, sample_rate, device
     )
-
     logging.info("Loading test data and initializing dataloader")
-    test_dataloader, _ = initialize_data_loader(
+    test_dataloader, params = initialize_data_loader(
         testing_set, inference_params, device
     )
-
     logging.info(
         "Drawing {} samples for each test data".format(num_samples_draw)
     )
@@ -91,36 +93,30 @@ def main(
     )
     total_sampling_time = time() - total_sampling_time
 
-    num_plotted = 0
-    for res in results:
-        # generate diagnostic posteriors
-        if random.random() > 0.5 and num_plotted < num_plot_corner:
-            corner_plot_filename = (
-                basedir / f"{num_plotted}_descaled_corner.png"
-            )
-            res.plot_corner(
-                save=True,
-                filename=corner_plot_filename,
-                levels=(0.5, 0.9),
-            )
-            num_plotted += 1
-    logging.info(
-        "Total sampling time: {:.1f}(s)/ Samples per second".format(
-            total_sampling_time
+    logging.info("Loading bilby results")
+    bilby_results = load_and_sort_bilby_results_from_dynesty(
+        bilby_result_dir, inference_params, params
+    )
+
+    bilby_results = add_phi_to_bilby_results(bilby_results)
+
+    skymap_dir = basedir / "skymaps"
+    skymap_dir.mkdir(exist_ok=True, parents=True)
+
+    logging.info("Making joint posterior plots")
+    for idx, (flow_res, bilby_res) in enumerate(zip(results, bilby_results)):
+        generate_corner_plots([flow_res, bilby_res], basedir / "corner")
+
+        # TODO: combined skymaps
+        plot_mollview(
+            flow_res.posterior["phi"].to_numpy().copy(),
+            flow_res.posterior["dec"].to_numpy().copy(),
+            truth=(bilby_res[6], bilby_res[4]),
+            outpath=skymap_dir / f"{idx}_mollview_flow.png",
         )
-    )
-
-    logging.info("Making pp-plot")
-    pp_plot_dir = basedir / "pp_plots"
-    pp_plot_filename = pp_plot_dir / "pp-plot-test-set.png"
-    bilby.result.make_pp_plot(
-        results,
-        save=True,
-        filename=pp_plot_filename,
-        keys=inference_params,
-    )
-    logging.info("PP Plots saved in %s" % (pp_plot_dir))
-
-    logging.info("Saving samples obtained from flow")
-    with open("flow-samples-as-bilby-result.pickle") as f:
-        pickle.dump(results, f)
+        plot_mollview(
+            bilby_res.posterior["phi"].to_numpy().copy(),
+            bilby_res.posterior["dec"].to_numpy().copy(),
+            truth=(bilby_res[6], bilby_res[4]),
+            outpath=skymap_dir / f"{idx}_mollview_bilby.png",
+        )

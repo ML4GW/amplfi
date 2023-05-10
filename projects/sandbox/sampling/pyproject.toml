@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "sample"
+name = "sampling"
 version = "0.0.0"
 description = "Generate samples from testing set, get diagnostic plots"
 authors = ["Ethan Marx <ethan.marx@ligo.org>", "Deep Chatterjee <deep.chatterjee@ligo.org>"]
@@ -27,8 +27,8 @@ secondary = true
 default = false
 
 [tool.poetry.scripts]
-sample-with-flow = "sample_with_flow:main"
-sample-and-compare-with-bilby = "bilby_comparison:main"
+sample-with-flow = "sampling.sample_with_flow:main"
+sample-and-compare-with-bilby = "sampling.bilby_comparison:main"
 
 [build-system]
 requires = ["poetry-core"]
