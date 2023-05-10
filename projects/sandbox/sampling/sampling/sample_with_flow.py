@@ -8,7 +8,7 @@ from typing import Callable, List
 import bilby
 import numpy as np
 from bilby.core.prior import Uniform
-from utils import (
+from sampling.utils import (
     draw_samples_from_model,
     initialize_data_loader,
     load_and_initialize_flow,
@@ -34,13 +34,11 @@ def main(
     kernel_length: float,
     fduration: float,
     inference_params: List[str],
-    datadir: Path,
     basedir: Path,
     testing_set: Path,
     device: str,
     num_samples_draw: int,
     num_plot_corner: int,
-    bilby_result_dir: Path = None,
     verbose: bool = False,
 ):
     logdir = basedir / "log"
@@ -58,7 +56,13 @@ def main(
 
     logging.info("Initializing model and setting weights from trained state")
     flow = load_and_initialize_flow(
-        model_state_path, n_ifos, strain_dim, param_dim, device
+        flow,
+        embedding,
+        model_state_path,
+        n_ifos,
+        strain_dim,
+        param_dim,
+        device,
     )
     flow.eval()  # set flow to eval mode
 

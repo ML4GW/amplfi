@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import bilby
 import h5py
@@ -176,8 +176,8 @@ def plot_mollview(
 
 
 def load_and_initialize_flow(
-    flow: torch.nn.Module,
-    embedding: torch.nn.Module,
+    flow: Callable,
+    embedding: Callable,
     model_state_path: Path,
     n_ifos: int,
     strain_dim: int,

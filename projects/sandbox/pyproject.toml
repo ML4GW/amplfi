@@ -38,8 +38,8 @@ waveform_duration = 8
 bilby_duration = 4
 
 # training parameters
-batches_per_epoch = 2
-max_epochs = 2
+batches_per_epoch = 100
+max_epochs = 10
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
@@ -118,7 +118,7 @@ adam = {lr = 1e-4, weight_decay = 1e-4}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
-onecycle = {max_lr = 2e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 200, steps_per_epoch = "${base.batches_per_epoch}" }
+onecycle = {max_lr = 1e-5, epochs = "${base.max_epochs}", lr_ramp_epochs = 1, steps_per_epoch = "${base.batches_per_epoch}" }
 
 
 [tool.typeo.scripts.generate-flow-injections]
@@ -181,8 +181,7 @@ fduration = "${base.fduration}"
 model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
 basedir = "${base.basedir}"
-datadir = "${base.datadir}"
-testing_set = "${base.datadir}/flow_test_injections.h5"
+testing_set = "${base.datadir}/flow_injections.h5"
 num_samples_draw = 10000
 num_plot_corner = 20
 device = "cuda"
