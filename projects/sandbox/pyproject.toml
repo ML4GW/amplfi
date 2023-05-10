@@ -149,7 +149,7 @@ stop = "${base.test_stop}"
 sample_rate = "${base.sample_rate}"
 prior = "mlpe.injection.priors.sg_uniform"
 waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-n_samples = 8
+n_samples = 1
 waveform_duration = "${base.waveform_duration}"
 spacing = 100
 buffer = 10
@@ -186,6 +186,18 @@ num_samples_draw = 10000
 num_plot_corner = 20
 device = "cuda"
 
+# flow subcommand
+[tool.typeo.scripts.sample-with-flow.flow]
+maf = "${base.maf}"
+coupling = "${base.coupling}"
+
+# embedding subcommand
+[tool.typeo.scripts.sample-with-flow.embedding]
+dense = "${base.dense}"
+coherent = "${base.coherent}"
+resnet = "${base.resnet}"
+
+
 [tool.typeo.scripts.sample-and-compare-with-bilby]
 ifos = "${base.ifos}"
 kernel_length = "${base.kernel_length}"
@@ -201,12 +213,12 @@ num_samples_draw = 10000
 device = "cuda"
 
 # flow subcommand
-[tool.typeo.scripts.sample-with-flow.flow]
+[tool.typeo.scripts.sample-and-compare-with-bilby.flow]
 maf = "${base.maf}"
 coupling = "${base.coupling}"
 
 # embedding subcommand
-[tool.typeo.scripts.sample-with-flow.embedding]
+[tool.typeo.scripts.sample-and-compare-with-bilby.embedding]
 dense = "${base.dense}"
 coherent = "${base.coherent}"
 resnet = "${base.resnet}"
