@@ -8,7 +8,6 @@ import h5py
 import numpy as np
 import torch
 from bilby.core.prior import Uniform
-from gwpy.timeseries import TimeSeries
 from utils import (
     cast_samples_as_bilby_result,
     generate_corner_plots,
@@ -189,39 +188,6 @@ def main(
             params.append(values)
 
         params = np.vstack(params).T
-
-    # load in the timeseries data and crop around the injection times
-    timeseries = []
-    injections = []
-
-    for ifo in ifos:
-        data = TimeSeries.read(
-            datadir / "bilby" / f"{ifo}_timeseries.hdf5", format="hdf5"
-        )
-        timeseries.append(data.value)
-
-    timeseries = np.stack(timeseries)
-
-    start_indices = ((times - (kernel_length // 2)) * sample_rate).astype(
-        "int64"
-    )
-    end_indices = start_indices + int(kernel_length * sample_rate)
-
-    for start, stop in zip(start_indices, end_indices):
-        injections.append(timeseries[:, start:stop])
-
-    injections = np.stack(injections)
-
-    test_data = torch.from_numpy(injections).to(torch.float32)
-    test_params = torch.from_numpy(params).to(torch.float32)
-
-    test_dataset = torch.utils.data.TensorDataset(test_data, test_params)
-    test_dataloader = torch.utils.data.DataLoader(
-        test_dataset,
-        pin_memory=False if device == "cpu" else True,
-        batch_size=1,
-        pin_memory_device=device,
-    )
 
     bilby_results_dir = datadir / "bilby" / "rundir" / "final_result"
     bilby_results_paths = sorted(list(bilby_results_dir.iterdir()))

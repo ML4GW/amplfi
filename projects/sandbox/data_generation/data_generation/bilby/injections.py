@@ -186,10 +186,6 @@ def main(
         format="hdf5",
         overwrite=True,
     )
-    # save parameters as hdf5 file
-    with h5py.File(datadir / "bilby_injection_parameters.hdf5", "w") as f:
-        for key, value in parameters.items():
-            f.create_dataset(key, data=value)
 
     # save injections as array easily ingestible by flow
     # load in the timeseries data and crop around the injection times
@@ -206,3 +202,5 @@ def main(
 
     with h5py.File(datadir / "bilby_injections.hdf5", "w") as f:
         f.create_dataset("injections", data=injections)
+        for key, value in parameters.items():
+            f.create_dataset(key, data=value)
