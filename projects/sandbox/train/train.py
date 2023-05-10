@@ -1,40 +1,21 @@
 import logging
-from math import pi
 from pathlib import Path
 from typing import Callable, List, Optional
 
 import h5py
 import numpy as np
 import torch
-from utils import split
+from utils import EXTRINSIC_DISTS, prepare_augmentation, split
 from validation import make_validation_dataset
 
-from ml4gw.distributions import Cosine, LogUniform, Uniform
 from ml4gw.transforms import ChannelWiseScaler
-from ml4gw.waveforms import SineGaussian
 from mlpe.architectures import embeddings, flows
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.transforms import Preprocessor
-from mlpe.data.transforms.injection import PEInjector
 from mlpe.logging import configure_logging
 from mlpe.trainer import optimizers, schedulers, train
 from typeo import scriptify
 from typeo.utils import make_dummy
-
-
-class ParameterSampler(torch.nn.Module):
-    def __init__(self, **parameters: Callable):
-        super().__init__()
-        self.parameters = parameters
-
-    def forward(
-        self,
-        N: int,
-        device: str = "cpu",
-    ):
-
-        parameters = {k: v(N).to(device) for k, v in self.parameters.items()}
-        return parameters
 
 
 def load_background(background_path: Path, ifos):
@@ -58,12 +39,12 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
         # of parameters throughout pipeline?
         intrinsic = []
         for param in parameter_names:
-            if param not in ["dec", "psi", "phi"]:
+            if param not in EXTRINSIC_DISTS.keys():
                 values = f[param][:]
                 # take logarithm since hrss
                 # spans large magnitude range
                 if param == "hrss":
-                    values = np.log(values)
+                    values = np.log10(values)
                 intrinsic.append(values)
 
         if intrinsic:
@@ -93,9 +74,8 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
     scheduler=schedulers,
 )
 def main(
-    background_dataset: Path,
+    background_path: Path,
     waveform_dataset: Path,
-    waveform_duration: float,
     flow: Callable,
     embedding: Callable,
     optimizer: Callable,
@@ -103,8 +83,10 @@ def main(
     inference_params: List[str],
     ifos: List[str],
     sample_rate: float,
+    trigger_distance: float,
     kernel_length: float,
     fduration: float,
+    highpass: float,
     batches_per_epoch: int,
     batch_size: int,
     device: str,
@@ -118,103 +100,58 @@ def main(
 
     logdir.mkdir(exist_ok=True, parents=True)
     configure_logging(logdir / "train.log", verbose)
-
     param_dim = len(inference_params)
     n_ifos = len(ifos)
 
     # load in background of shape (n_ifos, n_samples) and split into training
     # and validation if valid_frac specified
-    background = load_background(background_dataset, ifos)
+    background = load_background(background_path, ifos)
 
     logging.info(
         "Loading signals, performing train/val split, and preparing augmentors"
     )
+    # intrinsic parameters is an array of shape (n_params, n_signals)
+    signals, intrinsic = load_signals(waveform_dataset, inference_params)
 
-    # load in the fixed set of validation waveforms
-    # and split background into trainind and validation segments
-    valid_signals, valid_intrinsic = load_signals(
-        waveform_dataset, inference_params
-    )
     if valid_frac is not None:
         background, valid_background = split(background, 1 - valid_frac, 1)
 
-    # TODO: parameterize this somehow
-    dec = Cosine()
-    psi = Uniform(0, pi)
-    phi = Uniform(-pi, pi)
+    # note: we pass the transpose the intrinsic parameters here because
+    # the ml4gw transforms expects an array of shape (n_signals, n_params)
 
-    # intrinsic parameter sampler
-    parameter_sampler = ParameterSampler(
-        frequency=Uniform(32, 1024),
-        quality=Uniform(2, 100),
-        hrss=LogUniform(1e-23, 1e-19),
-        phase=Uniform(0, 2 * pi),
-        eccentricity=Uniform(0, 1),
-    )
-
-    # prepare waveform injector
-    waveform = SineGaussian(
-        sample_rate=sample_rate, duration=waveform_duration, device=device
-    )
-
-    # prepare injector
-    injector = PEInjector(
-        sample_rate,
+    injector, valid_injector = prepare_augmentation(
+        signals,
         ifos,
-        parameter_sampler,
-        dec,
-        psi,
-        phi,
-        waveform,
+        valid_frac,
+        sample_rate,
+        trigger_distance,
+        highpass,
+        intrinsic,
     )
 
-    parameter_sampler.to(device)
-    waveform.to(device)
-    injector.to(device)
+    injector.to(device, waveforms=True)
 
-    # sample parameters from parameter sampler
-    # so we can fit the standard scaler
-    samples = parameter_sampler(100000)
-    samples["dec"] = dec(100000)
-    samples["psi"] = psi(100000)
-    samples["phi"] = phi(100000)
+    # construct samples of extrinsic parameters
+    # if they were passed as inference params
+    # so they can be fit to standard scaler.
+    n_signals = len(signals)
 
+    # if no intrinsic parameters are requested,
+    # set parameters to empty list,
+    # otherwise, set to list of intrinsic parameters
     parameters = []
-    for param in inference_params:
-        values = samples[param]
-        if param == "hrss":
-            values = np.log(values)
-        parameters.append(values)
+    if intrinsic is not None:
+        parameters = list(intrinsic)
+
+    # append extrinsic parameters to list to be fit
+    for param, dist in EXTRINSIC_DISTS.items():
+        if param in inference_params:
+            samples = dist(n_signals)
+            parameters.append(samples)
+
     parameters = np.row_stack(parameters)
 
-    standard_scaler = ChannelWiseScaler(param_dim)
-    preprocessor = Preprocessor(
-        n_ifos,
-        sample_rate,
-        fduration,
-        scaler=standard_scaler,
-    )
-
-    preprocessor.scaler.fit(parameters)
-    preprocessor.scaler.to(device)
-
-    # create preprocessor out of whitening transform
-    # for strain data, and standard scaler for parameters
-    preprocessor.whitener.fit(kernel_length, *background)
-    preprocessor.whitener.to(device)
-
-    # TODO: this light preprocessor wrapper can probably be removed
-    # save preprocessor
-    preprocess_dir = outdir / "preprocessor"
-    preprocess_dir.mkdir(exist_ok=True, parents=True)
-    torch.save(
-        preprocessor.whitener.state_dict(), preprocess_dir / "whitener.pt"
-    )
-    torch.save(preprocessor.scaler.state_dict(), preprocess_dir / "scaler.pt")
-
-    # create full training dataloader that will sample
-    # kernels from background, generate sine gaussian waveforms
-    # and inject them into the background
+    # create full training dataloader
     train_dataset = PEInMemoryDataset(
         background,
         int(kernel_length * sample_rate),
@@ -226,18 +163,44 @@ def main(
         device=device,
     )
 
-    logging.info("Constructing validation dataloader")
+    logging.info("Preparing preprocessors")
+    # create preprocessor out of whitening transform
+    # for strain data, and standard scaler for parameters
+    standard_scaler = ChannelWiseScaler(param_dim)
+    preprocessor = Preprocessor(
+        n_ifos,
+        sample_rate,
+        fduration,
+        scaler=standard_scaler,
+    )
+
+    preprocessor.whitener.fit(kernel_length, *background)
+    preprocessor.whitener.to(device)
+
+    # to perform the normalization over each parameters,
+    # the ml4gw ChannelWiseScaler expects an array of shape
+    # (n_params, n_signals), so we pass the untransposed
+    # intrinsic parameters here
+    preprocessor.scaler.fit(parameters)
+    preprocessor.scaler.to(device)
+
+    # TODO: this light preprocessor wrapper can probably be removed
+    # save preprocessor
+    preprocess_dir = outdir / "preprocessor"
+    preprocess_dir.mkdir(exist_ok=True, parents=True)
+    torch.save(
+        preprocessor.whitener.state_dict(), preprocess_dir / "whitener.pt"
+    )
+    torch.save(preprocessor.scaler.state_dict(), preprocess_dir / "scaler.pt")
+
+    logging.debug("Constructing validation dataloader")
     # construct validation dataset
+    # from validation injector
     valid_dataset = None
     if valid_frac is not None:
         valid_dataset = make_validation_dataset(
             valid_background,
-            injector,
-            10000,
-            ifos,
-            dec,
-            psi,
-            phi,
+            valid_injector,
             kernel_length,
             valid_stride,
             sample_rate,
