@@ -126,5 +126,5 @@ def main(
     logging.info("PP Plots saved in %s" % (pp_plot_dir))
 
     logging.info("Saving samples obtained from flow")
-    with open("flow-samples-as-bilby-result.pickle") as f:
+    with open(basedir / "flow-samples-as-bilby-result.pickle", "wb") as f:
         pickle.dump(results, f)

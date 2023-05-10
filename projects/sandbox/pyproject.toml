@@ -206,9 +206,8 @@ fduration = "${base.fduration}"
 model_state_path = "${base.basedir}/training/weights.pt"
 inference_params = "${base.inference_params}"
 basedir = "${base.basedir}"
-datadir = "${base.datadir}"
-testing_set = "${base.datadir}/bilby_injections.hdf5"
-bilby_result_dir = "${base.datadir}/bilby/rundir/"
+testing_set = "${base.datadir}/bilby/bilby_injections.hdf5"
+bilby_result_dir = "${base.datadir}/bilby/rundir/final_result"
 num_samples_draw = 10000
 device = "cuda"
 

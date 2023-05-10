@@ -33,8 +33,8 @@ def load_preprocessor_state(
     whitener_path = preprocessor_dir / "whitener.pt"
     scaler_path = preprocessor_dir / "scaler.pt"
 
-    preprocessor.whitener = torch.load(whitener_path)
-    preprocessor.scaler = torch.load(scaler_path)
+    preprocessor.whitener.load_state_dict(torch.load(whitener_path))
+    preprocessor.scaler.load_state_dict(torch.load(scaler_path))
 
     preprocessor = preprocessor.to(device)
     return preprocessor
@@ -236,7 +236,7 @@ def load_and_sort_bilby_results_from_dynesty(
     bilby_results = []
     paths = sorted(list(bilby_result_dir.iterdir()))
     for idx, (path, param) in enumerate(zip(paths, parameters)):
-        bilby_result = bilby.result.Result.from_pickle(path)
+        bilby_result = bilby.core.result.read_in_result(path)
         bilby_result.injection_parameters = {
             k: float(v) for k, v in zip(inference_params, param)
         }

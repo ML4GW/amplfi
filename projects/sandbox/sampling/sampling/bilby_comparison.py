@@ -1,9 +1,11 @@
 import logging
+from math import pi
 from pathlib import Path
 from time import time
 from typing import Callable, List
 
-from utils import (
+from bilby.core.prior import Uniform
+from sampling.utils import (
     add_phi_to_bilby_results,
     draw_samples_from_model,
     generate_corner_plots,
@@ -33,12 +35,10 @@ def main(
     kernel_length: float,
     fduration: float,
     inference_params: List[str],
-    datadir: Path,
     basedir: Path,
     testing_set: Path,
     device: str,
     num_samples_draw: int,
-    num_plot_corner: int,
     bilby_result_dir: Path = None,
     verbose: bool = False,
 ):
@@ -48,13 +48,22 @@ def main(
     device = device or "cpu"
 
     priors = sg_uniform()
+    priors["phi"] = Uniform(
+        name="phi", minimum=-pi, maximum=pi, latex_label="phi"
+    )  # FIXME: remove when prior is moved to using torch tools
     n_ifos = len(ifos)
     param_dim = len(inference_params)
     strain_dim = int((kernel_length - fduration) * sample_rate)
 
     logging.info("Initializing model and setting weights from trained state")
     flow = load_and_initialize_flow(
-        model_state_path, embedding, n_ifos, strain_dim, param_dim, device
+        flow,
+        embedding,
+        model_state_path,
+        n_ifos,
+        strain_dim,
+        param_dim,
+        device,
     )
     flow.eval()  # set flow to eval mode
     logging.info(
