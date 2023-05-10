@@ -86,18 +86,19 @@ def main(
 
     logging.info("Loading bilby results")
     bilby_results = load_and_sort_bilby_results_from_dynesty(
-        inference_params, params, bilby_result_dir
+        bilby_result_dir, inference_params, params
     )
-    assert len(results) == len(bilby_results), "Length of datasets differ"
 
     bilby_results = add_phi_to_bilby_results(bilby_results)
 
     skymap_dir = basedir / "skymaps"
     skymap_dir.mkdir(exist_ok=True, parents=True)
 
-    logging.info("Making joint PP plots")
+    logging.info("Making joint posterior plots")
     for idx, (flow_res, bilby_res) in enumerate(zip(results, bilby_results)):
         generate_corner_plots([flow_res, bilby_res], basedir / "corner")
+
+        # TODO: combined skymaps
         plot_mollview(
             flow_res.posterior["phi"].to_numpy().copy(),
             flow_res.posterior["dec"].to_numpy().copy(),
