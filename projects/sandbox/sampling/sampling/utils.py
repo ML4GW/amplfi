@@ -247,10 +247,10 @@ def load_and_sort_bilby_results_from_dynesty(
 
 def add_phi_to_bilby_results(results: List[bilby.core.result.Result]):
     """Attach phi w.r.t. GMST to the bilby results"""
-    results = []
+    results_with_phi = []
     for res in results:
         res.posterior["phi"] = phi_from_ra(
             res.posterior["ra"], res.injection_parameters["geocent_time"]
         )
-        results.append(res)
-    return results
+        results_with_phi.append(res)
+    return results_with_phi
