@@ -6,9 +6,10 @@ steps = [
     "data_generation:generate-waveforms",
     "data_generation:generate-flow-injections",
     "data_generation:generate-bilby-injections",
-    "sample_with_bilby:sample-with-bilby",
+    "data_generation:analyze-with-bilby",
     "train:train:maf:resnet",
-    "sample_with_flow:sample-with-flow:maf:resnet"
+    "sampling:sample-with-flow:maf:resnet"
+    "sampling:sample-and-compare-with-bilby:maf:resnet"
 ]
 
 [tool.typeo.base]
@@ -37,8 +38,8 @@ waveform_duration = 8
 bilby_duration = 4
 
 # training parameters
-batches_per_epoch = 300
-max_epochs = 1000
+batches_per_epoch = 2
+max_epochs = 2
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
@@ -156,7 +157,7 @@ datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 gaussian = false
 
-[tool.typeo.scripts.sample-with-bilby]
+[tool.typeo.scripts.analyze-with-bilby]
 request_cpus = 24
 n_live = 256
 n_act = 5

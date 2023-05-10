@@ -23,9 +23,10 @@ pytest = "^7.2.0"
 
 [tool.poetry.scripts]
 generate-background = "data_generation.background:main"
-generate-flow-injections = "data_generation.flow_injections:main"
-generate-bilby-injections = "data_generation.bilby_injections:main"
 generate-waveforms = "data_generation.waveforms:main"
+generate-flow-injections = "data_generation.flow_injections:main"
+generate-bilby-injections = "data_generation.bilby:injections.main"
+analyze-with-bilby = "data_generation.bilby:bilby_pipe.main"
 
 [build-system]
 requires = ["poetry-core"]
