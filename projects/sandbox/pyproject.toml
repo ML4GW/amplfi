@@ -6,9 +6,9 @@ steps = [
     "data_generation:generate-waveforms",
     "data_generation:generate-flow-injections",
     "data_generation:generate-bilby-injections",
-    "data_generation:analyze-with-bilby",
+    "analyze_with_bilby:analyze-with-bilby",
     "train:train:maf:resnet",
-    "sampling:sample-with-flow:maf:resnet"
+    "sampling:sample-with-flow:maf:resnet",
     "sampling:sample-and-compare-with-bilby:maf:resnet"
 ]
 
@@ -141,6 +141,7 @@ gaussian = false
 [tool.typeo.scripts.generate-bilby-injections]
 bilby_duration = "${base.bilby_duration}"
 ifos = "${base.ifos}"
+kernel_length = "${base.kernel_length}"
 state_flag = "${base.state_flag}"
 frame_type = "${base.frame_type}"
 channel = "${base.channel}"
