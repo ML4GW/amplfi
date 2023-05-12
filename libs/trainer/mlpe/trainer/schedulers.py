@@ -33,4 +33,20 @@ class OneCycleLR(torch.optim.lr_scheduler.OneCycleLR):
         )
 
 
-schedulers = {"onecycle": _wrap_callable(OneCycleLR)}
+class CosineAnnealingLR(torch.optim.lr_scheduler.CosineAnnealingLR):
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer,
+        T_max: float,
+        eta_min: float = 1e-5,
+    ):
+        super().__init__(
+            optimizer,
+            T_max=T_max,
+            eta_min=eta_min
+        )
+
+schedulers = {
+    "onecycle": _wrap_callable(OneCycleLR),
+    "cosine": _wrap_callable(CosineAnnealingLR)
+}
