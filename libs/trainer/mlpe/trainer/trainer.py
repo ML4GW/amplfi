@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple
 
 import h5py
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -28,17 +29,18 @@ def train_for_one_epoch(
     start_time = time.time()
     flow.train()
     device = next(flow.parameters()).device
-
     for strain, parameters in train_dataset:
         if preprocessor is not None:
             strain, parameters = preprocessor(strain, parameters)
 
         optimizer.zero_grad(set_to_none=True)  # reset gradient
 
-        with torch.autocast("cuda", enabled=False):
+        with torch.autocast("cuda", enabled=scaler is not None):
             loss = -flow.log_prob(parameters, context=strain)
+
         train_loss += loss.detach().sum()
         loss = loss.mean()
+
         samples_seen += len(parameters)
 
         if scaler is not None:
@@ -75,10 +77,6 @@ def train_for_one_epoch(
         samples_seen = 0
 
         flow.eval()
-
-        # reason mixed precision is not used here?
-        # since no gradient calculation that requires
-        # higher precision?
         with torch.no_grad():
             for strain, parameters in valid_dataset:
                 strain, parameters = strain.to(device), parameters.to(device)
@@ -95,12 +93,18 @@ def train_for_one_epoch(
     else:
         valid_loss = None
 
+    current_lr = optimizer.param_groups[0]["lr"]
+    msg += f", current LR = {current_lr:.3e}"
+
     logging.info(msg)
     return train_loss, valid_loss, duration, throughput
 
 
 def train(
-    architecture: Callable,
+    flow: Callable,
+    embedding: Callable,
+    optimizer: Callable,
+    scheduler: Callable,
     outdir: Path,
     # data params
     train_dataset: Iterable[Tuple[np.ndarray, np.ndarray]],
@@ -109,11 +113,6 @@ def train(
     # optimization params
     max_epochs: int = 40,
     init_weights: Optional[Path] = None,
-    lr: float = 1e-3,
-    optimizer_fn: Callable = torch.optim.Adam,
-    optimizer_kwargs: dict = dict(weight_decay=0),
-    scheduler_fn: Callable = torch.optim.lr_scheduler.CosineAnnealingLR,
-    scheduler_kwargs: dict = dict(eta_min=1e-5, T_max=10000),
     early_stop: Optional[int] = None,
     # misc params
     device: Optional[str] = None,
@@ -180,16 +179,27 @@ def train(
     # infer the dimension of the parameters
     # and the context from the batch
     strain, parameters = next(iter(train_dataset))
+    valid_strain, valid_parameters = next(iter(valid_dataset))
+    valid_strain, valid_parameters = valid_strain.to(
+        device
+    ), valid_parameters.to(device)
     with h5py.File(outdir / "raw_batch.h5", "w") as f:
         f["strain"] = strain.cpu().numpy()
         f["parameters"] = parameters.cpu().numpy()
+        f["valid_strain"] = valid_strain.cpu().numpy()
+        f["valid_parameters"] = valid_parameters.cpu().numpy()
 
     if preprocessor is not None:
         strain, parameters = preprocessor(strain, parameters)
+        valid_strain, valid_parameters = preprocessor(
+            valid_strain, valid_parameters
+        )
 
     with h5py.File(outdir / "batch.h5", "w") as f:
         f["strain"] = strain.cpu().numpy()
         f["parameters"] = parameters.cpu().numpy()
+        f["valid_strain"] = valid_strain.cpu().numpy()
+        f["valid_parameters"] = valid_parameters.cpu().numpy()
 
     param_dim = parameters.shape[-1]
     _, n_ifos, strain_dim = strain.shape
@@ -197,12 +207,13 @@ def train(
     # Creating model, loss function, optimizer and lr scheduler
     logging.info("Building and initializing model")
 
-    # instantiate the architecture
-    flow_obj = architecture((param_dim, n_ifos, strain_dim))
-    # build the flow
+    # instantiate the embedding network, pass it to the flow
+    # object, and then build the flow
+    embedding = embedding((n_ifos, strain_dim))
+    flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
     flow_obj.build_flow()
-    # send to neural net to device
     flow_obj.to_device(device)
+
     # if we passed a module for preprocessing,
     # include it in the model so that the weights
     # get exported along with everything else
@@ -225,10 +236,8 @@ def train(
     logging.info("Initializing loss and optimizer")
 
     # TODO: Allow different loss functions or optimizers to be passed?
-    optimizer = optimizer_fn(
-        flow_obj.flow.parameters(), lr=lr, **optimizer_kwargs
-    )
-    lr_scheduler = scheduler_fn(optimizer, **scheduler_kwargs)
+    optimizer = optimizer(flow_obj.flow.parameters())
+    lr_scheduler = scheduler(optimizer)
 
     # start training
     torch.backends.cudnn.benchmark = True
@@ -306,6 +315,16 @@ def train(
                         )
                         break
 
+    # plot the training and validation losses and save result
+    plt.figure()
+    plt.plot(history["train_loss"], label="Train loss")
+    if valid_loss is not None:
+        plt.plot(history["valid_loss"], label="Valid loss")
+    plt.legend()
+    plt.xlabel("Epoch number")
+    plt.ylabel("Loss")
+    plt.savefig(outdir / "loss_history.png")
+    plt.close()
     with h5py.File(outdir / "train_results.h5", "w") as f:
         for key, value in history.items():
             f.create_dataset(key, data=value)

@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import h5py
 import numpy as np
@@ -9,10 +9,13 @@ from utils import EXTRINSIC_DISTS, prepare_augmentation, split
 from validation import make_validation_dataset
 
 from ml4gw.transforms import ChannelWiseScaler
+from mlpe.architectures import embeddings, flows
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.transforms import Preprocessor
 from mlpe.logging import configure_logging
-from mlpe.trainer import trainify
+from mlpe.trainer import optimizers, schedulers, train
+from typeo import scriptify
+from typeo.utils import make_dummy
 
 
 def load_background(background_path: Path, ifos):
@@ -25,13 +28,16 @@ def load_background(background_path: Path, ifos):
 
 
 def load_signals(waveform_dataset: Path, parameter_names: List[str]):
-
+    """
+    Load in signals and intrinsic parameters.
+    If no intrinsic parameters are requested, return None.
+    """
     with h5py.File(waveform_dataset, "r") as f:
         signals = f["signals"][:]
 
         # TODO: how do we ensure order
         # of parameters throughout pipeline?
-        data = []
+        intrinsic = []
         for param in parameter_names:
             if param not in EXTRINSIC_DISTS.keys():
                 values = f[param][:]
@@ -39,17 +45,41 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
                 # spans large magnitude range
                 if param == "hrss":
                     values = np.log10(values)
-                data.append(values)
+                intrinsic.append(values)
 
-        intrinsic = np.row_stack(data)
+        if intrinsic:
+            intrinsic = np.row_stack(intrinsic)
+        else:
+            intrinsic = None
 
     return signals, intrinsic
 
 
-@trainify
+@scriptify(
+    kwargs=make_dummy(
+        train,
+        exclude=[
+            "flow",
+            "embedding",
+            "optimizer",
+            "scheduler",
+            "train_dataset",
+            "valid_dataset",
+            "preprocessor",
+        ],
+    ),
+    flow=flows,
+    embedding=embeddings,
+    optimizer=optimizers,
+    scheduler=schedulers,
+)
 def main(
     background_path: Path,
     waveform_dataset: Path,
+    flow: Callable,
+    embedding: Callable,
+    optimizer: Callable,
+    scheduler: Callable,
     inference_params: List[str],
     ifos: List[str],
     sample_rate: float,
@@ -68,9 +98,10 @@ def main(
     **kwargs
 ):
 
+    logdir.mkdir(exist_ok=True, parents=True)
     configure_logging(logdir / "train.log", verbose)
-    num_ifos = len(ifos)
-    num_params = len(inference_params)
+    param_dim = len(inference_params)
+    n_ifos = len(ifos)
 
     # load in background of shape (n_ifos, n_samples) and split into training
     # and validation if valid_frac specified
@@ -87,27 +118,38 @@ def main(
 
     # note: we pass the transpose the intrinsic parameters here because
     # the ml4gw transforms expects an array of shape (n_signals, n_params)
+
     injector, valid_injector = prepare_augmentation(
         signals,
-        intrinsic.transpose(1, 0),
         ifos,
         valid_frac,
         sample_rate,
         trigger_distance,
         highpass,
+        intrinsic,
     )
 
     injector.to(device, waveforms=True)
 
     # construct samples of extrinsic parameters
     # if they were passed as inference params
-    # so they can be fit to standard scaler
+    # so they can be fit to standard scaler.
     n_signals = len(signals)
 
+    # if no intrinsic parameters are requested,
+    # set parameters to empty list,
+    # otherwise, set to list of intrinsic parameters
+    parameters = []
+    if intrinsic is not None:
+        parameters = list(intrinsic)
+
+    # append extrinsic parameters to list to be fit
     for param, dist in EXTRINSIC_DISTS.items():
         if param in inference_params:
             samples = dist(n_signals)
-            intrinsic = np.row_stack([intrinsic, samples])
+            parameters.append(samples)
+
+    parameters = np.row_stack(parameters)
 
     # create full training dataloader
     train_dataset = PEInMemoryDataset(
@@ -124,9 +166,9 @@ def main(
     logging.info("Preparing preprocessors")
     # create preprocessor out of whitening transform
     # for strain data, and standard scaler for parameters
-    standard_scaler = ChannelWiseScaler(num_params)
+    standard_scaler = ChannelWiseScaler(param_dim)
     preprocessor = Preprocessor(
-        num_ifos,
+        n_ifos,
         sample_rate,
         fduration,
         scaler=standard_scaler,
@@ -139,17 +181,19 @@ def main(
     # the ml4gw ChannelWiseScaler expects an array of shape
     # (n_params, n_signals), so we pass the untransposed
     # intrinsic parameters here
-    preprocessor.scaler.fit(intrinsic)
+    preprocessor.scaler.fit(parameters)
     preprocessor.scaler.to(device)
 
     # TODO: this light preprocessor wrapper can probably be removed
     # save preprocessor
     preprocess_dir = outdir / "preprocessor"
     preprocess_dir.mkdir(exist_ok=True, parents=True)
-    torch.save(preprocessor.whitener, preprocess_dir / "whitener.pt")
-    torch.save(preprocessor.scaler, preprocess_dir / "scaler.pt")
+    torch.save(
+        preprocessor.whitener.state_dict(), preprocess_dir / "whitener.pt"
+    )
+    torch.save(preprocessor.scaler.state_dict(), preprocess_dir / "scaler.pt")
 
-    logging.info("Constructing validation dataloader")
+    logging.debug("Constructing validation dataloader")
     # construct validation dataset
     # from validation injector
     valid_dataset = None
@@ -165,4 +209,15 @@ def main(
         )
 
     logging.info("Launching training")
-    return train_dataset, valid_dataset, preprocessor
+    train(
+        flow,
+        embedding,
+        optimizer,
+        scheduler,
+        outdir,
+        train_dataset,
+        valid_dataset,
+        preprocessor,
+        device=device,
+        **kwargs
+    )

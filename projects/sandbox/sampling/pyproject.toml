@@ -1,19 +1,24 @@
 [tool.poetry]
-name = "sample"
+name = "sampling"
 version = "0.0.0"
 description = "Generate samples from testing set, get diagnostic plots"
-authors = ["Deep Chatterjee <deep.chatterjee@ligo.org>"]
+authors = ["Ethan Marx <ethan.marx@ligo.org>", "Deep Chatterjee <deep.chatterjee@ligo.org>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
+
 torch = {version = "^1.12", source = "torch"}
+
 "mlpe.data" = {path = "../../../libs/data", develop  = true}
 "mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
 
 "ml4gw" = {path = "../../../ml4gw", develop = true}
+typeo = {path = "../../../typeo", develop = true}
+
+ligo-skymap = "^1.0.7"
 
 [[tool.poetry.source]]
 name = "torch"
@@ -22,7 +27,8 @@ secondary = true
 default = false
 
 [tool.poetry.scripts]
-sample_testing_set = "sample:main"
+sample-with-flow = "sampling.sample_with_flow:main"
+sample-and-compare-with-bilby = "sampling.bilby_comparison:main"
 
 [build-system]
 requires = ["poetry-core"]

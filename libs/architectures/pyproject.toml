@@ -10,7 +10,6 @@ packages = [{include = "mlpe"}]
 python = ">=3.8,<3.11"
 nflows = "^0.14"
 torch = "^1.0"
-typeo = {git = "https://github.com/ML4GW/typeo.git", branch = "main", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"

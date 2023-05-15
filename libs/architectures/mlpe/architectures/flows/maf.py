@@ -8,44 +8,37 @@ from nflows.transforms import CompositeTransform, RandomPermutation
 from nflows.transforms.autoregressive import (
     MaskedAffineAutoregressiveTransform,
 )
+from nflows.transforms.normalization import BatchNorm
 
-from mlpe.architectures.embeddings import NChannelDenseEmbedding
 from mlpe.architectures.flows.flow import NormalizingFlow
 
 
 @dataclass
 class MaskedAutoRegressiveFlow(NormalizingFlow):
     shape: Tuple[int, int, int]
-    num_transforms: int = 10
+    embedding_net: torch.nn.Module
+    num_transforms: int
     hidden_features: int = 50
     num_blocks: int = 2
     activation: Callable = torch.tanh
-    use_batch_norm: bool = False
+    use_batch_norm: bool = True
     use_residual_blocks: bool = True
+    batch_norm_between_layers: bool = True
 
     def __post_init__(self):
         self.param_dim, self.n_ifos, self.strain_dim = self.shape
-        # FIXME: port to project config; remove hardcoding
-        self.embedding_net = NChannelDenseEmbedding(
-            self.n_ifos,
-            self.strain_dim,
-            50,
-            activation=self.activation,
-            hidden_layer_size=100,
-            num_hidden_layers=2,
-        )
-
         super().__init__(
             self.param_dim,
             self.n_ifos,
             self.strain_dim,
-            num_flow_steps=self.num_transforms,
             embedding_net=self.embedding_net,
+            num_flow_steps=self.num_transforms,
         )
 
     def transform_block(self):
         """Returns the single block of the MAF"""
         single_block = [
+            RandomPermutation(features=self.param_dim),
             MaskedAffineAutoregressiveTransform(
                 features=self.param_dim,
                 hidden_features=self.hidden_features,
@@ -55,8 +48,9 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
                 use_batch_norm=self.use_batch_norm,
                 use_residual_blocks=self.use_residual_blocks,
             ),
-            RandomPermutation(features=self.param_dim),
         ]
+        if self.batch_norm_between_layers:
+            single_block.append(BatchNorm(features=self.param_dim))
         return single_block
 
     def distribution(self):
@@ -65,7 +59,7 @@ class MaskedAutoRegressiveFlow(NormalizingFlow):
 
     def build_flow(self):
         transforms = []
-        for idx in range(self.num_transforms):
+        for _ in range(self.num_transforms):
             transforms.extend(self.transform_block())
 
         transform = CompositeTransform(transforms)

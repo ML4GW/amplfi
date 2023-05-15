@@ -9,6 +9,7 @@ def sine_gaussian_frequency(
     frequency: float,
     phase: float,
     eccentricity: float,
+    **kwargs,
 ):
 
     """

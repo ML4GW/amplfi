@@ -9,16 +9,16 @@ from data_generation.utils import (
     download_data,
     inject_into_background,
     noise_from_psd,
-    phi_from_ra,
 )
-from gwpy.timeseries import TimeSeries, TimeSeriesDict
+from gwpy.timeseries import TimeSeries
 from mldatafind.segments import query_segments
-from typeo import scriptify
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
 from ml4gw.spectral import normalize_psd
 from mlpe.injection import generate_gw
+from mlpe.injection.utils import phi_from_ra
 from mlpe.logging import configure_logging
+from typeo import scriptify
 
 
 @scriptify
@@ -33,6 +33,7 @@ def main(
     spacing: float,
     start: float,
     stop: float,
+    kernel_length: float,
     sample_rate: float,
     waveform_duration: float,
     bilby_duration: float,
@@ -134,13 +135,17 @@ def main(
     # dec is declination
     # psi is polarization angle
     # phi is relative azimuthal angle between source and earth
+
+    phi = np.array(
+        [
+            phi_from_ra(ra, time)
+            for ra, time in zip(parameters["ra"], parameters["geocent_time"])
+        ]
+    )
+    parameters["phi"] = phi
     dec = torch.Tensor(parameters["dec"])
     psi = torch.Tensor(parameters["psi"])
-    phi = [
-        phi_from_ra(ra, time)
-        for ra, time in zip(parameters["ra"], parameters["geocent_time"])
-    ]
-    parameters["phi"] = phi
+    phi = torch.Tensor(parameters["phi"])
 
     waveforms = compute_observed_strain(
         dec,
@@ -154,7 +159,7 @@ def main(
     )
 
     waveforms = waveforms.numpy()
-    data_dict = TimeSeriesDict()
+    timeseries = []
     for i, (ifo, data) in enumerate(background_dict.items()):
         # set start time of data to 0 for simplicity
         data.t0 = 0
@@ -167,17 +172,33 @@ def main(
             signal_times,
         )
 
-        # package into gwpy timeseries and save as hdf5 files
-        data_dict[ifo] = TimeSeries(
-            data, dt=1 / sample_rate, channel=f"{ifo}:{channel}", t0=0
+        data.write(
+            datadir / f"{ifo}_timeseries.hdf5",
+            format="hdf5",
+            overwrite=True,
         )
 
-    data_dict.write(
-        datadir / "bilby_timeseries.hdf5",
-        format="hdf5",
-        overwrite=True,
-    )
-    # save parameters as hdf5 file
-    with h5py.File(datadir / "bilby_injection_parameters.hdf5", "w") as f:
+        timeseries.append(data)
+
+    # save timeseries as numpy array for slicing into
+    # format digestible by flow
+
+    timeseries = np.stack(timeseries)
+
+    # save injections as array easily ingestible by flow
+    # load in the timeseries data and crop around the injection times
+    start_indices = (
+        (signal_times - (kernel_length // 2)) * sample_rate
+    ).astype("int64")
+    end_indices = start_indices + int(kernel_length * sample_rate)
+
+    injections = []
+    for start, stop in zip(start_indices, end_indices):
+        injections.append(timeseries[:, start:stop])
+
+    injections = np.stack(injections)
+
+    with h5py.File(datadir / "bilby_injections.hdf5", "w") as f:
+        f.create_dataset("injections", data=injections)
         for key, value in parameters.items():
             f.create_dataset(key, data=value)

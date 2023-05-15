@@ -1,5 +1,5 @@
 from math import pi
-from typing import List, Tuple, TypeVar
+from typing import List, Optional, Tuple, TypeVar
 
 import numpy as np
 import torch
@@ -36,12 +36,12 @@ def split(X: Tensor, frac: float, axis: int) -> Tuple[Tensor, Tensor]:
 
 def prepare_augmentation(
     signals: np.ndarray,
-    intrinsic: np.ndarray,
     ifos: List[str],
     valid_frac: float,
     sample_rate: float,
     trigger_distance: float,
     highpass: float,
+    intrinsic: Optional[np.ndarray] = None,
 ):
 
     valid_injector = None
@@ -49,10 +49,19 @@ def prepare_augmentation(
     # construct validation injector
     # if valid_frac is passed
     if valid_frac is not None:
-        signals, valid_signals = split(signals, 1 - valid_frac, 0)
-        intrinsic, valid_intrinsic = split(intrinsic, 1 - valid_frac, 0)
 
+        signals, valid_signals = split(signals, 1 - valid_frac, 0)
         valid_plus, valid_cross = valid_signals.transpose(1, 0, 2)
+
+        # if we've passed intrinsic parameters,
+        # split them into validation and training
+        if intrinsic is not None:
+            intrinsic = intrinsic.transpose(1, 0)
+            intrinsic, valid_intrinsic = split(intrinsic, 1 - valid_frac, 0)
+        # otherwise, set valid_intrinsic to None
+        # so that the injector doesnt return samples from it
+        else:
+            valid_intrinsic = None
 
         # TODO: make extrinisic parameter
         # sampling deterministic

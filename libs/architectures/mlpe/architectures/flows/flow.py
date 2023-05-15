@@ -60,21 +60,21 @@ class NormalizingFlow(ABC):
     def set_weights_from_state_dict(self, state_dict):
         if self._flow is None:
             raise ValueError(
-                "Flow is not built. Call build_flow before setting weights"
+                "Flow is not built. Call build_flow() before setting weights"
             )
         self._flow.load_state_dict(state_dict)
 
     def to_device(self, device):
         if self._flow is None:
             raise ValueError(
-                "Flow is not built. Call build_flow before sending to device"
+                "Flow is not built. Call build_flow() before sending to device"
             )
         self._flow = self._flow.to(device)
 
     @property
     def context_dim(self):
-        sample_tensor = torch.zeros((1, self.n_ifos, self.strain_dim))
-        context_dim = self.embedding_net(sample_tensor).shape[-1]
+        dummy_tensor = torch.zeros((1, self.n_ifos, self.strain_dim))
+        context_dim = self.embedding_net(dummy_tensor).shape[-1]
         return context_dim
 
     @property

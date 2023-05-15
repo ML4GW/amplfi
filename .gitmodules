@@ -4,3 +4,6 @@
 [submodule "ml4gw"]
 	path = ml4gw
 	url = https://github.com/ML4GW/ml4gw
+[submodule "typeo"]
+	path = typeo
+	url = git@github.com:ML4GW/typeo.git

@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from typing import Callable, Tuple
+from pathlib import Path
+from typing import Callable, Optional, Tuple
 
 import nflows.nn.nets as nn_
 import torch
 from nflows import distributions, transforms, utils
 from nflows.flows import Flow
 
-from mlpe.architectures.embeddings import Flattener
 from mlpe.architectures.flows.flow import NormalizingFlow
 
 
@@ -14,13 +14,13 @@ from mlpe.architectures.flows.flow import NormalizingFlow
 class CouplingFlow(NormalizingFlow):
 
     shape: Tuple[int, int, int]
-    num_flow_steps: int
-    embedding_net: torch.nn.Module = Flattener()
+    embedding_net: torch.nn.Module
+    num_transforms: int
     hidden_dim: int = 512
     num_transform_blocks: int = 2
     dropout_probability: float = 0.0
     activation: Callable = torch.nn.functional.relu
-    use_batch_norm: bool = False
+    use_batch_norm: bool = True
     num_bins: int = 8
     tails: str = "linear"
     tail_bound: float = 1.0
@@ -34,7 +34,7 @@ class CouplingFlow(NormalizingFlow):
             self.param_dim,
             self.n_ifos,
             self.strain_dim,
-            self.num_flow_steps,
+            self.num_transforms,
             self.embedding_net,
         )
 
@@ -76,7 +76,7 @@ class CouplingFlow(NormalizingFlow):
     def distribution(self):
         return distributions.StandardNormal((self.param_dim,))
 
-    def build_flow(self, state_dict=None):
+    def build_flow(self, state_dict: Optional[Path] = None):
         """
         Constructs the normalizing flow model
         """
@@ -86,7 +86,7 @@ class CouplingFlow(NormalizingFlow):
                 transforms.CompositeTransform(
                     [self.transform_block(i), self.linear_block()]
                 )
-                for i in range(self.num_flow_steps)
+                for i in range(self.num_transforms)
             ]
             + [self.linear_block()]
         )
@@ -96,6 +96,7 @@ class CouplingFlow(NormalizingFlow):
             self.distribution(),
             embedding_net=self.embedding_net,
         )
-        if state_dict:
+        if state_dict is not None:
+            state_dict = torch.load(state_dict)
             flow.load_state_dict(state_dict)
         self._flow = flow
