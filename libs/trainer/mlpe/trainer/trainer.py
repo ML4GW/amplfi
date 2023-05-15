@@ -317,9 +317,9 @@ def train(
 
     # plot the training and validation losses and save result
     plt.figure()
-    plt.plot(history["train_loss"], label='Train loss')
+    plt.plot(history["train_loss"], label="Train loss")
     if valid_loss is not None:
-        plt.plot(history["valid_loss"], label='Valid loss')
+        plt.plot(history["valid_loss"], label="Valid loss")
     plt.legend()
     plt.xlabel("Epoch number")
     plt.ylabel("Loss")
