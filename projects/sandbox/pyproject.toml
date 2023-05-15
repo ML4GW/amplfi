@@ -114,7 +114,7 @@ resnet = "${base.resnet}"
 
 # scheduler subcommand
 [tool.typeo.scripts.train.optimizer]
-adam = {lr = 1e-4, weight_decay = 1e-5}
+adam = {lr = 5e-4, weight_decay = 1e-5}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
