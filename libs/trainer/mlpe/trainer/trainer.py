@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterable, Optional, Tuple
 
 import h5py
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -314,6 +315,16 @@ def train(
                         )
                         break
 
+    # plot the training and validation losses and save result
+    plt.figure()
+    plt.plot(history["train_loss"], label="Train loss")
+    if valid_loss is not None:
+        plt.plot(history["valid_loss"], label="Valid loss")
+    plt.legend()
+    plt.xlabel("Epoch number")
+    plt.ylabel("Loss")
+    plt.savefig(outdir / "loss_history.png")
+    plt.close()
     with h5py.File(outdir / "train_results.h5", "w") as f:
         for key, value in history.items():
             f.create_dataset(key, data=value)
