@@ -13,6 +13,7 @@ from sampling.utils import (
     initialize_data_loader,
     load_and_initialize_flow,
     load_preprocessor_state,
+    plot_mollview,
 )
 
 from mlpe.architectures import embeddings, flows
@@ -102,17 +103,23 @@ def main(
             corner_plot_filename = (
                 basedir / f"{num_plotted}_descaled_corner.png"
             )
+            skymap_filename = basedir / f"{num_plotted}_mollview.png"
             res.plot_corner(
                 save=True,
                 filename=corner_plot_filename,
                 levels=(0.5, 0.9),
             )
+            plot_mollview(
+                res.posterior["phi"],
+                res.posterior["dec"],
+                truth=(
+                    res.injection_parameters["phi"],
+                    res.injection_parameters["dec"],
+                ),
+                outpath=skymap_filename,
+            )
             num_plotted += 1
-    logging.info(
-        "Total sampling time: {:.1f}(s)/ Samples per second".format(
-            total_sampling_time
-        )
-    )
+    logging.info("Total sampling time: {:.1f}(s)".format(total_sampling_time))
 
     logging.info("Making pp-plot")
     pp_plot_dir = basedir / "pp_plots"

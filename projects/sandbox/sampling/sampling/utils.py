@@ -134,15 +134,14 @@ def plot_mollview(
     """Plot mollview of posterior samples
 
     Args:
-        ra_samples: array of right ascension samples in radians (0, 2 pi)
+        ra_samples: array of right ascension samples in radians (-pi, pi)
         dec_samples: array of declination samples in radians (-pi/2, pi/2)
         nside: nside parameter for healpy
         truth: tuple of true ra and dec
     """
 
     # mask out non physical samples;
-    # convert dec between 0 and pi in rads as required by healpy
-    ra_samples_mask = (ra_samples > 0) * (ra_samples < 360)
+    ra_samples_mask = (ra_samples > -np.pi) * (ra_samples < np.pi)
     dec_samples += np.pi / 2
     dec_samples_mask = (dec_samples > 0) * (dec_samples < np.pi)
 
