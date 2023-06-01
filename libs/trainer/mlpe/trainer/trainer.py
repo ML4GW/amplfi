@@ -226,7 +226,7 @@ def train(
         if init_weights.is_dir():
             init_weights = init_weights / "weights.pt"
 
-        logging.debug(
+        logging.info(
             f"Initializing model weights from checkpoint '{init_weights}'"
         )
         state_dict = torch.load(init_weights)
