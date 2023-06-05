@@ -12,6 +12,20 @@ if TYPE_CHECKING:
     from nflows import transforms
 
 
+def number_trainable_parameters(model: torch.nn.Module):
+    """Return a list of trainable parameters in a model"""
+    num = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    num += sum(p.numel() for p in model.buffers() if p.requires_grad)
+    return num
+
+
+def model_memory(model: torch.nn.Module):
+    """Return the memory used by a model in Mega bytes"""
+    memory = sum(p.numel() * p.element_size() for p in model.parameters())
+    memory += sum(p.numel() * p.element_size() for p in model.buffers())
+    return memory / 1e6
+
+
 def train_for_one_epoch(
     flow: "transforms.flow",
     optimizer: torch.optim.Optimizer,
@@ -210,9 +224,22 @@ def train(
     # instantiate the embedding network, pass it to the flow
     # object, and then build the flow
     embedding = embedding((n_ifos, strain_dim))
+
     flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
     flow_obj.build_flow()
     flow_obj.to_device(device)
+
+    n_model_parameters = number_trainable_parameters(flow_obj.flow)
+    n_embedding_parameters = number_trainable_parameters(embedding)
+    memory = model_memory(flow_obj.flow)
+
+    logging.info(f"Estimated memory: {memory} MB")
+    logging.info(f"Number of embedding parameters: {n_embedding_parameters}")
+    logging.info(
+        "Number of flow parameters: "
+        f"{n_model_parameters - n_embedding_parameters}"
+    )
+    logging.info(f"Number of model parameters: {n_model_parameters}")
 
     # if we passed a module for preprocessing,
     # include it in the model so that the weights
