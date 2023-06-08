@@ -12,6 +12,13 @@ if TYPE_CHECKING:
     from nflows import transforms
 
 
+def step_scheduler(scheduler: torch.optim.lr_scheduler, metric: float = None):
+    if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+        scheduler.step(metric)
+    else:
+        scheduler.step()
+
+
 def number_trainable_parameters(model: torch.nn.Module):
     """Return a list of trainable parameters in a model"""
     num = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -67,6 +74,7 @@ def train_for_one_epoch(
 
         if profiler is not None:
             profiler.step()
+
         if scheduler is not None:
             scheduler.step()
 

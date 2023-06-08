@@ -76,7 +76,7 @@ def main(
     )
 
     logging.info("Loading test data and initializing dataloader")
-    test_dataloader, _ = initialize_data_loader(
+    test_dataloader, _, _ = initialize_data_loader(
         testing_set, inference_params, device
     )
 

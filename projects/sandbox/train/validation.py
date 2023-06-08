@@ -1,12 +1,10 @@
 from math import ceil
-from typing import TYPE_CHECKING, Callable, List
+from typing import List
 
 import numpy as np
 import torch
-from ml4gw import gw
 
-if TYPE_CHECKING:
-    from mlpe.data.transforms.injection import PEInjector
+from ml4gw import gw
 
 
 def make_validation_dataset(
@@ -20,11 +18,11 @@ def make_validation_dataset(
     batch_size: int,
     device: str,
 ):
-    
+
     tensors, vertices = gw.get_ifo_geometry(*ifos)
-    dec, psi, phi = parameters[:, -3:].transpose(1,0)
-    
-    plus, cross = signals.transpose(1, 0, 2)
+    dec, psi, phi = parameters[:, -3:].transpose(1, 0)
+
+    cross, plus = signals.transpose(1, 0, 2)
     signals = gw.compute_observed_strain(
         torch.Tensor(dec),
         torch.Tensor(psi),
@@ -41,7 +39,6 @@ def make_validation_dataset(
     start = center - (kernel_size // 2)
     stop = center + (kernel_size // 2)
     signals = signals[:, :, start:stop]
-
 
     stride_size = int(stride * sample_rate)
     num_kernels = (background.shape[-1] - kernel_size) // stride_size + 1

@@ -1,13 +1,8 @@
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from ml4gw import gw
-
 from typing import Callable, List
 
 import torch
 
 from ml4gw import gw
-from ml4gw.waveforms.generator import ParameterSampler
 
 
 class PEInjector(torch.nn.Module):
@@ -20,7 +15,7 @@ class PEInjector(torch.nn.Module):
         self,
         sample_rate: float,
         ifos: List[str],
-        intrinsic_parameter_sampler: "ParameterSampler",
+        intrinsic_parameter_sampler: Callable,
         dec: Callable,
         psi: Callable,
         phi: Callable,
@@ -44,26 +39,23 @@ class PEInjector(torch.nn.Module):
         # take logarithm of hrss since that is what we train with;
         # remove eccentricity from parameters since we don't train with it
         parameters["hrss"] = torch.log(parameters["hrss"])
-        parameters.pop("eccentricity")        
+        parameters.pop("eccentricity")
         return parameters
 
     def sample_waveforms(self, N: int):
         # randomly sample intrinsic parameters and generate raw polarizations
         parameters = self.parameter_sampler(N, device=self.tensors.device)
-        waveforms = self.waveform(**parameters)
-
-        n_waveforms = len(waveforms)
+        cross, plus = self.waveform(**parameters)
         dec, psi, phi = (
-            self.dec(n_waveforms),
-            self.psi(n_waveforms),
-            self.phi(n_waveforms),
+            self.dec(N),
+            self.psi(N),
+            self.phi(N),
         )
 
-        dec = dec.to(waveforms.device)
-        psi = psi.to(waveforms.device)
-        phi = phi.to(waveforms.device)
+        dec = dec.to(self.tensors.device)
+        psi = psi.to(self.tensors.device)
+        phi = phi.to(self.tensors.device)
 
-        plus, cross = waveforms.transpose(1, 0)
         waveforms = gw.compute_observed_strain(
             dec,
             psi,
@@ -74,7 +66,7 @@ class PEInjector(torch.nn.Module):
             plus=plus,
             cross=cross,
         )
-        
+
         transformed = self.transform(parameters)
         # concatenate intrinsic parameters with sampled extrinsic parameters
         transformed = torch.column_stack(list(transformed.values()))

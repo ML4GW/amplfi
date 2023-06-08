@@ -1,1 +1,1 @@
-from .injection import generate_gw
+from .injection import generate_time_domain_sine_gaussian

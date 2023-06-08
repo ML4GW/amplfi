@@ -72,13 +72,12 @@ logdir = "${base.logdir}"
 n_samples = 25000
 sample_rate = "${base.sample_rate}" 
 force_generation = "${base.force_generation}"
-waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 waveform_duration = "${base.waveform_duration}"
 prior = "${base.prior}"
 
 [tool.typeo.scripts.train]
 background_path = "${base.datadir}/background.h5" 
-waveform_dataset = "${base.datadir}/signals.h5"
+waveform_dataset = "${base.datadir}/validation_signals.h5"
 
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
@@ -123,7 +122,7 @@ adam = {lr = 1e-3, weight_decay = 1e-5}
 onecycle = {max_lr = 1e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 80, steps_per_epoch = "${base.batches_per_epoch}" }
 cosine = {T_max = 10000, eta_min = 1e-5}
 sequential = {schedulers = ['ConstantLR', 'CosineAnnealingLR', 'StepLR'], scheduler_kwargs = ["dict(total_iters=4800)", "dict(T_max=2000,eta_min=1e-5)", "dict(gamma=0.1,step_size=2400)"], milestones = [4800, 20000]}
-
+plateau = {factor = 0.9, patience = 30, cooldown = 10, min_lr = 1e-8}
 
 [tool.typeo.scripts.generate-flow-injections]
 ifos = "${base.ifos}"
@@ -134,7 +133,6 @@ start = "${base.stop}"
 stop = "${base.test_stop}" 
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
-waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
 n_samples = 5000
 kernel_length = "${base.kernel_length}"
 waveform_duration = "${base.waveform_duration}"
@@ -153,8 +151,7 @@ start = "${base.stop}"
 stop = "${base.test_stop}"
 sample_rate = "${base.sample_rate}"
 prior = "mlpe.injection.priors.sg_uniform"
-waveform = "mlpe.injection.waveforms.sine_gaussian_frequency"
-n_samples = 1
+n_samples = 10
 waveform_duration = "${base.waveform_duration}"
 spacing = 100
 buffer = 10

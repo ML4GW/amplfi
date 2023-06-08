@@ -91,6 +91,31 @@ class SequentialLR(torch.optim.lr_scheduler.SequentialLR):
             milestones=[eval(_) for _ in milestones],
         )
 
+class ReduceLROnPlateau(torch.optim.lr_scheduler.ReduceLROnPlateau):
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer,
+        factor: float = 0.1,
+        patience: int = 10,
+        threshold: float = 0.0001,
+        threshold_mode: str = "rel",
+        cooldown: int = 0,
+        min_lr: float = 0,
+        eps: float = 1e-08,
+        verbose: bool = False,
+    ):
+        super().__init__(
+            optimizer,
+            factor=factor,
+            patience=patience,
+            threshold=threshold,
+            threshold_mode=threshold_mode,
+            cooldown=cooldown,
+            min_lr=min_lr,
+            eps=eps,
+            verbose=verbose,
+        )
+
 
 schedulers = {
     "onecycle": _wrap_callable(OneCycleLR),
@@ -98,4 +123,5 @@ schedulers = {
     "exponential": _wrap_callable(ExponentialLR),
     "cosine": _wrap_callable(CosineAnnealingLR),
     "sequential": _wrap_callable(SequentialLR),
+    "plateau": _wrap_callable(ReduceLROnPlateau),
 }

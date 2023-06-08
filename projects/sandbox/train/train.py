@@ -51,7 +51,6 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
     """
     with h5py.File(waveform_dataset, "r") as f:
         signals = f["signals"][:]
-
         # TODO: how do we ensure order
         # of parameters throughout pipeline?
         parameters = []
@@ -65,11 +64,10 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
                 values = np.log(f[param][:])
             else:
                 values = f[param][:]
-            
+
             parameters.append(values)
 
         parameters = np.column_stack(parameters)
- 
 
     return signals, parameters
 
@@ -133,6 +131,7 @@ def main(
 
     # load in the fixed set of validation waveforms
     # and split background into trainind and validation segments
+
     valid_signals, valid_parameters = load_signals(
         waveform_dataset, inference_params
     )
@@ -158,9 +157,7 @@ def main(
     )
 
     # prepare waveform injector
-    waveform = SineGaussian(
-        sample_rate=sample_rate, duration=4
-    )
+    waveform = SineGaussian(sample_rate=sample_rate, duration=4)
 
     # prepare injector
     injector = PEInjector(
@@ -199,7 +196,6 @@ def main(
         fduration,
         scaler=standard_scaler,
     )
-    parameters = np.row_stack(parameters)
 
     # create full training dataloader
     train_dataset = PEInMemoryDataset(
@@ -213,7 +209,9 @@ def main(
         device=device,
     )
 
-    preprocessor.whitener.fit(kernel_length, highpass=highpass, sample_rate=sample_rate, *background)
+    preprocessor.whitener.fit(
+        kernel_length, highpass=highpass, sample_rate=sample_rate, *background
+    )
     preprocessor.whitener.to(device)
 
     # to perform the normalization over each parameters,
