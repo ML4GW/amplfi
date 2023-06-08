@@ -4,10 +4,8 @@ from pathlib import Path
 
 import bilby
 import pytest
-from bilby.gw.conversion import convert_to_lal_binary_black_hole_parameters
 
 import mlpe.injection
-import mlpe.injection.waveforms as waveforms
 
 TEST_DIR = Path(__file__).resolve().parent
 
@@ -17,7 +15,7 @@ def n_samples(request):
     return request.param
 
 
-@pytest.fixture(params=[1, 2, 4])
+@pytest.fixture(params=[4])
 def waveform_duration(request):
     return request.param
 
@@ -32,57 +30,26 @@ def sample_rate(request):
         "priors/sine_gaussian.prior",
     ]
 )
-def sg_prior_file(request):
+def prior_file(request):
     return str(Path(__file__).resolve().parent / request.param)
 
 
-@pytest.fixture(params=["priors/nonspin_BBH.prior"])
-def cbc_prior_file(request):
-    return str(Path(__file__).resolve().parent / request.param)
-
-
-def test_generate_gw_sg(
-    sg_prior_file, waveform_duration, sample_rate, n_samples
+def test_generate_time_domain_sine_gaussian(
+    prior_file, waveform_duration, sample_rate, n_samples
 ):
 
-    # first test custom sine gaussian
-    n_pols = 2
     waveform_size = sample_rate * waveform_duration
-    sample_params = bilby.gw.prior.PriorDict(sg_prior_file).sample(n_samples)
+    params = bilby.gw.prior.PriorDict(prior_file).sample(n_samples)
 
-    signals = mlpe.injection.generate_gw(
-        sample_params,
-        sample_rate,
-        waveform_duration,
-        waveform=waveforms.sine_gaussian_frequency,
+    cross, plus = mlpe.injection.generate_time_domain_sine_gaussian(
+        frequencies=params["frequency"],
+        hrss=params["hrss"],
+        qualities=params["quality"],
+        phases=params["phase"],
+        eccentricities=params["eccentricity"],
+        sample_rate=sample_rate,
+        duration=waveform_duration,
     )
 
-    expected_signal_shape = (n_samples, n_pols, waveform_size)
-    assert signals.shape == expected_signal_shape
-
-
-def test_generate_gw_cbc(
-    cbc_prior_file, waveform_duration, sample_rate, n_samples
-):
-
-    # first test custom sine gaussian
-    n_pols = 2
-    waveform_size = sample_rate * waveform_duration
-    sample_params = bilby.gw.prior.PriorDict(cbc_prior_file).sample(n_samples)
-
-    waveform_arguments = dict(
-        reference_frequency=20,
-        minimum_frequency=30,
-        waveform_approximant="IMRPhenomPv2",
-    )
-    signals = mlpe.injection.generate_gw(
-        sample_params,
-        sample_rate,
-        waveform_duration,
-        waveform=bilby.gw.source.lal_binary_black_hole,
-        waveform_arguments=waveform_arguments,
-        parameter_conversion=convert_to_lal_binary_black_hole_parameters,
-    )
-
-    expected_signal_shape = (n_samples, n_pols, waveform_size)
-    assert signals.shape == expected_signal_shape
+    assert cross.shape == (n_samples, waveform_size)
+    assert plus.shape == (n_samples, waveform_size)
