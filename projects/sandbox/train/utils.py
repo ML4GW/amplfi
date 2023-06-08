@@ -1,10 +1,7 @@
-from math import pi
-from typing import List, Optional, Tuple, TypeVar
+from typing import Tuple, TypeVar
 
 import numpy as np
 import torch
-
-from ml4gw.distributions import Cosine, Uniform
 
 Tensor = TypeVar("T", np.ndarray, torch.Tensor)
 
@@ -22,4 +19,3 @@ def split(X: Tensor, frac: float, axis: int) -> Tuple[Tensor, Tensor]:
     else:
         splits = [size, X.shape[axis] - size]
         return torch.split(X, splits, dim=axis)
-
