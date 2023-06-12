@@ -40,6 +40,7 @@ bilby_duration = 4
 # training parameters
 batches_per_epoch = 300
 max_epochs = 250
+init_weights = "/work/submit/deep1018/pe-base-dir/training/weights.pt"
 
 # flow subcommands
 coupling = {num_flow_steps = 10}
@@ -120,6 +121,7 @@ adam = {lr = 5e-4, weight_decay = 1e-5}
 [tool.typeo.scripts.train.scheduler]
 onecycle = {max_lr = 1e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 80, steps_per_epoch = "${base.batches_per_epoch}" }
 cosine = {T_max = 10000, eta_min = 1e-5}
+sequential = {schedulers = ['ConstantLR', 'OneCycleLR', 'CosineAnnealingLR'], scheduler_kwargs = ["dict(total_iters=5)", "dict(total_steps=20,max_lr=2e-3)", "dict(T_max=10000,eta_min=1e-5)"], milestones = [5, 20]}
 
 
 [tool.typeo.scripts.generate-flow-injections]
