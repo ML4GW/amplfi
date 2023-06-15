@@ -92,8 +92,7 @@ trigger_distance = "${base.trigger_distance}"
 batch_size = 512
 batches_per_epoch = "${base.batches_per_epoch}"
 max_epochs = "${base.max_epochs}"
-
-early_stop = 150
+early_stop = 30
 
 use_amp = false
 profile = false
@@ -115,13 +114,13 @@ resnet = "${base.resnet}"
 
 # scheduler subcommand
 [tool.typeo.scripts.train.optimizer]
-adam = {lr = 5e-4, weight_decay = 1e-5}
+adam = {lr = 1e-3, weight_decay = 1e-5}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
 onecycle = {max_lr = 1e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 80, steps_per_epoch = "${base.batches_per_epoch}" }
 cosine = {T_max = 10000, eta_min = 1e-5}
-sequential = {schedulers = ['ConstantLR', 'OneCycleLR', 'CosineAnnealingLR'], scheduler_kwargs = ["dict(total_iters=5)", "dict(total_steps=20,max_lr=2e-3)", "dict(T_max=10000,eta_min=1e-5)"], milestones = [5, 20]}
+sequential = {schedulers = ['ConstantLR', 'CosineAnnealingLR', 'StepLR'], scheduler_kwargs = ["dict(total_iters=4800)", "dict(T_max=2000,eta_min=1e-5)", "dict(gamma=0.1,step_size=2400)"], milestones = [4800, 20000]}
 
 
 [tool.typeo.scripts.generate-flow-injections]
