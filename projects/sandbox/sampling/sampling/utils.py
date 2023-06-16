@@ -53,14 +53,13 @@ def initialize_data_loader(
             # take logarithm since hrss
             # spans large magnitude range
             if param == "hrss":
-                values = np.log10(values)
+                values = np.log(values)
             params.append(values)
 
         params = np.vstack(params).T
     injections = torch.from_numpy(signals).to(torch.float32)
     params = torch.from_numpy(params).to(torch.float32)
-
-    dataset = torch.utils.data.TensorDataset(injections, params)
+    dataset = torch.utils.data.TensorDataset(injections[:100], params[:100])
     dataloader = torch.utils.data.DataLoader(
         dataset,
         pin_memory=False if device == "cpu" else True,
