@@ -24,6 +24,9 @@ default = false
 [tool.poetry.scripts]
 train = "train:main"
 
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

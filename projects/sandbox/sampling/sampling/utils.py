@@ -239,6 +239,7 @@ def load_and_sort_bilby_results_from_dynesty(
     bilby_results = []
     paths = sorted(list(bilby_result_dir.iterdir()))
     for idx, (path, param, time) in enumerate(zip(paths, parameters, times)):
+        print(idx, time, path)
         bilby_result = bilby.core.result.read_in_result(path)
         bilby_result.injection_parameters = {
             k: float(v) for k, v in zip(inference_params, param)
