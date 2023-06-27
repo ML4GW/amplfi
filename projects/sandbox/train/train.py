@@ -47,7 +47,7 @@ def load_background(background_path: Path, ifos):
 
 def load_signals(waveform_dataset: Path, parameter_names: List[str]):
     """
-    Load in validation signals and parameters
+    Load in validation signals (generated with lalsimulation) and parameters
     """
     with h5py.File(waveform_dataset, "r") as f:
         signals = f["signals"][:]
