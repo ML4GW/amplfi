@@ -46,7 +46,7 @@ def generate_time_domain_sine_gaussian(
     return cross, plus
 
 
-def sine_gaussian_frequency(
+def bilby_frequency_domain_sine_gaussian(
     frequency_array: np.ndarray,
     hrss: float,
     quality: float,
@@ -55,7 +55,6 @@ def sine_gaussian_frequency(
     eccentricity: float,
     **kwargs,
 ):
-
     """
     Frequency domain sine gaussian built on top of
     lalinference BurstSineGaussianF.
