@@ -61,7 +61,7 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
             # take logarithm since hrss
             # spans large magnitude range
             elif param == "hrss":
-                values = np.log(f[param][:])
+                values = np.log10(f[param][:])
             else:
                 values = f[param][:]
 
@@ -185,7 +185,7 @@ def main(
     for param in inference_params:
         values = samples[param]
         if param == "hrss":
-            values = np.log(values)
+            values = np.log10(values)
         parameters.append(values)
     parameters = np.row_stack(parameters)
 

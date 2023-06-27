@@ -57,7 +57,7 @@ def initialize_data_loader(
             # take logarithm since hrss
             # spans large magnitude range
             if param == "hrss":
-                values = np.log(values)
+                values = np.log10(values)
             params.append(values)
 
         params = np.vstack(params).T
