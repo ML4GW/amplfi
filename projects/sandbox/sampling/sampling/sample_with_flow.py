@@ -123,7 +123,7 @@ def main(
 
     logging.info("Making pp-plot")
     pp_plot_dir = basedir / "pp_plots"
-    pp_plot_filename = pp_plot_dir / "pp-plot-test-set.png"
+    pp_plot_filename = pp_plot_dir / "pp-plot-test-set-5000.png"
     bilby.result.make_pp_plot(
         results,
         save=True,

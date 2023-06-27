@@ -63,7 +63,7 @@ def initialize_data_loader(
         params = np.vstack(params).T
     injections = torch.from_numpy(signals).to(torch.float32)
     params = torch.from_numpy(params).to(torch.float32)
-    dataset = torch.utils.data.TensorDataset(injections[:100], params[:100])
+    dataset = torch.utils.data.TensorDataset(injections, params)
     dataloader = torch.utils.data.DataLoader(
         dataset,
         pin_memory=False if device == "cpu" else True,

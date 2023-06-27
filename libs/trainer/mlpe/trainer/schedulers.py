@@ -38,6 +38,13 @@ class ConstantLR(torch.optim.lr_scheduler.ConstantLR):
         super().__init__(optimizer, total_iters=total_iters)
 
 
+class StepLR(torch.optim.lr_scheduler.StepLR):
+    def __init__(
+        self, optimizer: torch.optim.Optimizer, step_size: int, gamma: float
+    ):
+        super().__init__(optimizer, step_size=step_size, gamma=gamma)
+
+
 class ExponentialLR(torch.optim.lr_scheduler.ExponentialLR):
     def __init__(self, optimizer: torch.optim.Optimizer, gamma=0.99):
         super().__init__(optimizer, gamma=gamma)
@@ -47,7 +54,7 @@ class CosineAnnealingLR(torch.optim.lr_scheduler.CosineAnnealingLR):
     def __init__(
         self,
         optimizer: torch.optim.Optimizer,
-        T_max: float,
+        T_max: int,
         eta_min: float = 1e-5,
     ):
         super().__init__(optimizer, T_max=T_max, eta_min=eta_min)
@@ -91,6 +98,7 @@ class SequentialLR(torch.optim.lr_scheduler.SequentialLR):
             milestones=[eval(_) for _ in milestones],
         )
 
+
 class ReduceLROnPlateau(torch.optim.lr_scheduler.ReduceLROnPlateau):
     def __init__(
         self,
@@ -124,4 +132,5 @@ schedulers = {
     "cosine": _wrap_callable(CosineAnnealingLR),
     "sequential": _wrap_callable(SequentialLR),
     "plateau": _wrap_callable(ReduceLROnPlateau),
+    "step": _wrap_callable(StepLR),
 }
