@@ -1,2 +1,2 @@
-from .injection import WaveformInjector
+from .injection import PEInjector
 from .preprocessor import Preprocessor

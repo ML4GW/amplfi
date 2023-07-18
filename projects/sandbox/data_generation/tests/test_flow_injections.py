@@ -7,7 +7,6 @@ from data_generation.flow_injections import main
 from gwpy.timeseries import TimeSeries, TimeSeriesDict
 
 from mlpe.injection.priors import sg_uniform
-from mlpe.injection.waveforms import sine_gaussian_frequency
 
 
 @pytest.fixture(params=[["H1", "L1"]])
@@ -61,7 +60,6 @@ def test_flow_injections(
             None,
             sample_rate,
             sg_uniform,
-            sine_gaussian_frequency,
             n_samples,
             kernel_length,
             waveform_duration,

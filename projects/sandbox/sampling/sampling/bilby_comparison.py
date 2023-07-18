@@ -4,11 +4,11 @@ from pathlib import Path
 from time import time
 from typing import Callable, List
 
+import bilby
 from bilby.core.prior import Uniform
 from sampling.utils import (
     add_phi_to_bilby_results,
     draw_samples_from_model,
-    generate_corner_plots,
     initialize_data_loader,
     load_and_initialize_flow,
     load_and_sort_bilby_results_from_dynesty,
@@ -74,7 +74,7 @@ def main(
         preprocessor_dir, param_dim, n_ifos, fduration, sample_rate, device
     )
     logging.info("Loading test data and initializing dataloader")
-    test_dataloader, params = initialize_data_loader(
+    test_dataloader, params, times = initialize_data_loader(
         testing_set, inference_params, device
     )
     logging.info(
@@ -95,28 +95,43 @@ def main(
 
     logging.info("Loading bilby results")
     bilby_results = load_and_sort_bilby_results_from_dynesty(
-        bilby_result_dir, inference_params, params
+        bilby_result_dir, inference_params, params, times
     )
 
     bilby_results = add_phi_to_bilby_results(bilby_results)
 
     skymap_dir = basedir / "skymaps"
     skymap_dir.mkdir(exist_ok=True, parents=True)
-
+    cornerdir = basedir / "corner"
+    cornerdir.mkdir(exist_ok=True)
     logging.info("Making joint posterior plots")
     for idx, (flow_res, bilby_res) in enumerate(zip(results, bilby_results)):
-        generate_corner_plots([flow_res, bilby_res], basedir / "corner")
+        results = [flow_res, bilby_res]
+        filename = str(cornerdir / f"corner_{idx}.png")
+        bilby.result.plot_multiple(
+            results,
+            parameters=results[0].injection_parameters,
+            save=True,
+            filename=filename,
+            levels=(0.5, 0.9),
+        )
 
         # TODO: combined skymaps
         plot_mollview(
             flow_res.posterior["phi"].to_numpy().copy(),
             flow_res.posterior["dec"].to_numpy().copy(),
-            truth=(bilby_res[6], bilby_res[4]),
+            truth=(
+                flow_res.injection_parameters["phi"],
+                flow_res.injection_parameters["dec"],
+            ),
             outpath=skymap_dir / f"{idx}_mollview_flow.png",
         )
         plot_mollview(
             bilby_res.posterior["phi"].to_numpy().copy(),
             bilby_res.posterior["dec"].to_numpy().copy(),
-            truth=(bilby_res[6], bilby_res[4]),
+            truth=(
+                bilby_res.injection_parameters["phi"],
+                bilby_res.injection_parameters["dec"],
+            ),
             outpath=skymap_dir / f"{idx}_mollview_bilby.png",
         )

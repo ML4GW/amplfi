@@ -17,7 +17,7 @@ def sg_uniform():
         name="ra", minimum=0, maximum=2 * np.pi, latex_label="ra"
     )
     prior_dict["hrss"] = LogUniform(
-        name="hrss", minimum=1e-23, maximum=1e-19, latex_label="hrss"
+        name="hrss", minimum=1e-23, maximum=5e-20, latex_label="hrss"
     )
     prior_dict["time"] = 0
 

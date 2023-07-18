@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List
 
 import h5py
 import numpy as np
@@ -15,7 +15,7 @@ from mldatafind.segments import query_segments
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
 from ml4gw.spectral import normalize_psd
-from mlpe.injection import generate_gw
+from mlpe.injection import generate_time_domain_sine_gaussian
 from mlpe.logging import configure_logging
 from typeo import scriptify
 
@@ -30,15 +30,12 @@ def main(
     stop: float,
     sample_rate: float,
     prior: Callable,
-    waveform: Callable,
     n_samples: int,
     kernel_length: float,
     waveform_duration: float,
     datadir: Path,
     logdir: Path,
     min_duration: float = 0,
-    waveform_arguments: Optional[Dict] = None,
-    parameter_conversion: Optional[Callable] = None,
     gaussian: bool = False,
     force_generation: bool = False,
     verbose: bool = False,
@@ -151,18 +148,18 @@ def main(
 
     # instantiate prior, sample, and generate signals
     prior = prior()
-    parameters = prior.sample(n_samples)
+    params = prior.sample(n_samples)
 
-    signals = generate_gw(
-        parameters,
-        sample_rate,
-        waveform_duration,
-        waveform,
-        waveform_arguments=waveform_arguments,
-        parameter_conversion=parameter_conversion,
+    cross, plus = generate_time_domain_sine_gaussian(
+        frequencies=params["frequency"],
+        hrss=params["hrss"],
+        qualities=params["quality"],
+        phases=params["phase"],
+        eccentricities=params["eccentricity"],
+        sample_rate=sample_rate,
+        duration=waveform_duration,
     )
 
-    plus, cross = signals.transpose(1, 0, 2)
     plus = torch.Tensor(plus)
     cross = torch.Tensor(cross)
 
@@ -175,15 +172,15 @@ def main(
     # dec is declination
     # psi is polarization angle
     # phi is relative azimuthal angle between source and earth
-    dec = torch.Tensor(parameters["dec"])
-    psi = torch.Tensor(parameters["psi"])
+    dec = torch.Tensor(params["dec"])
+    psi = torch.Tensor(params["psi"])
 
     # The "correct" conversion here doesnt matter
     # since we arent comparing with bilby
     # Just putting phi in the range [-pi, pi]
     # so that it is consistent with the training set
-    phi = torch.Tensor(parameters["ra"]) - np.pi
-    parameters["phi"] = phi
+    phi = torch.Tensor(params["ra"]) - np.pi
+    params["phi"] = phi
 
     waveforms = compute_observed_strain(
         dec,
@@ -208,7 +205,7 @@ def main(
 
         f.create_dataset("injections", data=injections)
 
-        for name, value in parameters.items():
+        for name, value in params.items():
             f.create_dataset(name, data=value)
 
         # write attributes
@@ -217,11 +214,8 @@ def main(
                 "size": n_samples,
                 "sample_rate": sample_rate,
                 "waveform_duration": waveform_duration,
-                "waveform": waveform.__name__,
             }
         )
-        if waveform_arguments is not None:
-            f.attrs.update(waveform_arguments)
 
     return signal_file
 

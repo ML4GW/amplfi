@@ -76,7 +76,7 @@ def main(
     )
 
     logging.info("Loading test data and initializing dataloader")
-    test_dataloader, _ = initialize_data_loader(
+    test_dataloader, _, _ = initialize_data_loader(
         testing_set, inference_params, device
     )
 
@@ -123,7 +123,7 @@ def main(
 
     logging.info("Making pp-plot")
     pp_plot_dir = basedir / "pp_plots"
-    pp_plot_filename = pp_plot_dir / "pp-plot-test-set.png"
+    pp_plot_filename = pp_plot_dir / "pp-plot-test-set-5000.png"
     bilby.result.make_pp_plot(
         results,
         save=True,

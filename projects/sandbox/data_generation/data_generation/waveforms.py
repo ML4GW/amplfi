@@ -1,10 +1,11 @@
 import logging
 from pathlib import Path
-from typing import Callable, Dict, Optional
+from typing import Callable
 
 import h5py
+import numpy as np
 
-import mlpe.injection as injection
+from mlpe.injection import generate_time_domain_sine_gaussian
 from mlpe.logging import configure_logging
 from typeo import scriptify
 
@@ -12,19 +13,15 @@ from typeo import scriptify
 @scriptify
 def main(
     prior: Callable,
-    waveform: Callable,
     sample_rate: float,
     n_samples: int,
     waveform_duration: float,
     datadir: Path,
     logdir: Path,
-    waveform_arguments: Optional[Dict] = None,
-    parameter_conversion: Optional[Callable] = None,
     force_generation: bool = False,
     verbose: bool = False,
 ):
-    """Generates a dataset of raw waveforms. The goal was to make this
-    project waveform agnositic
+    """Generates a dataset of raw sine gaussian waveforms to use for validation
 
     Args:
 
@@ -44,9 +41,8 @@ def main(
     """
 
     configure_logging(logdir / "generate_waveforms.log", verbose)
-    # make data dir
     datadir.mkdir(exist_ok=True, parents=True)
-    signal_file = datadir / "signals.h5"
+    signal_file = datadir / "validation_signals.h5"
 
     if signal_file.exists() and not force_generation:
         logging.info(
@@ -57,23 +53,25 @@ def main(
 
     priors = prior()
 
-    sample_params = priors.sample(n_samples)
+    params = priors.sample(n_samples)
 
-    signals = injection.generate_gw(
-        sample_params,
-        sample_rate,
-        waveform_duration,
-        waveform,
-        waveform_arguments=waveform_arguments,
-        parameter_conversion=parameter_conversion,
+    cross, plus = generate_time_domain_sine_gaussian(
+        frequencies=params["frequency"],
+        hrss=params["hrss"],
+        qualities=params["quality"],
+        phases=params["phase"],
+        eccentricities=params["eccentricity"],
+        sample_rate=sample_rate,
+        duration=waveform_duration,
     )
 
+    signals = np.stack([cross, plus], axis=1)
     # write signals and parameters used to generate them
     with h5py.File(signal_file, "w") as f:
 
         f.create_dataset("signals", data=signals)
 
-        for k, v in sample_params.items():
+        for k, v in params.items():
             f.create_dataset(k, data=v)
 
         # write attributes
@@ -82,11 +80,8 @@ def main(
                 "size": n_samples,
                 "sample_rate": sample_rate,
                 "waveform_duration": waveform_duration,
-                "waveform": waveform.__name__,
             }
         )
-        if waveform_arguments is not None:
-            f.attrs.update(waveform_arguments)
 
     return signal_file
 

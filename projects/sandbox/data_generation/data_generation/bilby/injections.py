@@ -15,7 +15,7 @@ from mldatafind.segments import query_segments
 
 from ml4gw.gw import compute_observed_strain, get_ifo_geometry
 from ml4gw.spectral import normalize_psd
-from mlpe.injection import generate_gw
+from mlpe.injection import generate_time_domain_sine_gaussian
 from mlpe.injection.utils import phi_from_ra
 from mlpe.logging import configure_logging
 from typeo import scriptify
@@ -29,7 +29,6 @@ def main(
     state_flag: str,
     frame_type: str,
     channel: str,
-    waveform: Callable,
     spacing: float,
     start: float,
     stop: float,
@@ -48,7 +47,6 @@ def main(
 ):
 
     configure_logging(logdir / "generate_testing_set.log", verbose)
-
     datadir = datadir / "bilby"
     datadir.mkdir(exist_ok=True, parents=True)
     logdir.mkdir(exist_ok=True, parents=True)
@@ -108,25 +106,27 @@ def main(
             duration = len(background_dict[ifo]) / sample_rate
             psd = normalize_psd(background_dict[ifo], df, sample_rate)
             data = noise_from_psd(psd, df, duration, sample_rate)
-            background_dict[ifo] = TimeSeries(data, dt=1 / sample_rate)
+            background_dict[ifo] = TimeSeries(
+                data, dt=1 / sample_rate, name=f"{ifo}:{channel}"
+            )
 
     # instantiate prior, sample, and generate signals
     prior = prior()
-    parameters = prior.sample(n_samples)
-    parameters["geocent_time"] = signal_times
+    params = prior.sample(n_samples)
+    params["geocent_time"] = signal_times
 
-    signals = generate_gw(
-        parameters,
-        sample_rate,
-        waveform_duration,
-        waveform,
-        waveform_arguments=waveform_arguments,
-        parameter_conversion=parameter_conversion,
+    cross, plus = generate_time_domain_sine_gaussian(
+        frequencies=params["frequency"],
+        hrss=params["hrss"],
+        qualities=params["quality"],
+        phases=params["phase"],
+        eccentricities=params["eccentricity"],
+        sample_rate=sample_rate,
+        duration=waveform_duration,
     )
 
-    plus, cross = signals.transpose(1, 0, 2)
-    plus = torch.Tensor(plus)
     cross = torch.Tensor(cross)
+    plus = torch.Tensor(plus)
 
     # project raw polarizations onto interferometers
     # with sampled sky localizations
@@ -139,13 +139,13 @@ def main(
     phi = np.array(
         [
             phi_from_ra(ra, time)
-            for ra, time in zip(parameters["ra"], parameters["geocent_time"])
+            for ra, time in zip(params["ra"], params["geocent_time"])
         ]
-    )
-    parameters["phi"] = phi
-    dec = torch.Tensor(parameters["dec"])
-    psi = torch.Tensor(parameters["psi"])
-    phi = torch.Tensor(parameters["phi"])
+    ).flatten()
+    params["phi"] = phi
+    dec = torch.Tensor(params["dec"])
+    psi = torch.Tensor(params["psi"])
+    phi = torch.Tensor(params["phi"])
 
     waveforms = compute_observed_strain(
         dec,
@@ -182,7 +182,6 @@ def main(
 
     # save timeseries as numpy array for slicing into
     # format digestible by flow
-
     timeseries = np.stack(timeseries)
 
     # save injections as array easily ingestible by flow
@@ -200,5 +199,5 @@ def main(
 
     with h5py.File(datadir / "bilby_injections.hdf5", "w") as f:
         f.create_dataset("injections", data=injections)
-        for key, value in parameters.items():
+        for key, value in params.items():
             f.create_dataset(key, data=value)

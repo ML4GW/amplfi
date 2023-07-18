@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+from mlpe.trainer.utils import model_memory, number_trainable_parameters
+
 if TYPE_CHECKING:
     from nflows import transforms
 
@@ -53,6 +55,7 @@ def train_for_one_epoch(
 
         if profiler is not None:
             profiler.step()
+
         if scheduler is not None:
             scheduler.step()
 
@@ -210,9 +213,22 @@ def train(
     # instantiate the embedding network, pass it to the flow
     # object, and then build the flow
     embedding = embedding((n_ifos, strain_dim))
+
     flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
     flow_obj.build_flow()
     flow_obj.to_device(device)
+
+    n_model_parameters = number_trainable_parameters(flow_obj.flow)
+    n_embedding_parameters = number_trainable_parameters(embedding)
+    memory = model_memory(flow_obj.flow)
+
+    logging.info(f"Estimated memory: {memory} MB")
+    logging.info(f"Number of embedding parameters: {n_embedding_parameters}")
+    logging.info(
+        "Number of flow parameters: "
+        f"{n_model_parameters - n_embedding_parameters}"
+    )
+    logging.info(f"Number of model parameters: {n_model_parameters}")
 
     # if we passed a module for preprocessing,
     # include it in the model so that the weights
@@ -226,7 +242,7 @@ def train(
         if init_weights.is_dir():
             init_weights = init_weights / "weights.pt"
 
-        logging.debug(
+        logging.info(
             f"Initializing model weights from checkpoint '{init_weights}'"
         )
         state_dict = torch.load(init_weights)

@@ -19,6 +19,7 @@ torch = {version = "^1.12", source = "torch"}
 typeo = {path = "../../../typeo", develop = true}
 
 ligo-skymap = "^1.0.7"
+ipykernel = "^6.23.1"
 
 [[tool.poetry.source]]
 name = "torch"

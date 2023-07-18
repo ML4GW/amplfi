@@ -1,39 +1,96 @@
-from typing import TYPE_CHECKING
+from typing import Callable, List
 
-from ml4gw.transforms import RandomWaveformInjection
+import torch
 
-if TYPE_CHECKING:
-    from ml4gw import gw
+from ml4gw import gw
 
 
-class WaveformInjector(RandomWaveformInjection):
-    """Subclass of ml4gw's RandomWaveformInjection
-    that injects waveforms at a fixed location
-    into background kernels. The offset from the center
-    is determine by `trigger_offset`
+class PEInjector(torch.nn.Module):
+    """
+    A torch module that generates waveforms and injects them into
+    background kernels
     """
 
-    def forward(self, X: "gw.WaveformTensor") -> "gw.WaveformTensor":
+    def __init__(
+        self,
+        sample_rate: float,
+        ifos: List[str],
+        intrinsic_parameter_sampler: Callable,
+        dec: Callable,
+        psi: Callable,
+        phi: Callable,
+        waveform: Callable,
+    ):
+        super().__init__()
+
+        self.waveform = waveform
+        self.parameter_sampler = intrinsic_parameter_sampler
+        self.sample_rate = sample_rate
+
+        self.dec = dec
+        self.psi = psi
+        self.phi = phi
+
+        tensors, vertices = gw.get_ifo_geometry(*ifos)
+        self.register_buffer("tensors", tensors)
+        self.register_buffer("vertices", vertices)
+
+    def transform(self, parameters: dict):
+        # take logarithm of hrss since that is what we train with;
+        # remove eccentricity from parameters since we don't train with it
+        parameters["hrss"] = torch.log(parameters["hrss"])
+        parameters.pop("eccentricity")
+        return parameters
+
+    def sample_waveforms(self, N: int):
+        # randomly sample intrinsic parameters and generate raw polarizations
+        parameters = self.parameter_sampler(N, device=self.tensors.device)
+        cross, plus = self.waveform(**parameters)
+        dec, psi, phi = (
+            self.dec(N),
+            self.psi(N),
+            self.phi(N),
+        )
+
+        dec = dec.to(self.tensors.device)
+        psi = psi.to(self.tensors.device)
+        phi = phi.to(self.tensors.device)
+
+        waveforms = gw.compute_observed_strain(
+            dec,
+            psi,
+            phi,
+            detector_tensors=self.tensors,
+            detector_vertices=self.vertices,
+            sample_rate=self.sample_rate,
+            plus=plus,
+            cross=cross,
+        )
+
+        transformed = self.transform(parameters)
+        # concatenate intrinsic parameters with sampled extrinsic parameters
+        transformed = torch.column_stack(list(transformed.values()))
+        transformed = torch.column_stack((transformed, dec, psi, phi))
+
+        return waveforms, transformed
+
+    def forward(self, X: "gw.WaveformTensor"):
         if self.training:
-            # inject waveform with probability 1
+            # inject waveforms into every kernel
             N = len(X)
 
-            # infer kernel size of background
+            # infer kernel size from background
             kernel_size = X.shape[-1]
-
-            # randomly sample waveforms
-            waveforms, sampled_params = self.sample(N)
-            waveforms = waveforms.to(X.device)
+            waveforms, parameters = self.sample_waveforms(N)
 
             # calculate the fixed location
             # where waveform T_c will placed
-            center = (waveforms.shape[-1] // 2) + self.trigger_offset
+            center = waveforms.shape[-1] // 2
             start = center - (kernel_size // 2)
             stop = center + (kernel_size // 2)
 
             waveforms = waveforms[:, :, start:stop]
             X += waveforms
 
-            return X, sampled_params
-
+            return X, parameters
         return X

@@ -46,6 +46,10 @@ def initialize_data_loader(
     device: str,
 ):
     with h5py.File(testing_path, "r") as f:
+        try:
+            times = f["geocent_time"][:]
+        except KeyError:
+            times = None
         signals = f["injections"][:]
         params = []
         for param in inference_params:
@@ -59,7 +63,6 @@ def initialize_data_loader(
         params = np.vstack(params).T
     injections = torch.from_numpy(signals).to(torch.float32)
     params = torch.from_numpy(params).to(torch.float32)
-
     dataset = torch.utils.data.TensorDataset(injections, params)
     dataloader = torch.utils.data.DataLoader(
         dataset,
@@ -67,7 +70,8 @@ def initialize_data_loader(
         batch_size=1,
         pin_memory_device=device,
     )
-    return dataloader, params
+
+    return dataloader, params, times
 
 
 def cast_samples_as_bilby_result(
@@ -111,15 +115,14 @@ def generate_corner_plots(
 
 
 def generate_overlapping_corner_plots(
-    results: List[Tuple[bilby.core.result.Result]], writedir: Path
+    results: Tuple[bilby.core.result.Result], outfile: Path
 ):
     for i, result in enumerate(results):
-        filename = writedir / f"corner_{i}.png"
         bilby.result.plot_multiple(
             result,
-            parameters=["ra", "dec", "psi"],
+            parameters=result[0].injection_parameters,
             save=True,
-            filename=filename,
+            filename=outfile,
             levels=(0.5, 0.9),
         )
 
@@ -231,14 +234,17 @@ def load_and_sort_bilby_results_from_dynesty(
     bilby_result_dir: Path,
     inference_params: List[str],
     parameters: np.ndarray,
+    times: np.ndarray,
 ):
     bilby_results = []
     paths = sorted(list(bilby_result_dir.iterdir()))
-    for idx, (path, param) in enumerate(zip(paths, parameters)):
+    for idx, (path, param, time) in enumerate(zip(paths, parameters, times)):
+        print(idx, time, path)
         bilby_result = bilby.core.result.read_in_result(path)
         bilby_result.injection_parameters = {
             k: float(v) for k, v in zip(inference_params, param)
         }
+        bilby_result.injection_parameters["geocent_time"] = time
         bilby_result.label = f"bilby_{idx}"
         bilby_results.append(bilby_result)
     return bilby_results
