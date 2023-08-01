@@ -62,6 +62,13 @@ def main(
     for ifo in ifos:
         channel_name = f"{ifo}:{channel}"
         interferometer = bilby.gw.detector.get_empty_interferometer(ifo)
+
+        # reset the mininimum and maximum frequency to full range
+        # so that we can save the raw time domain data for use with
+        # our network
+        interferometer.minimum_frequency = 0
+        interferometer.maximum_frequency = sample_rate / 2
+
         data = TimeSeries.get(channel_name, start, stop)
         data = data.resample(sample_rate)
         interferometer.strain_data.set_from_gwpy_timeseries(data)
@@ -81,8 +88,6 @@ def main(
                 frequency_array=psd.frequencies.value, psd_array=psd.value
             )
         )
-        interferometer.maximum_frequency = sample_rate * 0.5
-        interferometer.minimum_frequency = fmin
         detectors.append(interferometer)
 
     bilby.core.utils.check_directory_exists_and_if_not_mkdir(outdir)
@@ -122,6 +127,10 @@ def main(
 
         data.append(detector.strain_data.time_domain_strain)
 
+        # set minimum and maximum frequency used during nested sampling here
+        detector.minimum_frequency = fmin
+        detector.maximum_frequency = sample_rate * 0.5
+
     with h5py.File(outdir / "data.hdf5", "w") as f:
         f.create_dataset("strain", data=np.stack(data))
 
@@ -131,6 +140,7 @@ def main(
         interferometers=detectors, waveform_generator=waveform_generator
     )
 
+    # copied from bilby_pipe
     def sighandler(signum, frame):
         logging.info("Performing periodic eviction")
         sys.exit(77)
@@ -139,7 +149,6 @@ def main(
     signal.alarm(28800)
 
     logging.info("Launching sampler")
-    # Run sampler.  In this case we're going to use the `dynesty` sampler
     result = bilby.core.sampler.run_sampler(
         likelihood=likelihood,
         priors=prior,
