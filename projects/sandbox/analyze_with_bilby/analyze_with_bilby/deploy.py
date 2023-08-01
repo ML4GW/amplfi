@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import bilby
+import h5py
 import numpy as np
 from mldatafind.segments import query_segments
 
@@ -10,12 +11,22 @@ from mlpe.deploy import condor
 from typeo import scriptify
 
 
-def load_bilby_results(outdir: Path):
-    results = []
+def post_process(outdir: Path):
+    # read in all the bilby results into a list
+    # next, read in all the data for the flow
+    results, data = [], []
     for run in outdir.iterdir():
         result = bilby.core.result.read_in_result(run / "result.hdf5")
-    results.append(result)
-    return results
+        results.append(result)
+        with h5py.File(run / "data.hdf5") as f:
+            data.append(f["strain"][:])
+
+    data = np.stack(data)
+
+    results.make_pp_plot()
+
+    with h5py.File(outdir / "bilby_injections.h5", "w") as f:
+        f.create_dataset("injections", data=data)
 
 
 @scriptify
@@ -111,6 +122,4 @@ def main(
     condor.watch(dag_id, condordir, held=True)
     logging.info("Completed bilby analysis jobs")
 
-    results = load_bilby_results(outdir)
-
-    results.make_pp_plot()
+    post_process(outdir)
