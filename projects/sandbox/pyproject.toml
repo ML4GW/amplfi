@@ -170,6 +170,7 @@ waveform = "mlpe.injection.bilby_frequency_domain_sine_gaussian"
 datadir = "${base.datadir}"
 logdir = "${base.logdir}"
 accounting_group = "${LIGO_ACCOUNTING_GROUP}"
+
 channel = "${base.channel}"
 sample_rate = "${base.sample_rate}"
 prior = "${base.prior}"
@@ -223,3 +224,20 @@ coupling = "${base.coupling}"
 dense = "${base.dense}"
 coherent = "${base.coherent}"
 resnet = "${base.resnet}"
+
+[tool.typeo.scripts.deploy-bilby]
+start = "${base.stop}"
+stop = "${base.test_stop}"
+n_samples = 100
+duration = 2
+sample_rate = "${base.sample_rate}"
+fmin = "${base.highpass}"
+prior = "${base.prior}"
+waveform = "mlpe.injection.bilby_frequency_domain_sine_gaussian"
+ifos = "${base.ifos}"
+state_flag = "${base.state_flag}"
+channel = "${base.channel}"
+outdir = "${base.basedir}"
+request_cpus = 24
+accounting_group = "${LIGO_ACCOUNTING_GROUP}"
+accounting_group_user = "${LIGO_USERNAME}"
