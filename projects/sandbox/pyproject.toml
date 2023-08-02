@@ -2,12 +2,12 @@
 # note: until pinto update gets in, any steps
 # that have subcommands will fail (e.g. training and sampling)
 steps = [
-    #"data_generation:generate-background",
-    #"data_generation:generate-waveforms",
-    #"data_generation:generate-flow-injections",
+    "data_generation:generate-background",
+    "data_generation:generate-waveforms",
+    "data_generation:generate-flow-injections",
     #"data_generation:generate-bilby-injections",
     #"analyze_with_bilby:analyze-with-bilby",
-    "train:train:maf:resnet",
+    #"train:train:maf:resnet",
     #"sampling:sample-with-flow:maf:resnet",
     #"sampling:sample-and-compare-with-bilby:maf:resnet"
 ]
@@ -115,7 +115,7 @@ resnet = "${base.resnet}"
 
 # scheduler subcommand
 [tool.typeo.scripts.train.optimizer]
-adam = {lr = 1e-4, weight_decay = 1e-5}
+adam = {lr = 1e-3, weight_decay = 1e-5}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
