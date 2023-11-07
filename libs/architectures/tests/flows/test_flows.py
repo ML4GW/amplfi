@@ -1,8 +1,9 @@
+from unittest.mock import Mock
+
 import pytest
 import torch
 
-from mlpe.architectures.embeddings import ResNet
-from mlpe.architectures.flows import CouplingFlow, MaskedAutoRegressiveFlow
+from mlpe.data.transforms import Preprocessor
 
 
 @pytest.fixture(params=[2, 10])
@@ -28,14 +29,28 @@ def num_transforms(request):
 def test_coupling_flow(param_dim, strain_dim, n_ifos, num_transforms):
     data = torch.randn((100, param_dim))
     strain = torch.randn((100, n_ifos, strain_dim))
+    from mlpe.architectures.embeddings import ResNet
+    from mlpe.architectures.flows import CouplingFlow
+
     embedding = ResNet((n_ifos, None), layers=[1, 1], context_dim=10)
+    preprocessor = Preprocessor(n_ifos, strain_dim, fduration=1.0)
+
+    opt = Mock()
+    sched = Mock()
+    inference_params = Mock()
+    priors = Mock()
 
     coupling_flow = CouplingFlow(
-        (param_dim, n_ifos, strain_dim), embedding, num_transforms
+        (param_dim, n_ifos, strain_dim),
+        embedding,
+        preprocessor,
+        opt,
+        sched,
+        inference_params,
+        priors,
+        num_transforms=num_transforms,
     )
-
-    flow = coupling_flow.flow
-    log_likelihoods = flow.log_prob(data, context=strain)
+    log_likelihoods = coupling_flow.log_prob(data, context=strain)
 
     assert log_likelihoods.shape == (len(data),)
 
@@ -46,10 +61,24 @@ def test_masked_autoregressive_flow(
 
     data = torch.randn((100, param_dim))
     strain = torch.randn((100, n_ifos, strain_dim))
+    from mlpe.architectures.embeddings import ResNet
+    from mlpe.architectures.flows import MaskedAutoRegressiveFlow
+
     embedding = ResNet((n_ifos, None), layers=[1, 1], context_dim=10)
+    preprocessor = Preprocessor(n_ifos, strain_dim, fduration=1.0)
+    opt = Mock()
+    sched = Mock()
+    inference_params = Mock()
+    priors = Mock()
     maf = MaskedAutoRegressiveFlow(
-        (param_dim, n_ifos, strain_dim), embedding, num_transforms
+        (param_dim, n_ifos, strain_dim),
+        embedding,
+        preprocessor,
+        opt,
+        sched,
+        inference_params,
+        priors,
+        num_transforms=num_transforms,
     )
-    flow = maf.flow
-    log_likelihoods = flow.log_prob(data, context=strain)
+    log_likelihoods = maf.log_prob(data, context=strain)
     assert log_likelihoods.shape == (len(data),)

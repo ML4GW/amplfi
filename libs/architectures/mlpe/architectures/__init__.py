@@ -11,13 +11,31 @@ from mlpe.architectures.flows import CouplingFlow, MaskedAutoRegressiveFlow
 
 def _wrap_flow(arch):
     def func(*args, **kwargs):
-        def f(shape, embedding):
-            return arch(shape, embedding, *args, **kwargs)
+        def f(
+            shape,
+            embedding,
+            preprocessor,
+            opt,
+            sched,
+            inference_params,
+            priors,
+        ):
+            return arch(
+                shape,
+                embedding,
+                preprocessor,
+                opt,
+                sched,
+                inference_params,
+                priors,
+                *args,
+                **kwargs
+            )
 
         return f
 
     params = inspect.signature(arch).parameters
-    params = list(params.values())[2:]
+    params = list(params.values())[7:]
     func.__signature__ = inspect.Signature(params)
     return func
 

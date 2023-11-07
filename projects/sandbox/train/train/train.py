@@ -3,11 +3,12 @@ from math import pi
 from pathlib import Path
 from typing import Callable, List, Optional
 
+import bilby
 import h5py
 import numpy as np
 import torch
-from utils import split
-from validation import make_validation_dataset
+from lightning.pytorch import Trainer, callbacks, loggers
+from sampling import utils as sampling_utils
 
 from ml4gw.distributions import Cosine, LogUniform, Uniform
 from ml4gw.transforms import ChannelWiseScaler
@@ -16,10 +17,14 @@ from mlpe.architectures import embeddings, flows
 from mlpe.data.dataloader import PEInMemoryDataset
 from mlpe.data.transforms import Preprocessor
 from mlpe.data.transforms.injection import PEInjector
+from mlpe.injection.priors import sg_uniform
 from mlpe.logging import configure_logging
-from mlpe.trainer import optimizers, schedulers, train
 from typeo import scriptify
-from typeo.utils import make_dummy
+
+from .optimizers import optimizers
+from .schedulers import schedulers
+from .utils import split
+from .validation import make_validation_dataset
 
 
 class ParameterSampler(torch.nn.Module):
@@ -73,18 +78,6 @@ def load_signals(waveform_dataset: Path, parameter_names: List[str]):
 
 
 @scriptify(
-    kwargs=make_dummy(
-        train,
-        exclude=[
-            "flow",
-            "embedding",
-            "optimizer",
-            "scheduler",
-            "train_dataset",
-            "valid_dataset",
-            "preprocessor",
-        ],
-    ),
     flow=flows,
     embedding=embeddings,
     optimizer=optimizers,
@@ -108,12 +101,16 @@ def main(
     device: str,
     outdir: Path,
     logdir: Path,
+    testing_set: Path,
+    max_epochs: int = 40,
+    num_samples_draw: int = 3000,
+    num_plot_corner: int = 20,
+    early_stop: Optional[int] = None,
     valid_frac: Optional[float] = None,
     valid_stride: Optional[float] = None,
     verbose: bool = False,
-    **kwargs
+    **kwargs,
 ):
-
     logdir.mkdir(exist_ok=True, parents=True)
     configure_logging(logdir / "train.log", verbose)
 
@@ -245,17 +242,54 @@ def main(
             batch_size,
             device,
         )
+    logging.info("Preparing Priors")
+    priors = sg_uniform()
+    priors["phi"] = bilby.core.prior.Uniform(
+        name="phi", minimum=-np.pi, maximum=np.pi, latex_label="phi"
+    )  # FIXME: remove when prior is moved to using torch tools
+    logging.info("Loading test dataloaders")
+    test_dataloader, _, _ = sampling_utils.initialize_data_loader(
+        testing_set, inference_params, device
+    )
 
-    logging.info("Launching training")
-    train(
-        flow,
+    logging.info(f"Device: {device}")
+    logging.info("set_float32_matmul_precision to high")
+    torch.set_float32_matmul_precision("high")
+    outdir.mkdir(exist_ok=True)
+
+    strain, parameters = next(iter(train_dataset))
+    param_dim = parameters.shape[-1]
+    _, n_ifos, strain_dim = strain.shape
+    logging.info("Building and initializing model")
+
+    embedding = embedding((n_ifos, strain_dim))
+
+    flow_obj = flow(
+        (param_dim, n_ifos, strain_dim),
         embedding,
+        preprocessor,
         optimizer,
         scheduler,
-        outdir,
-        train_dataset,
-        valid_dataset,
-        preprocessor,
-        device=device,
-        **kwargs
+        inference_params,
+        priors,
     )
+
+    logging.info("Launching training")
+    early_stop_cb = callbacks.EarlyStopping(
+        "valid_loss", patience=early_stop, check_finite=True, verbose=True
+    )
+    lr_monitor = callbacks.LearningRateMonitor(logging_interval="epoch")
+    logger = loggers.CSVLogger(save_dir=outdir / "pl-logdir", name="sg-model")
+    trainer = Trainer(
+        max_epochs=max_epochs,
+        log_every_n_steps=50,
+        accelerator=device,
+        callbacks=[early_stop_cb, lr_monitor],
+        logger=logger,
+        gradient_clip_val=5.0,
+    )
+    trainer.fit(flow_obj, train_dataset, valid_dataset)
+    logging.info(
+        "Drawing {} samples for each test data".format(num_samples_draw)
+    )
+    trainer.test(flow_obj, test_dataloader, ckpt_path="last")

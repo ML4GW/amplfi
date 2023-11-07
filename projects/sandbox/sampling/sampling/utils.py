@@ -186,48 +186,39 @@ def load_and_initialize_flow(
     param_dim: int,
     device: str,
 ):
-    model_state = torch.load(model_state_path)
+    model_state = torch.load(model_state_path, map_location=device)
     embedding = embedding((n_ifos, strain_dim))
     flow_obj = flow((param_dim, n_ifos, strain_dim), embedding)
-    flow_obj.build_flow()
-    flow_obj.set_weights_from_state_dict(model_state)
-    flow_obj.to_device(device)
+    flow_obj.build_flow(device=device, model_state=model_state)
 
-    flow = flow_obj.flow
-    return flow
+    return flow_obj
 
 
 def draw_samples_from_model(
-    test_dataloader: torch.utils.data.DataLoader,
+    signal,
+    param,
     flow: torch.nn.Module,
     preprocessor: torch.nn.Module,
     inference_params: List[str],
     num_samples_draw: int,
     priors: dict,
-    device: str,
     label: str = "testing_samples",
 ):
-    results = []
-    for signal, param in test_dataloader:
-        signal = signal.to(device)
-        param = param.to(device)
-        strain, scaled_param = preprocessor(signal, param)
-        with torch.no_grad():
-            samples = flow.sample(num_samples_draw, context=strain)
-            descaled_samples = preprocessor.scaler(
-                samples[0].transpose(1, 0), reverse=True
-            )
-            descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
-            descaled_res = cast_samples_as_bilby_result(
-                descaled_samples.cpu().numpy()[0],
-                param.cpu().numpy()[0],
-                inference_params,
-                priors,
-                label=label,
-            )
-        results.append(descaled_res)
-
-    return results
+    strain, scaled_param = preprocessor(signal, param)
+    with torch.no_grad():
+        samples = flow.sample([1, num_samples_draw], context=strain)
+        descaled_samples = preprocessor.scaler(
+            samples[0].transpose(1, 0), reverse=True
+        )
+    descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
+    descaled_res = cast_samples_as_bilby_result(
+        descaled_samples.cpu().numpy()[0],
+        param.cpu().numpy()[0],
+        inference_params,
+        priors,
+        label=label,
+    )
+    return descaled_res
 
 
 def load_and_sort_bilby_results_from_dynesty(

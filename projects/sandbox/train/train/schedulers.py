@@ -2,7 +2,7 @@ from typing import Optional
 
 import torch
 
-from mlpe.trainer.wrapper import _wrap_callable
+from .wrapper import _wrap_callable
 
 
 # typeo requires type hints to parse arguments from the command line.
