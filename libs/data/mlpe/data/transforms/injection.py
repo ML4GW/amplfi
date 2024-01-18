@@ -38,7 +38,7 @@ class PEInjector(torch.nn.Module):
     def transform(self, parameters: dict):
         # take logarithm of hrss since that is what we train with;
         # remove eccentricity from parameters since we don't train with it
-        parameters["hrss"] = torch.log(parameters["hrss"])
+        parameters["hrss"] = torch.log10(parameters["hrss"])
         parameters.pop("eccentricity")
         return parameters
 
@@ -46,6 +46,7 @@ class PEInjector(torch.nn.Module):
         # randomly sample intrinsic parameters and generate raw polarizations
         parameters = self.parameter_sampler(N, device=self.tensors.device)
         cross, plus = self.waveform(**parameters)
+        cross, plus = cross.float(), plus.float()
         dec, psi, phi = (
             self.dec(N),
             self.psi(N),

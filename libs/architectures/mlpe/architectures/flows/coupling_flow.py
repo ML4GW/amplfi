@@ -1,102 +1,151 @@
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Callable, Tuple
 
-import nflows.nn.nets as nn_
 import torch
-from nflows import distributions, transforms, utils
-from nflows.flows import Flow
+import torch.distributions as dist
+from lightning import pytorch as pl
+from pyro.distributions.conditional import ConditionalComposeTransformModule
+from pyro.distributions.transforms import ConditionalAffineCoupling
+from pyro.nn import ConditionalDenseNN
 
+from mlpe.architectures.flows import utils
 from mlpe.architectures.flows.flow import NormalizingFlow
+from mlpe.data.transforms import Preprocessor
 
 
-@dataclass
-class CouplingFlow(NormalizingFlow):
+class CouplingFlow(pl.LightningModule, NormalizingFlow):
+    def __init__(
+        self,
+        shape: Tuple[int, int, int],
+        embedding_net: torch.nn.Module,
+        preprocessor: Preprocessor,
+        opt: torch.optim.SGD,
+        sched: torch.optim.lr_scheduler.ConstantLR,
+        inference_params: list,
+        priors: dict,
+        num_samples_draw: int = 3000,
+        num_plot_corner: int = 20,
+        hidden_features: int = 512,
+        num_transforms: int = 5,
+        num_blocks: int = 2,
+        dropout_probability: float = 0.0,
+        activation: Callable = torch.relu,
+    ):
+        super().__init__()
+        self.param_dim, self.n_ifos, self.strain_dim = shape
+        self.split_dim = self.param_dim // 2
+        self.hidden_features = hidden_features
+        self.num_blocks = num_blocks
+        self.num_transforms = num_transforms
+        self.activation = activation
+        self.optimizer = opt
+        self.scheduler = sched
+        self.priors = priors
+        self.inference_params = inference_params
+        self.num_samples_draw = num_samples_draw
+        self.num_plot_corner = num_plot_corner
+        # define embedding net and base distribution
+        self.embedding_net = embedding_net
+        self.preprocessor = preprocessor
+        # don't train preprocessor
+        for n, p in self.preprocessor.named_parameters():
+            p.required_grad = False
+        # build the transform - sets the transforms attrib
+        self.build_flow()
 
-    shape: Tuple[int, int, int]
-    embedding_net: torch.nn.Module
-    num_transforms: int
-    hidden_dim: int = 512
-    num_transform_blocks: int = 2
-    dropout_probability: float = 0.0
-    activation: Callable = torch.nn.functional.relu
-    use_batch_norm: bool = True
-    num_bins: int = 8
-    tails: str = "linear"
-    tail_bound: float = 1.0
-    apply_unconditional_transform: bool = False
-
-    def __post_init__(self):
-        # unpack shape parameters
-        self.param_dim, self.n_ifos, self.strain_dim = self.shape
-
-        super().__init__(
-            self.param_dim,
-            self.n_ifos,
-            self.strain_dim,
-            self.num_transforms,
-            self.embedding_net,
+    def transform_block(self):
+        """Returns single affine coupling transform"""
+        arn = ConditionalDenseNN(
+            self.split_dim,
+            self.context_dim,
+            [self.hidden_features],
+            param_dims=[
+                self.param_dim - self.split_dim,
+                self.param_dim - self.split_dim,
+            ],
+            nonlinearity=self.activation,
         )
-
-    def transform_block(self, idx: int):
-        transform = transforms.PiecewiseRationalQuadraticCouplingTransform(
-            mask=utils.create_alternating_binary_mask(
-                self.param_dim, even=(idx % 2 == 0)
-            ),
-            # TODO: generalize the ability to specify
-            # different Callables here?
-            transform_net_create_fn=(
-                lambda in_features, out_features: nn_.ResidualNet(
-                    in_features=in_features,
-                    out_features=out_features,
-                    hidden_features=self.hidden_dim,
-                    context_features=self.context_dim,
-                    num_blocks=self.num_transform_blocks,
-                    activation=self.activation,
-                    dropout_probability=self.dropout_probability,
-                    use_batch_norm=self.use_batch_norm,
-                )
-            ),
-            num_bins=self.num_bins,
-            tails=self.tails,
-            tail_bound=self.tail_bound,
-            apply_unconditional_transform=self.apply_unconditional_transform,
-        )
-
+        transform = ConditionalAffineCoupling(self.split_dim, arn)
         return transform
 
-    def linear_block(self):
-        return transforms.CompositeTransform(
-            [
-                transforms.RandomPermutation(features=self.param_dim),
-                transforms.LULinear(self.param_dim, identity_init=True),
-            ]
-        )
-
     def distribution(self):
-        return distributions.StandardNormal((self.param_dim,))
-
-    def build_flow(self, state_dict: Optional[Path] = None):
-        """
-        Constructs the normalizing flow model
-        """
-
-        self.transform = transforms.CompositeTransform(
-            [
-                transforms.CompositeTransform(
-                    [self.transform_block(i), self.linear_block()]
-                )
-                for i in range(self.num_transforms)
-            ]
-            + [self.linear_block()]
+        """Returns the base distribution for the flow"""
+        return dist.Normal(
+            torch.zeros(self.param_dim, device=self.device),
+            torch.ones(self.param_dim, device=self.device),
         )
 
-        flow = Flow(
-            self.transform,
-            self.distribution(),
-            embedding_net=self.embedding_net,
+    def build_flow(self):
+        self.transforms = []
+        for _ in range(self.num_transforms):
+            self.transforms.extend([self.transform_block()])
+
+        self.transforms = ConditionalComposeTransformModule(self.transforms)
+
+    def training_step(self, batch, batch_idx):
+        strain, parameters = batch
+        strain, parameters = self.preprocessor(strain, parameters)
+        loss = -self.log_prob(parameters, context=strain).mean()
+        self.log(
+            "train_loss", loss, on_step=True, prog_bar=True, sync_dist=False
         )
-        if state_dict is not None:
-            state_dict = torch.load(state_dict)
-            flow.load_state_dict(state_dict)
-        self._flow = flow
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        strain, parameters = batch
+        strain, parameters = self.preprocessor(strain, parameters)
+        loss = -self.log_prob(parameters, context=strain).mean()
+        self.log(
+            "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
+        )
+        return loss
+
+    def on_test_epoch_start(self):
+        self.test_results = []
+        self.num_plotted = 0
+
+    def test_step(self, batch, batch_idx):
+        strain, parameters = batch
+        res = utils.draw_samples_from_model(
+            strain,
+            parameters,
+            self,
+            self.preprocessor,
+            self.inference_params,
+            self.num_samples_draw,
+            self.priors,
+        )
+        self.test_results.append(res)
+        if batch_idx % 100 == 0 and self.num_plotted < self.num_plot_corner:
+            skymap_filename = f"{self.num_plotted}_mollview.png"
+            res.plot_corner(
+                save=True,
+                filename=f"{self.num_plotted}_corner.png",
+                levels=(0.5, 0.9),
+            )
+            utils.plot_mollview(
+                res.posterior["phi"],
+                res.posterior["dec"],
+                truth=(
+                    res.injection_parameters["phi"],
+                    res.injection_parameters["dec"],
+                ),
+                outpath=skymap_filename,
+            )
+            self.num_plotted += 1
+            self.print("Made corner plots and skymap for ", batch_idx)
+
+    def on_test_epoch_end(self):
+        import bilby
+
+        bilby.result.make_pp_plot(
+            self.test_results,
+            save=True,
+            filename="pp-plot.png",
+            keys=self.inference_params,
+        )
+        del self.test_results, self.num_plotted
+
+    def configure_optimizers(self):
+        opt = self.optimizer(self.parameters())
+        sched = self.scheduler(opt)
+        return {"optimizer": opt, "lr_scheduler": {"scheduler": sched}}

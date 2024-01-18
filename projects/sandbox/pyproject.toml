@@ -38,13 +38,12 @@ waveform_duration = 8
 bilby_duration = 4
 
 # training parameters
-batches_per_epoch = 300
-max_epochs = 250
-#init_weights = "/work/submit/deep1018/pe-base-dir/training/weights.pt"
+batches_per_epoch = 200
+max_epochs = 300
 
 # flow subcommands
-coupling = {num_transforms = 20, num_transform_blocks = 4, use_batch_norm = true}
-maf = {num_transforms = 15, num_blocks = 2, use_batch_norm = true}
+coupling = {num_transforms = 20, num_blocks = 4}
+maf = {hidden_features = 100, num_transforms = 20, num_blocks = 5}
 
 # embedding subcommands
 dense = {context_dim = 64, hidden_layer_size = 128, num_hidden_layers = 2}
@@ -81,6 +80,7 @@ waveform_dataset = "${base.datadir}/validation_signals.h5"
 
 logdir = "${base.logdir}"
 outdir = "${base.basedir}/training"
+testing_set = "${base.datadir}/flow_injections.h5"
 
 inference_params = "${base.inference_params}"
 
@@ -90,18 +90,17 @@ kernel_length = "${base.kernel_length}"
 fduration = "${base.fduration}"
 highpass = 32 
 
-batch_size = 1024
+batch_size = 1200
 batches_per_epoch = "${base.batches_per_epoch}"
 max_epochs = "${base.max_epochs}"
-early_stop = 30
+early_stop = 50
 
-use_amp = false
-profile = false
 device = "cuda"
-
+num_samples_draw = 10000
+num_plot_corner = 20
 valid_frac = 0.25
 valid_stride = 0.0625
-#init_weights = "${base.basedir}/training/weights.pt"
+# init_weights = "${base.basedir}/training/weights.pt"
 # flow subcommand
 [tool.typeo.scripts.train.flow]
 coupling = "${base.coupling}"
@@ -115,13 +114,13 @@ resnet = "${base.resnet}"
 
 # scheduler subcommand
 [tool.typeo.scripts.train.optimizer]
-adam = {lr = 1e-4, weight_decay = 1e-5}
+adam = {lr = 1e-3, weight_decay = 1e-7}
 
 # optimizer subcommand
 [tool.typeo.scripts.train.scheduler]
 onecycle = {max_lr = 1e-3, epochs = "${base.max_epochs}", lr_ramp_epochs = 80, steps_per_epoch = "${base.batches_per_epoch}" }
 cosine = {T_max = 10000, eta_min = 1e-5}
-sequential = {schedulers = ['ConstantLR', 'CosineAnnealingLR', 'StepLR'], scheduler_kwargs = ["dict(total_iters=4800)", "dict(T_max=2000,eta_min=1e-5)", "dict(gamma=0.1,step_size=2400)"], milestones = [4800, 20000]}
+sequential = {schedulers = ['ConstantLR', 'CosineAnnealingLR', 'StepLR'], scheduler_kwargs = ["dict(total_iters=2,factor=1.0)", "dict(T_max=10,eta_min=1e-5)", "dict(gamma=0.5,step_size=5)"], milestones = [2, 250]}
 plateau = {factor = 0.9, patience = 30, cooldown = 10, min_lr = 1e-8}
 step = {step_size = 4500, gamma = 0.6}
 

@@ -8,15 +8,29 @@ packages = [{include = "mlpe"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-nflows = "^0.14"
-torch = "^1.0"
+torch = "^1.13"
+pyro-ppl = "*"
+lightning = "*"
+healpy = "^1.16"
+pandas = "^2.0"
+numpy = "^1.0"
+matplotlib = "^3.3"
+bilby = "^1.0"
+"mlpe.data" = {path = "../../libs/data", develop  = true}
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1.3"
+"ml4gw" = {path = "../../ml4gw", develop = true}
 
 [tool.poetry.extras]
 wrapper = ["typeo"]
 
+[[tool.poetry.source]]
+name = "torch"
+url = "https://download.pytorch.org/whl/cu116"
+secondary = true
+default = false
 
 [build-system]
 requires = ["poetry-core"]

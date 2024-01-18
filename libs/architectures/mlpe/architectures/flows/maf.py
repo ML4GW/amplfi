@@ -1,67 +1,146 @@
-from dataclasses import dataclass
 from typing import Callable, Tuple
 
 import torch
-from nflows.distributions import StandardNormal
-from nflows.flows import Flow
-from nflows.transforms import CompositeTransform, RandomPermutation
-from nflows.transforms.autoregressive import (
-    MaskedAffineAutoregressiveTransform,
-)
-from nflows.transforms.normalization import BatchNorm
+import torch.distributions as dist
+from lightning import pytorch as pl
+from pyro.distributions.conditional import ConditionalComposeTransformModule
+from pyro.distributions.transforms import ConditionalAffineAutoregressive
+from pyro.nn import ConditionalAutoRegressiveNN
 
+from mlpe.architectures.flows import utils
 from mlpe.architectures.flows.flow import NormalizingFlow
+from mlpe.data.transforms import Preprocessor
 
 
-@dataclass
-class MaskedAutoRegressiveFlow(NormalizingFlow):
-    shape: Tuple[int, int, int]
-    embedding_net: torch.nn.Module
-    num_transforms: int
-    hidden_features: int = 50
-    num_blocks: int = 2
-    activation: Callable = torch.tanh
-    use_batch_norm: bool = True
-    use_residual_blocks: bool = True
-    batch_norm_between_layers: bool = True
-
-    def __post_init__(self):
-        self.param_dim, self.n_ifos, self.strain_dim = self.shape
-        super().__init__(
-            self.param_dim,
-            self.n_ifos,
-            self.strain_dim,
-            embedding_net=self.embedding_net,
-            num_flow_steps=self.num_transforms,
-        )
+class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
+    def __init__(
+        self,
+        shape: Tuple[int, int, int],
+        embedding_net: torch.nn.Module,
+        preprocessor: Preprocessor,
+        opt: torch.optim.SGD,
+        sched: torch.optim.lr_scheduler.ConstantLR,
+        inference_params: list,
+        priors: dict,
+        num_samples_draw: int = 3000,
+        num_plot_corner: int = 20,
+        hidden_features: int = 50,
+        num_transforms: int = 5,
+        num_blocks: int = 2,
+        activation: Callable = torch.tanh,
+    ):
+        super().__init__()
+        self.param_dim, self.n_ifos, self.strain_dim = shape
+        self.hidden_features = hidden_features
+        self.num_blocks = num_blocks
+        self.num_transforms = num_transforms
+        self.activation = activation
+        self.optimizer = opt
+        self.scheduler = sched
+        self.priors = priors
+        self.inference_params = inference_params
+        self.num_samples_draw = num_samples_draw
+        self.num_plot_corner = num_plot_corner
+        # define embedding net and base distribution
+        self.embedding_net = embedding_net
+        self.preprocessor = preprocessor
+        # don't train preprocessor
+        for n, p in self.preprocessor.named_parameters():
+            p.required_grad = False
+        # build the transform - sets the transforms attrib
+        self.build_flow()
 
     def transform_block(self):
-        """Returns the single block of the MAF"""
-        single_block = [
-            RandomPermutation(features=self.param_dim),
-            MaskedAffineAutoregressiveTransform(
-                features=self.param_dim,
-                hidden_features=self.hidden_features,
-                context_features=self.context_dim,
-                num_blocks=self.num_blocks,
-                activation=self.activation,
-                use_batch_norm=self.use_batch_norm,
-                use_residual_blocks=self.use_residual_blocks,
-            ),
-        ]
-        if self.batch_norm_between_layers:
-            single_block.append(BatchNorm(features=self.param_dim))
-        return single_block
+        """Returns single autoregressive transform"""
+        arn = ConditionalAutoRegressiveNN(
+            self.param_dim,
+            self.context_dim,
+            self.num_blocks * [self.hidden_features],
+            nonlinearity=self.activation,
+        )
+        transform = ConditionalAffineAutoregressive(arn)
+        return transform
 
     def distribution(self):
         """Returns the base distribution for the flow"""
-        return StandardNormal([self.param_dim])
+        return dist.Normal(
+            torch.zeros(self.param_dim, device=self.device),
+            torch.ones(self.param_dim, device=self.device),
+        )
 
     def build_flow(self):
-        transforms = []
-        for _ in range(self.num_transforms):
-            transforms.extend(self.transform_block())
+        """Build the transform"""
+        self.transforms = []
+        for idx in range(self.num_transforms):
+            _transform = self.transform_block()
+            self.transforms.extend([_transform])
+        self.transforms = ConditionalComposeTransformModule(self.transforms)
 
-        transform = CompositeTransform(transforms)
-        base_dist = self.distribution()
-        self._flow = Flow(transform, base_dist, self.embedding_net)
+    def training_step(self, batch, batch_idx):
+        strain, parameters = batch
+        strain, parameters = self.preprocessor(strain, parameters)
+        loss = -self.log_prob(parameters, context=strain).mean()
+        self.log(
+            "train_loss", loss, on_step=True, prog_bar=True, sync_dist=False
+        )
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        strain, parameters = batch
+        strain, parameters = self.preprocessor(strain, parameters)
+        loss = -self.log_prob(parameters, context=strain).mean()
+        self.log(
+            "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
+        )
+        return loss
+
+    def on_test_epoch_start(self):
+        self.test_results = []
+        self.num_plotted = 0
+
+    def test_step(self, batch, batch_idx):
+        strain, parameters = batch
+        res = utils.draw_samples_from_model(
+            strain,
+            parameters,
+            self,
+            self.preprocessor,
+            self.inference_params,
+            self.num_samples_draw,
+            self.priors,
+        )
+        self.test_results.append(res)
+        if batch_idx % 100 == 0 and self.num_plotted < self.num_plot_corner:
+            skymap_filename = f"{self.num_plotted}_mollview.png"
+            res.plot_corner(
+                save=True,
+                filename=f"{self.num_plotted}_corner.png",
+                levels=(0.5, 0.9),
+            )
+            utils.plot_mollview(
+                res.posterior["phi"],
+                res.posterior["dec"],
+                truth=(
+                    res.injection_parameters["phi"],
+                    res.injection_parameters["dec"],
+                ),
+                outpath=skymap_filename,
+            )
+            self.num_plotted += 1
+            self.print("Made corner plots and skymap for ", batch_idx)
+
+    def on_test_epoch_end(self):
+        import bilby
+
+        bilby.result.make_pp_plot(
+            self.test_results,
+            save=True,
+            filename="pp-plot.png",
+            keys=self.inference_params,
+        )
+        del self.test_results, self.num_plotted
+
+    def configure_optimizers(self):
+        opt = self.optimizer(self.parameters())
+        sched = self.scheduler(opt)
+        return {"optimizer": opt, "lr_scheduler": {"scheduler": sched}}

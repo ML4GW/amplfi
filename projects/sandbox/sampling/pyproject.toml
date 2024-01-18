@@ -11,15 +11,11 @@ python = ">=3.8,<3.11"
 torch = {version = "^1.12", source = "torch"}
 
 "mlpe.data" = {path = "../../../libs/data", develop  = true}
-"mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
 "mlpe.injection" = {path = "../../../libs/injection", develop = true}
 
 "ml4gw" = {path = "../../../ml4gw", develop = true}
 typeo = {path = "../../../typeo", develop = true}
-
-ligo-skymap = "^1.0.7"
-ipykernel = "^6.23.1"
 
 [[tool.poetry.source]]
 name = "torch"

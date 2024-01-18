@@ -7,10 +7,10 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-torch = {version = "^1.12", source = "torch"}
+torch = {version = "*", source = "torch"}
 "mlpe.data" = {path = "../../../libs/data", develop  = true}
-"mlpe.trainer" = {path = "../../../libs/trainer", develop = true}
 "mlpe.logging" = {path = "../../../libs/logging", develop = true}
+"sampling" = {path = "../sampling", develop = true}
 
 "ml4gw" = {path = "../../../ml4gw", develop = true}
 typeo = {path = "../../../typeo", develop = true}
@@ -22,7 +22,7 @@ secondary = true
 default = false
 
 [tool.poetry.scripts]
-train = "train:main"
+train = "train.train:main"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
