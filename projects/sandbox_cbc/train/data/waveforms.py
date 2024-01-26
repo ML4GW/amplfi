@@ -19,6 +19,7 @@ class FrequencyDomainWaveformGenerator:
     ) -> None:
         self.device = device
         self.sampling_frequency = sampling_frequency
+        self.time_duration = time_duration
         number_of_samples = ceil(time_duration * sampling_frequency)
         number_of_frequencies = number_of_samples // 2 + 1
 

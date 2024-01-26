@@ -127,12 +127,13 @@ class SignalDataSet(pl.LightningDataModule):
         ifos: Sequence[str],
         valid_frac: float,
         batch_size: int,
+        batches_per_epoch: int,
         sampling_frequency: float,
         time_duration: float,
         f_min: float,
         f_max: float,
         approximant=IMRPhenomD,
-        prior: dict = nonspin_bbh,
+        prior: dict = nonspin_bbh(),
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
@@ -140,17 +141,15 @@ class SignalDataSet(pl.LightningDataModule):
         self.num_ifos = len(ifos)
         self.prior = prior
 
-        tensors, vertices = gw.get_ifo_geometry(*ifos)
-        self.register_buffer("tensors", tensors)
-        self.register_buffer("vertices", vertices)
+        self.tensors, self.vertices = gw.get_ifo_geometry(*ifos)
 
     def load_background(self):
         background = []
         with h5py.File(self.background_path) as f:
-            for ifo in self.ifos:
+            for ifo in self.hparams.ifos:
                 hoft = f[ifo][:]
                 background.append(hoft)
-        return np.stack(background)
+        return torch.from_numpy(np.stack(background)).to(dtype=torch.float32)
 
     def set_waveform_generator(self):
         self.waveform_generator = FrequencyDomainWaveformGenerator(
@@ -159,7 +158,7 @@ class SignalDataSet(pl.LightningDataModule):
             self.hparams.f_min,
             self.hparams.f_max,
             self.hparams.approximant,
-            device=self.device,
+            device='cpu',
         )
 
     def setup(self, stage: str) -> None:
@@ -171,53 +170,55 @@ class SignalDataSet(pl.LightningDataModule):
         self.standard_scaler = ChannelWiseScaler(len(self.prior))
         self.preprocessor = Preprocessor(
             self.num_ifos,
-            self.hparams.sampling_frequency,
             self.hparams.time_duration,
+            self.hparams.sampling_frequency,
             scaler=self.standard_scaler,
         )
         self.preprocessor.whitener.fit(
-            kernel_length=2,
-            highpass=self.f_min,
-            sample_rate=self.hparams.sampling_frequency,
+            self.hparams.time_duration,
             *self.background
         )
-        self.preprocessor.whitener.to(self.device)
+        # self.preprocessor.whitener.to(self.device)
         # set waveform generator and initialize in-memory datasets
         self.set_waveform_generator()
         self.training_dataset = PEInMemoryDataset(
             self.background,
-            kernel_size=self.waveform_generator.number_of_samples,
+            waveform_generator=self.waveform_generator,
+            prior=self.prior,
+            kernel_size=self.waveform_generator.time_duration,
             batch_size=self.hparams.batch_size,
-            stride=1,
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
             shuffle=True,
-            device=self.device,
+            device='cpu',
         )
         self.validation_dataset = PEInMemoryDataset(
             self.valid_background,
-            kernel_size=self.waveform_generator.number_of_samples,
+            waveform_generator=self.waveform_generator,
+            prior=self.prior,
+            kernel_size=self.waveform_generator.time_duration,
             batch_size=self.hparams.batch_size,
-            stride=1,
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
             shuffle=True,
-            device=self.device,
+            device='cpu',
         )
 
     def train_dataloader(self):
-        pin_memory = isinstance(
-            self.trainer.accelerator, pl.accelerators.CUDAAccelerator
-        )
+        #pin_memory = isinstance(
+        #    self.trainer.accelerator, pl.accelerators.CUDAAccelerator
+        #)
+        pin_memory = True
 
-        local_world_size = len(self.trainer.device_ids)
-        num_workers = min(6, int(os.cpu_count() / local_world_size))
-        dataloader = torch.utils.data.DataLoader(
-            self.training_dataset,
-            num_workers=num_workers,
-            pin_memory=pin_memory,
-        )
-        return dataloader
+        local_world_size = getattr(self.trainer, 'device_ids', 1)
+        num_workers = max(2, int(os.cpu_count() / local_world_size))
+        #dataloader = torch.utils.data.DataLoader(
+        #    self.training_dataset,
+        #    num_workers=num_workers,
+        #    pin_memory=pin_memory,
+        #)
+        #return dataloader
+        return self.training_dataset
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
