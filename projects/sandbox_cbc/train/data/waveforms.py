@@ -41,7 +41,7 @@ class FrequencyDomainWaveformGenerator:
             try:
                 self.approximant = getattr(waveforms, approximant)
             except AttributeError:
-                # FIXME: implement API to use bilby
+                # FIXME: provide pathway into lalsimulation/bilby API
                 raise RuntimeError(
                     "Waveform not implemented in ml4gw.waveforms"
                 )
