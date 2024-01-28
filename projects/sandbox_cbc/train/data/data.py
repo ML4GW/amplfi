@@ -69,36 +69,39 @@ class PEInMemoryDataset(InMemoryDataset):
         )
         self.waveform_generator = waveform_generator
         self.prior = prior
+        self.device = device
+
+        self.tensors, self.vertices = gw.get_ifo_geometry('H1', 'L1')
 
     def sample_waveforms(self, N: int):
         # sample parameters from prior
         parameters = self.prior.sample(N)
-        parameters = torch.from_numpy(parameters).to(device=self.device)
         # FIXME: generalize to other parameter combinations
         chirp_mass, mass_ratio = chirp_mass_mass_ratio(
             parameters["mass_1"], parameters["mass_2"]
         )
         parameters["chirp_mass"] = chirp_mass
         parameters["mass_ratio"] = mass_ratio
+        # parameters = torch.from_numpy(parameters).to(device=self.device)
         # generate intrinsic waveform
         hf_p, hf_c = self.waveform_generator.frequency_domain_strain(
-            parameters["chirp_mass"],
-            parameters["mass_ratio"],
-            parameters["a_1"],
-            parameters["a_2"],
-            parameters["luminosity_distance"],
-            parameters["phase"],
-            parameters["theta_jn"],
+            torch.from_numpy(parameters["chirp_mass"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["mass_ratio"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["a_1"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["a_2"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["luminosity_distance"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["phase"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["theta_jn"]).to(device=self.device,dtype=torch.float32)
         )
         plus, cross = self.waveform_generator.time_domain_strain()
 
         waveforms = gw.compute_observed_strain(
-            parameters["dec"],
-            parameters["psi"],
-            parameters["ra"],
+            torch.from_numpy(parameters["dec"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["psi"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["ra"]).to(device=self.device,dtype=torch.float32),
             detector_tensors=self.tensors,
             detector_vertices=self.vertices,
-            sample_rate=self.sample_rate,
+            sample_rate=self.waveform_generator.sampling_frequency,
             plus=plus,
             cross=cross,
         )
@@ -107,17 +110,17 @@ class PEInMemoryDataset(InMemoryDataset):
     def waveform_injector(self, X):
         N = len(X)
         kernel_size = X.shape[-1]
-        waveforms, parameters = self.sample_waveforms(N)
+        parameters, waveforms = self.sample_waveforms(N)
         start = 0
         stop = kernel_size
         waveforms = waveforms[:, :, start:stop]
         X += waveforms
-        return X, parameters
+        return parameters, waveforms
 
     def __next__(self) -> Tuple[torch.Tensor, torch.Tensor]:
         X = super().__next__()
-        X, parameters = self.waveform_injector(X)
-        return X
+        parameters, X = self.waveform_injector(X)
+        return parameters, X
 
 
 class SignalDataSet(pl.LightningDataModule):
@@ -132,6 +135,7 @@ class SignalDataSet(pl.LightningDataModule):
         time_duration: float,
         f_min: float,
         f_max: float,
+        f_ref: float,
         approximant=IMRPhenomD,
         prior: dict = nonspin_bbh(),
     ) -> None:
@@ -157,6 +161,7 @@ class SignalDataSet(pl.LightningDataModule):
             self.hparams.sampling_frequency,
             self.hparams.f_min,
             self.hparams.f_max,
+            self.hparams.f_ref,
             self.hparams.approximant,
             device='cpu',
         )
@@ -185,7 +190,7 @@ class SignalDataSet(pl.LightningDataModule):
             self.background,
             waveform_generator=self.waveform_generator,
             prior=self.prior,
-            kernel_size=self.waveform_generator.time_duration,
+            kernel_size=self.waveform_generator.number_of_samples,
             batch_size=self.hparams.batch_size,
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
