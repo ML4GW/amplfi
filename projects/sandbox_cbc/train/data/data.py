@@ -1,4 +1,3 @@
-import os
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Optional, Tuple, TypeVar
@@ -71,34 +70,47 @@ class PEInMemoryDataset(InMemoryDataset):
         self.prior = prior
         self.device = device
 
-        self.tensors, self.vertices = gw.get_ifo_geometry('H1', 'L1')
+        self.tensors, self.vertices = gw.get_ifo_geometry("H1", "L1")
 
     def sample_waveforms(self, N: int):
         # sample parameters from prior
         parameters = self.prior.sample(N)
         # FIXME: generalize to other parameter combinations
-        chirp_mass, mass_ratio = chirp_mass_mass_ratio(
-            parameters["mass_1"], parameters["mass_2"]
-        )
-        parameters["chirp_mass"] = chirp_mass
-        parameters["mass_ratio"] = mass_ratio
-        # parameters = torch.from_numpy(parameters).to(device=self.device)
         # generate intrinsic waveform
-        hf_p, hf_c = self.waveform_generator.frequency_domain_strain(
-            torch.from_numpy(parameters["chirp_mass"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["mass_ratio"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["a_1"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["a_2"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["luminosity_distance"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["phase"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["theta_jn"]).to(device=self.device,dtype=torch.float32)
+        plus, cross = self.waveform_generator.time_domain_strain(
+            torch.from_numpy(parameters["chirp_mass"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["mass_ratio"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["a_1"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["a_2"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["luminosity_distance"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["phase"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["theta_jn"]).to(
+                device=self.device, dtype=torch.float32
+            ),
         )
-        plus, cross = self.waveform_generator.time_domain_strain()
 
         waveforms = gw.compute_observed_strain(
-            torch.from_numpy(parameters["dec"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["psi"]).to(device=self.device,dtype=torch.float32),
-            torch.from_numpy(parameters["ra"]).to(device=self.device,dtype=torch.float32),
+            torch.from_numpy(parameters["dec"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["psi"]).to(
+                device=self.device, dtype=torch.float32
+            ),
+            torch.from_numpy(parameters["ra"]).to(
+                device=self.device, dtype=torch.float32
+            ),
             detector_tensors=self.tensors,
             detector_vertices=self.vertices,
             sample_rate=self.waveform_generator.sampling_frequency,
@@ -115,12 +127,12 @@ class PEInMemoryDataset(InMemoryDataset):
         stop = kernel_size
         waveforms = waveforms[:, :, start:stop]
         X += waveforms
-        return parameters, waveforms
+        return parameters, X, waveforms
 
     def __next__(self) -> Tuple[torch.Tensor, torch.Tensor]:
         X = super().__next__()
-        parameters, X = self.waveform_injector(X)
-        return parameters, X
+        parameters, X, waveforms = self.waveform_injector(X)
+        return parameters, X, waveforms
 
 
 class SignalDataSet(pl.LightningDataModule):
@@ -163,7 +175,7 @@ class SignalDataSet(pl.LightningDataModule):
             self.hparams.f_max,
             self.hparams.f_ref,
             self.hparams.approximant,
-            device='cpu',
+            device="cpu",
         )
 
     def setup(self, stage: str) -> None:
@@ -180,8 +192,7 @@ class SignalDataSet(pl.LightningDataModule):
             scaler=self.standard_scaler,
         )
         self.preprocessor.whitener.fit(
-            self.hparams.time_duration,
-            *self.background
+            self.hparams.time_duration, *self.background
         )
         # self.preprocessor.whitener.to(self.device)
         # set waveform generator and initialize in-memory datasets
@@ -195,7 +206,7 @@ class SignalDataSet(pl.LightningDataModule):
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
             shuffle=True,
-            device='cpu',
+            device="cpu",
         )
         self.validation_dataset = PEInMemoryDataset(
             self.valid_background,
@@ -206,29 +217,11 @@ class SignalDataSet(pl.LightningDataModule):
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
             shuffle=True,
-            device='cpu',
+            device="cpu",
         )
 
     def train_dataloader(self):
-        #pin_memory = isinstance(
-        #    self.trainer.accelerator, pl.accelerators.CUDAAccelerator
-        #)
-        pin_memory = True
-
-        local_world_size = getattr(self.trainer, 'device_ids', 1)
-        num_workers = max(2, int(os.cpu_count() / local_world_size))
-        #dataloader = torch.utils.data.DataLoader(
-        #    self.training_dataset,
-        #    num_workers=num_workers,
-        #    pin_memory=pin_memory,
-        #)
-        #return dataloader
         return self.training_dataset
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(
-            self.validation_dataset,
-            batch_size=self.hparams.batch_size,
-            shuffle=False,
-            pin_memory=False,
-        )
+        return self.validation_dataset

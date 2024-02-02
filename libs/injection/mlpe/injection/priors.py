@@ -37,17 +37,16 @@ def sg_uniform():
 def nonspin_bbh():
 
     prior_dict = PriorDict()
-    prior_dict["mass_1"] = Uniform(
-        name="mass_1", minimum=5, maximum=100, unit=r"$M_{\odot}$"
+    prior_dict["mass_1"] = Constraint(name="mass_1", minimum=10, maximum=80)
+    prior_dict["mass_2"] = Constraint(name="mass_2", minimum=10, maximum=80)
+    prior_dict["mass_ratio"] = Uniform(
+        name="mass_ratio", minimum=0.125, maximum=1
     )
-    prior_dict["mass_2"] = Uniform(
-        name="mass_2", minimum=5, maximum=100, unit=r"$M_{\odot}$"
-    )
-    prior_dict["mass_ratio"] = Constraint(
-        name="mass_ratio", minimum=0.2, maximum=5.0
+    prior_dict["chirp_mass"] = Uniform(
+        name="chirp_mass", minimum=20, maximum=35
     )
     prior_dict["luminosity_distance"] = UniformSourceFrame(
-        name="luminosity_distance", minimum=100, maximum=3000, unit="Mpc"
+        name="luminosity_distance", minimum=10, maximum=100, unit="Mpc"
     )
     prior_dict["dec"] = Cosine(name="dec")
     prior_dict["ra"] = Uniform(

@@ -29,14 +29,14 @@ class FrequencyDomainWaveformGenerator:
             self.sampling_frequency / 2,
             self.number_of_frequencies,
             device=self.device,
-            dtype=torch.float32
+            dtype=torch.float32,
         )
         self.time_array = torch.linspace(
             0,
             self.time_duration - 1 / self.sampling_frequency,
             self.number_of_samples,
             device=self.device,
-            dtype=torch.float32
+            dtype=torch.float32,
         )
         self.f_min = f_min
         self.f_max = f_max
@@ -52,18 +52,8 @@ class FrequencyDomainWaveformGenerator:
         else:
             self.approximant = approximant
 
-        self._frequency_domain_h_plus = None
-        self._frequency_domain_h_cross = None
-        self._time_domain_h_plus = None
-        self._time_domain_h_cross = None
-
     def frequency_domain_strain(self, *args, **kwargs):
-        kwargs['f_ref'] = self.f_ref  # FIXME: yuck! fix this
-        if self._frequency_domain_h_plus:
-            return (
-                self._frequency_domain_h_plus,
-                self._frequency_domain_h_cross,
-            )
+        kwargs["f_ref"] = self.f_ref  # FIXME: handle this better
 
         freq_mask = self.frequency_array >= self.f_min
         freq_mask *= self.frequency_array < self.f_max
@@ -72,29 +62,30 @@ class FrequencyDomainWaveformGenerator:
             self.frequency_array[freq_mask], *args, **kwargs
         )
 
-        self._frequency_domain_h_plus = torch.zeros(
+        _frequency_domain_h_plus = torch.zeros(
             _hp.shape[0],
             self.frequency_array.shape[-1],
             device=self.device,
             dtype=_hp.dtype,
         )
-        self._frequency_domain_h_cross = torch.zeros(
+        _frequency_domain_h_cross = torch.zeros(
             _hc.shape[0],
             self.frequency_array.shape[-1],
             device=self.device,
             dtype=_hc.dtype,
         )
-        self._frequency_domain_h_plus[..., freq_mask] = _hp
-        self._frequency_domain_h_cross[..., freq_mask] = _hc
-        return self._frequency_domain_h_plus, self._frequency_domain_h_cross
+        _frequency_domain_h_plus[..., freq_mask] = _hp
+        _frequency_domain_h_cross[..., freq_mask] = _hc
+        return _frequency_domain_h_plus, _frequency_domain_h_cross
 
-    def time_domain_strain(self):
-        if self._frequency_domain_h_plus is None:
-            raise RuntimeError("Frequency domain strain not set")
+    def time_domain_strain(self, *args, **kwargs):
+        (
+            _frequency_domain_h_plus,
+            _frequency_domain_h_cross,
+        ) = self.frequency_domain_strain(*args, **kwargs)
         # implemented based on https://git.ligo.org/lscsoft/bilby/-/blob/master/bilby/core/utils/series.py  # noqa
-        if self._time_domain_h_plus is None:
-            _hp = torch.fft.irfft(self._frequency_domain_h_plus)
-            _hc = torch.fft.irfft(self._frequency_domain_h_cross)
-            self._time_domain_h_plus = _hp * self.sampling_frequency
-            self._time_domain_h_cross = _hc * self.sampling_frequency
-        return self._time_domain_h_plus, self._time_domain_h_cross
+        _hp = torch.fft.irfft(_frequency_domain_h_plus)
+        _hc = torch.fft.irfft(_frequency_domain_h_cross)
+        _time_domain_h_plus = _hp * self.sampling_frequency
+        _time_domain_h_cross = _hc * self.sampling_frequency
+        return _time_domain_h_plus, _time_domain_h_cross
