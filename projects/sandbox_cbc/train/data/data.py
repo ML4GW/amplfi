@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Optional, Tuple, TypeVar
+from typing import Callable, Optional, Tuple, TypeVar
 
 import h5py
 import lightning.pytorch as pl
@@ -50,6 +50,7 @@ class PEInMemoryDataset(InMemoryDataset):
         waveform_generator: FrequencyDomainWaveformGenerator,
         prior: dict,
         kernel_size: int,
+        preprocessor: Optional[Callable] = None,
         batch_size: int = 32,
         batches_per_epoch: Optional[int] = None,
         coincident: bool = True,
@@ -67,6 +68,7 @@ class PEInMemoryDataset(InMemoryDataset):
             device=device,
         )
         self.waveform_generator = waveform_generator
+        self.preprocessor = preprocessor
         self.prior = prior
         self.device = device
 
@@ -75,49 +77,60 @@ class PEInMemoryDataset(InMemoryDataset):
     def sample_waveforms(self, N: int):
         # sample parameters from prior
         parameters = self.prior.sample(N)
+        intrinsic_parameters = torch.vstack(
+            (
+                torch.from_numpy(parameters["chirp_mass"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["mass_ratio"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["a_1"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["a_2"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["luminosity_distance"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["phase"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["theta_jn"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+            )
+        )
         # FIXME: generalize to other parameter combinations
         # generate intrinsic waveform
         plus, cross = self.waveform_generator.time_domain_strain(
-            torch.from_numpy(parameters["chirp_mass"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["mass_ratio"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["a_1"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["a_2"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["luminosity_distance"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["phase"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["theta_jn"]).to(
-                device=self.device, dtype=torch.float32
-            ),
+            *intrinsic_parameters
+        )
+        dec_psi_ra = torch.vstack(
+            (
+                torch.from_numpy(parameters["dec"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["psi"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+                torch.from_numpy(parameters["ra"]).to(
+                    device=self.device, dtype=torch.float32
+                ),
+            )
         )
 
         waveforms = gw.compute_observed_strain(
-            torch.from_numpy(parameters["dec"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["psi"]).to(
-                device=self.device, dtype=torch.float32
-            ),
-            torch.from_numpy(parameters["ra"]).to(
-                device=self.device, dtype=torch.float32
-            ),
+            *dec_psi_ra,
             detector_tensors=self.tensors,
             detector_vertices=self.vertices,
             sample_rate=self.waveform_generator.sampling_frequency,
             plus=plus,
             cross=cross,
         )
-        return parameters, waveforms
+
+        return torch.vstack((intrinsic_parameters, dec_psi_ra)), waveforms
 
     def waveform_injector(self, X):
         N = len(X)
@@ -132,7 +145,18 @@ class PEInMemoryDataset(InMemoryDataset):
     def __next__(self) -> Tuple[torch.Tensor, torch.Tensor]:
         X = super().__next__()
         parameters, X, waveforms = self.waveform_injector(X)
-        return parameters, X, waveforms
+        # whiten and scale parameters
+        if self.preprocessor:
+            transformed_X, transformed_parameters = self.preprocessor(
+                X, parameters
+            )
+        return (
+            parameters.T,
+            transformed_parameters.T,
+            X,
+            transformed_X,
+            waveforms,
+        )
 
 
 class SignalDataSet(pl.LightningDataModule):
@@ -165,7 +189,7 @@ class SignalDataSet(pl.LightningDataModule):
             for ifo in self.hparams.ifos:
                 hoft = f[ifo][:]
                 background.append(hoft)
-        return torch.from_numpy(np.stack(background)).to(dtype=torch.float32)
+        return torch.from_numpy(np.stack(background)).to(dtype=torch.float64)
 
     def set_waveform_generator(self):
         self.waveform_generator = FrequencyDomainWaveformGenerator(
@@ -175,6 +199,8 @@ class SignalDataSet(pl.LightningDataModule):
             self.hparams.f_max,
             self.hparams.f_ref,
             self.hparams.approximant,
+            start_time=-0.5,
+            post_padding=1.0,
             device="cpu",
         )
 
@@ -184,16 +210,14 @@ class SignalDataSet(pl.LightningDataModule):
         self.background, self.valid_background = split(
             background, 1 - self.hparams.valid_frac, 1
         )
-        self.standard_scaler = ChannelWiseScaler(len(self.prior))
+        self.standard_scaler = torch.nn.Identity()
         self.preprocessor = Preprocessor(
             self.num_ifos,
-            self.hparams.time_duration,
+            self.hparams.time_duration + 1,
             self.hparams.sampling_frequency,
             scaler=self.standard_scaler,
         )
-        self.preprocessor.whitener.fit(
-            self.hparams.time_duration, *self.background
-        )
+        self.preprocessor.whitener.fit(1, *background, fftlength=2)
         # self.preprocessor.whitener.to(self.device)
         # set waveform generator and initialize in-memory datasets
         self.set_waveform_generator()
@@ -201,7 +225,9 @@ class SignalDataSet(pl.LightningDataModule):
             self.background,
             waveform_generator=self.waveform_generator,
             prior=self.prior,
-            kernel_size=self.waveform_generator.number_of_samples,
+            preprocessor=self.preprocessor,
+            kernel_size=self.waveform_generator.number_of_samples
+            + self.waveform_generator.number_of_post_padding,
             batch_size=self.hparams.batch_size,
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
@@ -212,6 +238,7 @@ class SignalDataSet(pl.LightningDataModule):
             self.valid_background,
             waveform_generator=self.waveform_generator,
             prior=self.prior,
+            preprocessor=self.preprocessor,
             kernel_size=self.waveform_generator.time_duration,
             batch_size=self.hparams.batch_size,
             batches_per_epoch=self.hparams.batches_per_epoch,

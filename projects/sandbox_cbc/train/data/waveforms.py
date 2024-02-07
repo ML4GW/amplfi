@@ -16,6 +16,8 @@ class FrequencyDomainWaveformGenerator:
         f_max: float,
         f_ref: float,
         approximant: waveforms.IMRPhenomD,
+        start_time: float = 0.0,
+        post_padding: float = 0.0,
         device: str = "cpu",
     ) -> None:
         self.device = device
@@ -23,6 +25,8 @@ class FrequencyDomainWaveformGenerator:
         self.time_duration = time_duration
         self.number_of_samples = ceil(time_duration * sampling_frequency)
         self.number_of_frequencies = self.number_of_samples // 2 + 1
+        self.start_time = start_time
+        self.post_padding = post_padding
 
         self.frequency_array = torch.linspace(
             0,
@@ -32,12 +36,25 @@ class FrequencyDomainWaveformGenerator:
             dtype=torch.float32,
         )
         self.time_array = torch.linspace(
-            0,
-            self.time_duration - 1 / self.sampling_frequency,
+            self.start_time,
+            self.time_duration + self.start_time - 1 / self.sampling_frequency,
             self.number_of_samples,
             device=self.device,
             dtype=torch.float32,
         )
+        # append the times corresponding to padding
+        self.number_of_post_padding = ceil(post_padding * sampling_frequency)
+        post_time_array = torch.linspace(
+            self.time_duration + self.start_time,
+            self.time_duration
+            + self.start_time
+            + self.post_padding
+            - 1 / self.sampling_frequency,
+            self.number_of_post_padding,
+            device=self.device,
+            dtype=torch.float32,
+        )
+        self.time_array = torch.cat((self.time_array, post_time_array))
         self.f_min = f_min
         self.f_max = f_max
         self.f_ref = f_ref
@@ -88,4 +105,13 @@ class FrequencyDomainWaveformGenerator:
         _hc = torch.fft.irfft(_frequency_domain_h_cross)
         _time_domain_h_plus = _hp * self.sampling_frequency
         _time_domain_h_cross = _hc * self.sampling_frequency
+
+        post_padding_samples = int(self.post_padding * self.sampling_frequency)
+        _time_domain_h_plus = torch.nn.functional.pad(
+            _time_domain_h_plus, (0, post_padding_samples, 0, 0)
+        )
+        _time_domain_h_cross = torch.nn.functional.pad(
+            _time_domain_h_cross, (0, post_padding_samples, 0, 0)
+        )
+
         return _time_domain_h_plus, _time_domain_h_cross

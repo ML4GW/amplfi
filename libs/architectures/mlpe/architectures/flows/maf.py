@@ -9,7 +9,6 @@ from pyro.nn import ConditionalAutoRegressiveNN
 
 from mlpe.architectures.flows import utils
 from mlpe.architectures.flows.flow import NormalizingFlow
-from mlpe.data.transforms import Preprocessor
 
 
 class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
@@ -17,7 +16,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         self,
         shape: Tuple[int, int, int],
         embedding_net: torch.nn.Module,
-        preprocessor: Preprocessor,
         opt: torch.optim.SGD,
         sched: torch.optim.lr_scheduler.ConstantLR,
         inference_params: list,
@@ -43,10 +41,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         self.num_plot_corner = num_plot_corner
         # define embedding net and base distribution
         self.embedding_net = embedding_net
-        self.preprocessor = preprocessor
-        # don't train preprocessor
-        for n, p in self.preprocessor.named_parameters():
-            p.required_grad = False
         # build the transform - sets the transforms attrib
         self.build_flow()
 
@@ -78,7 +72,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
 
     def training_step(self, batch, batch_idx):
         strain, parameters = batch
-        strain, parameters = self.preprocessor(strain, parameters)
         loss = -self.log_prob(parameters, context=strain).mean()
         self.log(
             "train_loss", loss, on_step=True, prog_bar=True, sync_dist=False
@@ -87,7 +80,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
 
     def validation_step(self, batch, batch_idx):
         strain, parameters = batch
-        strain, parameters = self.preprocessor(strain, parameters)
         loss = -self.log_prob(parameters, context=strain).mean()
         self.log(
             "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
