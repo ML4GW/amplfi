@@ -11,9 +11,9 @@ from waveforms import FrequencyDomainWaveformGenerator
 from ml4gw import gw
 from ml4gw.dataloading import InMemoryDataset
 from ml4gw.transforms import ChannelWiseScaler
-from ml4gw.waveforms import IMRPhenomD
+from ml4gw.waveforms import IMRPhenomD, TaylorF2
 from mlpe.data.transforms import Preprocessor
-from mlpe.injection.priors import nonspin_bbh
+from mlpe.injection.priors import nonspin_bbh_chirp_mass_q
 
 
 def chirp_mass_mass_ratio(m1, m2):
@@ -73,18 +73,26 @@ class PEInMemoryDataset(InMemoryDataset):
         self.device = device
 
         self.tensors, self.vertices = gw.get_ifo_geometry("H1", "L1")
+        self.tensors = self.tensors.to(self.device)
+        self.vertices = self.vertices.to(self.device)
 
     def sample_waveforms(self, N: int):
         # sample parameters from prior
         parameters = self.prior.sample(N)
         intrinsic_parameters = torch.vstack(
             (
-                torch.from_numpy(parameters["chirp_mass"]).to(
+                torch.from_numpy(parameters["mass_1"]).to(
                     device=self.device, dtype=torch.float32
                 ),
-                torch.from_numpy(parameters["mass_ratio"]).to(
+                torch.from_numpy(parameters["mass_2"]).to(
                     device=self.device, dtype=torch.float32
                 ),
+                #torch.from_numpy(parameters["chirp_mass"]).to(
+                #    device=self.device, dtype=torch.float32
+                #),
+                #torch.from_numpy(parameters["mass_ratio"]).to(
+                #    device=self.device, dtype=torch.float32
+                #),
                 torch.from_numpy(parameters["a_1"]).to(
                     device=self.device, dtype=torch.float32
                 ),
@@ -129,7 +137,9 @@ class PEInMemoryDataset(InMemoryDataset):
             plus=plus,
             cross=cross,
         )
-
+        # FIXME: delta function distributions are removed, make it cleaner
+        intrinsic_parameters = torch.vstack(
+            (intrinsic_parameters[:2], intrinsic_parameters[4], intrinsic_parameters[6]))
         return torch.vstack((intrinsic_parameters, dec_psi_ra)), waveforms
 
     def waveform_injector(self, X):
@@ -150,13 +160,14 @@ class PEInMemoryDataset(InMemoryDataset):
             transformed_X, transformed_parameters = self.preprocessor(
                 X, parameters
             )
-        return (
-            parameters.T,
-            transformed_parameters.T,
-            X,
-            transformed_X,
-            waveforms,
-        )
+        #return (
+        #    parameters.T,
+        #    transformed_parameters.T,
+        #    X,
+        #    transformed_X,
+        #    waveforms,
+        #)
+        return transformed_X.to(dtype=torch.float32), transformed_parameters.T.to(dtype=torch.float32)
 
 
 class SignalDataSet(pl.LightningDataModule):
@@ -172,8 +183,8 @@ class SignalDataSet(pl.LightningDataModule):
         f_min: float,
         f_max: float,
         f_ref: float,
-        approximant=IMRPhenomD,
-        prior: dict = nonspin_bbh(),
+        approximant=TaylorF2,
+        prior: dict = nonspin_bbh_chirp_mass_q(),
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
@@ -182,6 +193,7 @@ class SignalDataSet(pl.LightningDataModule):
         self.prior = prior
 
         self.tensors, self.vertices = gw.get_ifo_geometry(*ifos)
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def load_background(self):
         background = []
@@ -201,7 +213,7 @@ class SignalDataSet(pl.LightningDataModule):
             self.hparams.approximant,
             start_time=-0.5,
             post_padding=1.0,
-            device="cpu",
+            device=self.device,
         )
 
     def setup(self, stage: str) -> None:
@@ -218,9 +230,10 @@ class SignalDataSet(pl.LightningDataModule):
             scaler=self.standard_scaler,
         )
         self.preprocessor.whitener.fit(1, *background, fftlength=2)
-        # self.preprocessor.whitener.to(self.device)
+        self.preprocessor.whitener.to(self.device)
         # set waveform generator and initialize in-memory datasets
         self.set_waveform_generator()
+        # FIXME: check if this is OK
         self.training_dataset = PEInMemoryDataset(
             self.background,
             waveform_generator=self.waveform_generator,
@@ -232,19 +245,20 @@ class SignalDataSet(pl.LightningDataModule):
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
             shuffle=True,
-            device="cpu",
+            device=self.device,
         )
         self.validation_dataset = PEInMemoryDataset(
             self.valid_background,
             waveform_generator=self.waveform_generator,
             prior=self.prior,
             preprocessor=self.preprocessor,
-            kernel_size=self.waveform_generator.time_duration,
+            kernel_size=self.waveform_generator.number_of_samples
+            + self.waveform_generator.number_of_post_padding,
             batch_size=self.hparams.batch_size,
             batches_per_epoch=self.hparams.batches_per_epoch,
             coincident=False,
-            shuffle=True,
-            device="cpu",
+            shuffle=False,
+            device=self.device,
         )
 
     def train_dataloader(self):

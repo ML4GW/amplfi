@@ -1,5 +1,5 @@
 import numpy as np
-from bilby.core.prior import Constraint, Cosine, LogUniform, PriorDict, Uniform
+from bilby.core.prior import Constraint, Cosine, LogUniform, PriorDict, Sine, Uniform
 from bilby.gw.prior import UniformSourceFrame
 
 
@@ -34,7 +34,7 @@ def sg_uniform():
     return prior_dict
 
 
-def nonspin_bbh():
+def nonspin_bbh_chirp_mass_q():
 
     prior_dict = PriorDict()
     prior_dict["mass_1"] = Constraint(name="mass_1", minimum=10, maximum=80)
@@ -52,7 +52,34 @@ def nonspin_bbh():
     prior_dict["ra"] = Uniform(
         name="ra", minimum=0, maximum=2 * np.pi, boundary="periodic"
     )
-    prior_dict["theta_jn"] = 0
+    prior_dict["theta_jn"] = Sine(name='theta_jn')
+    prior_dict["psi"] = 0
+    prior_dict["phase"] = 0
+    prior_dict["a_1"] = 0
+    prior_dict["a_2"] = 0
+    prior_dict["tilt_1"] = 0
+    prior_dict["tilt_2"] = 0
+    prior_dict["phi_12"] = 0
+    prior_dict["phi_jl"] = 0
+
+    return prior_dict
+
+def nonspin_bbh_component_mass():
+
+    prior_dict = PriorDict()
+    prior_dict["mass_1"] = Uniform(20, 40, name="mass_1")
+    prior_dict["mass_2"] = Uniform(20, 40, name="mass_2")
+    prior_dict["mass_ratio"] = Constraint(
+        name="mass_ratio", minimum=0.2, maximum=0.999
+    )
+    prior_dict["luminosity_distance"] = UniformSourceFrame(
+        name="luminosity_distance", minimum=10, maximum=100, unit="Mpc"
+    )
+    prior_dict["dec"] = Cosine(name="dec")
+    prior_dict["ra"] = Uniform(
+        name="ra", minimum=0, maximum=2 * np.pi, boundary="periodic"
+    )
+    prior_dict["theta_jn"] = Sine(name='theta_jn')
     prior_dict["psi"] = 0
     prior_dict["phase"] = 0
     prior_dict["a_1"] = 0

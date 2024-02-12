@@ -3,7 +3,6 @@ from typing import Callable, List
 import torch
 
 from ml4gw import gw
-from mlpe.injection.priors import nonspin_bbh
 
 
 class PEInjector(torch.nn.Module):

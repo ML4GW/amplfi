@@ -133,6 +133,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         del self.test_results, self.num_plotted
 
     def configure_optimizers(self):
-        opt = self.optimizer(self.parameters())
+        opt = self.optimizer(self.parameters(), lr=1e-3)
         sched = self.scheduler(opt)
-        return {"optimizer": opt, "lr_scheduler": {"scheduler": sched}}
+        return {"optimizer": opt, "lr_scheduler": {"scheduler": sched, "monitor": "valid_loss"}}
