@@ -13,21 +13,9 @@ from ml4gw.dataloading import InMemoryDataset
 from ml4gw.transforms import ChannelWiseScaler
 from ml4gw.waveforms import IMRPhenomD, TaylorF2
 from mlpe.data.transforms import Preprocessor
-from mlpe.injection.priors import nonspin_bbh_chirp_mass_q
-
-
-def chirp_mass_mass_ratio(m1, m2):
-    chirp_mass = (m1 * m2) ** (3.0 / 5.0) / (m1 + m2) ** (1.0 / 5.0)
-    mass_ratio = m2 / m1
-    return chirp_mass, mass_ratio
-
-
-def x_per_y(x, y):
-    return int((x - 1) // y) + 1
-
+from mlpe.injection.priors import nonspin_bbh_chirp_mass_q_parameter_sampler
 
 Tensor = TypeVar("T", np.ndarray, torch.Tensor)
-
 
 def split(X: Tensor, frac: float, axis: int) -> Tuple[Tensor, Tensor]:
     """
@@ -78,36 +66,18 @@ class PEInMemoryDataset(InMemoryDataset):
 
     def sample_waveforms(self, N: int):
         # sample parameters from prior
-        parameters = self.prior.sample(N)
+        parameters = self.prior(N)
         intrinsic_parameters = torch.vstack(
             (
-                torch.from_numpy(parameters["mass_1"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                torch.from_numpy(parameters["mass_2"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                #torch.from_numpy(parameters["chirp_mass"]).to(
-                #    device=self.device, dtype=torch.float32
-                #),
-                #torch.from_numpy(parameters["mass_ratio"]).to(
-                #    device=self.device, dtype=torch.float32
-                #),
-                torch.from_numpy(parameters["a_1"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                torch.from_numpy(parameters["a_2"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                torch.from_numpy(parameters["luminosity_distance"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                torch.from_numpy(parameters["phase"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                torch.from_numpy(parameters["theta_jn"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
+                parameters["chirp_mass"],
+                parameters["mass_ratio"],
+                #parameters["mass_1"],
+                #parameters["mass_2"],
+                parameters["a_1"],
+                parameters["a_2"],
+                parameters["luminosity_distance"],
+                parameters["phase"],
+                parameters["theta_jn"],
             )
         )
         # FIXME: generalize to other parameter combinations
@@ -117,15 +87,9 @@ class PEInMemoryDataset(InMemoryDataset):
         )
         dec_psi_ra = torch.vstack(
             (
-                torch.from_numpy(parameters["dec"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                torch.from_numpy(parameters["psi"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
-                torch.from_numpy(parameters["ra"]).to(
-                    device=self.device, dtype=torch.float32
-                ),
+                parameters["dec"],
+                parameters["psi"],
+                parameters["phi"]
             )
         )
 
@@ -139,7 +103,7 @@ class PEInMemoryDataset(InMemoryDataset):
         )
         # FIXME: delta function distributions are removed, make it cleaner
         intrinsic_parameters = torch.vstack(
-            (intrinsic_parameters[:2], intrinsic_parameters[4], intrinsic_parameters[6]))
+            (intrinsic_parameters[:2], intrinsic_parameters[4:]))
         return torch.vstack((intrinsic_parameters, dec_psi_ra)), waveforms
 
     def waveform_injector(self, X):
@@ -158,16 +122,9 @@ class PEInMemoryDataset(InMemoryDataset):
         # whiten and scale parameters
         if self.preprocessor:
             transformed_X, transformed_parameters = self.preprocessor(
-                X, parameters
+                X, parameters.T
             )
-        #return (
-        #    parameters.T,
-        #    transformed_parameters.T,
-        #    X,
-        #    transformed_X,
-        #    waveforms,
-        #)
-        return transformed_X.to(dtype=torch.float32), transformed_parameters.T.to(dtype=torch.float32)
+        return transformed_X.to(dtype=torch.float32), transformed_parameters.to(dtype=torch.float32)
 
 
 class SignalDataSet(pl.LightningDataModule):
@@ -184,16 +141,16 @@ class SignalDataSet(pl.LightningDataModule):
         f_max: float,
         f_ref: float,
         approximant=TaylorF2,
-        prior: dict = nonspin_bbh_chirp_mass_q(),
+        prior_func: callable = nonspin_bbh_chirp_mass_q_parameter_sampler,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self.background_path = background_path
         self.num_ifos = len(ifos)
-        self.prior = prior
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.prior_func = prior_func  # instantiate in setup
 
         self.tensors, self.vertices = gw.get_ifo_geometry(*ifos)
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
     def load_background(self):
         background = []
@@ -222,7 +179,27 @@ class SignalDataSet(pl.LightningDataModule):
         self.background, self.valid_background = split(
             background, 1 - self.hparams.valid_frac, 1
         )
-        self.standard_scaler = torch.nn.Identity()
+        self.valid_background, self.test_background = split(
+            self.valid_background, 0.5, 1
+        )
+        self.standard_scaler = ChannelWiseScaler(8)  # FIXME: don't hardcode
+        # self.standard_scaler = torch.nn.Identity()
+        # FIXME: clean up the standard scaler fitting
+        self.prior = self.prior_func(self.device)
+        _samples = self.prior(10000)
+        _samples = torch.vstack((
+            _samples["chirp_mass"],
+            _samples["mass_ratio"],
+            #_samples["mass_1"],
+            #_samples["mass_2"],
+            _samples["luminosity_distance"],
+            _samples["phase"],
+            _samples["theta_jn"],
+            _samples["dec"],
+            _samples["psi"],
+            _samples["phi"]))
+        self.standard_scaler.fit(_samples)
+        self.standard_scaler.to(self.device)
         self.preprocessor = Preprocessor(
             self.num_ifos,
             self.hparams.time_duration + 1,
@@ -260,9 +237,25 @@ class SignalDataSet(pl.LightningDataModule):
             shuffle=False,
             device=self.device,
         )
+        self.test_dataset = PEInMemoryDataset(
+            self.test_background,
+            waveform_generator=self.waveform_generator,
+            prior=self.prior,
+            preprocessor=self.preprocessor,
+            kernel_size=self.waveform_generator.number_of_samples
+            + self.waveform_generator.number_of_post_padding,
+            batch_size=1,
+            batches_per_epoch=self.hparams.batches_per_epoch,
+            coincident=False,
+            shuffle=False,
+            device=self.device,
+        )
 
     def train_dataloader(self):
         return self.training_dataset
 
     def val_dataloader(self):
         return self.validation_dataset
+
+    def test_dataloader(self):
+        return self.test_dataset

@@ -2,6 +2,10 @@ import numpy as np
 from bilby.core.prior import Constraint, Cosine, LogUniform, PriorDict, Sine, Uniform
 from bilby.gw.prior import UniformSourceFrame
 
+from ml4gw import distributions
+from ml4gw.waveforms.generator import ParameterSampler
+import torch
+
 
 def sg_uniform():
     prior_dict = PriorDict()
@@ -34,27 +38,118 @@ def sg_uniform():
     return prior_dict
 
 
-def nonspin_bbh_chirp_mass_q():
+def nonspin_bbh_component_mass_parameter_sampler(device='cpu'):
+    return ParameterSampler(
+        mass_1=torch.distributions.Uniform(
+            torch.as_tensor(30, device=device, dtype=torch.float32),
+            torch.as_tensor(40, device=device, dtype=torch.float32)
+        ),
+        mass_2=torch.distributions.Uniform(
+            torch.as_tensor(20, device=device, dtype=torch.float32),
+            torch.as_tensor(30, device=device, dtype=torch.float32)
+        ),
+        luminosity_distance=distributions.PowerLaw(
+            torch.as_tensor(10, device=device, dtype=torch.float32),
+            torch.as_tensor(1000, device=device, dtype=torch.float32),
+            index=2
+        ),
+        dec=distributions.Cosine(
+            torch.as_tensor(-torch.pi/2, device=device, dtype=torch.float32),
+            torch.as_tensor(torch.pi/2, device=device, dtype=torch.float32)
+        ),
+        phi=torch.distributions.Uniform(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(2*torch.pi, device=device, dtype=torch.float32)
+        ),
+        theta_jn=distributions.Sine(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+        ),
+        psi=torch.distributions.Uniform(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+        ),
+        phase=torch.distributions.Uniform(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(2 * torch.pi, device=device, dtype=torch.float32)
+        ),
+        a_1=distributions.DeltaFunction(
+            torch.as_tensor(0, device=device, dtype=torch.float32)
+        ),
+        a_2=distributions.DeltaFunction(
+            torch.as_tensor(0, device=device, dtype=torch.float32)
+        ),
+    )
 
+
+def nonspin_bbh_chirp_mass_q_parameter_sampler(device='cpu'):
+    return ParameterSampler(
+        chirp_mass=torch.distributions.Uniform(
+            torch.as_tensor(20, device=device, dtype=torch.float32),
+            torch.as_tensor(40, device=device, dtype=torch.float32)
+        ),
+        mass_ratio=torch.distributions.Uniform(
+            torch.as_tensor(0.125, device=device, dtype=torch.float32),
+            torch.as_tensor(0.999, device=device, dtype=torch.float32)
+        ),
+        luminosity_distance=distributions.PowerLaw(
+            torch.as_tensor(10, device=device, dtype=torch.float32),
+            torch.as_tensor(1000, device=device, dtype=torch.float32),
+            index=2
+        ),
+        dec=distributions.Cosine(
+            torch.as_tensor(-torch.pi/2, device=device, dtype=torch.float32),
+            torch.as_tensor(torch.pi/2, device=device, dtype=torch.float32)
+        ),
+        phi=torch.distributions.Uniform(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(2*torch.pi, device=device, dtype=torch.float32)
+        ),
+        theta_jn=distributions.Sine(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+        ),
+        psi=torch.distributions.Uniform(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+        ),
+        phase=torch.distributions.Uniform(
+            torch.as_tensor(0, device=device, dtype=torch.float32),
+            torch.as_tensor(2 * torch.pi, device=device, dtype=torch.float32)
+        ),
+        a_1=distributions.DeltaFunction(
+            torch.as_tensor(0, device=device, dtype=torch.float32)
+        ),
+        a_2=distributions.DeltaFunction(
+            torch.as_tensor(0, device=device, dtype=torch.float32)
+        ),
+    )
+
+
+def nonspin_bbh_chirp_mass_q():
     prior_dict = PriorDict()
     prior_dict["mass_1"] = Constraint(name="mass_1", minimum=10, maximum=80)
     prior_dict["mass_2"] = Constraint(name="mass_2", minimum=10, maximum=80)
     prior_dict["mass_ratio"] = Uniform(
-        name="mass_ratio", minimum=0.125, maximum=1
+        name="mass_ratio", minimum=0.125, maximum=0.999
     )
     prior_dict["chirp_mass"] = Uniform(
         name="chirp_mass", minimum=20, maximum=35
     )
     prior_dict["luminosity_distance"] = UniformSourceFrame(
-        name="luminosity_distance", minimum=10, maximum=100, unit="Mpc"
+        name="luminosity_distance", minimum=10, maximum=3000, unit="Mpc"
     )
     prior_dict["dec"] = Cosine(name="dec")
-    prior_dict["ra"] = Uniform(
-        name="ra", minimum=0, maximum=2 * np.pi, boundary="periodic"
+    prior_dict["phi"] = Uniform(
+        name="phi", minimum=0, maximum=2 * np.pi, boundary="periodic"
     )
     prior_dict["theta_jn"] = Sine(name='theta_jn')
-    prior_dict["psi"] = 0
-    prior_dict["phase"] = 0
+    prior_dict["psi"] = Uniform(
+        name="psi", minimum=0, maximum=np.pi, latex_label="psi"
+    )
+    prior_dict["phase"] = Uniform(
+        name="phase", minimum=0, maximum=2 * np.pi, latex_label="phase"
+    )
     prior_dict["a_1"] = 0
     prior_dict["a_2"] = 0
     prior_dict["tilt_1"] = 0
@@ -65,7 +160,6 @@ def nonspin_bbh_chirp_mass_q():
     return prior_dict
 
 def nonspin_bbh_component_mass():
-
     prior_dict = PriorDict()
     prior_dict["mass_1"] = Uniform(20, 40, name="mass_1")
     prior_dict["mass_2"] = Uniform(20, 40, name="mass_2")
@@ -76,12 +170,16 @@ def nonspin_bbh_component_mass():
         name="luminosity_distance", minimum=10, maximum=100, unit="Mpc"
     )
     prior_dict["dec"] = Cosine(name="dec")
-    prior_dict["ra"] = Uniform(
-        name="ra", minimum=0, maximum=2 * np.pi, boundary="periodic"
+    prior_dict["phi"] = Uniform(
+        name="phi", minimum=0, maximum=2 * np.pi, boundary="periodic"
     )
     prior_dict["theta_jn"] = Sine(name='theta_jn')
-    prior_dict["psi"] = 0
-    prior_dict["phase"] = 0
+    prior_dict["psi"] = Uniform(
+        name="psi", minimum=0, maximum=np.pi, latex_label="psi"
+    )
+    prior_dict["phase"] = Uniform(
+        name="phase", minimum=0, maximum=2 * np.pi, latex_label="phase"
+    )
     prior_dict["a_1"] = 0
     prior_dict["a_2"] = 0
     prior_dict["tilt_1"] = 0

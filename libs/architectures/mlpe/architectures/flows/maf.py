@@ -35,7 +35,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         self.activation = activation
         self.optimizer = opt
         self.scheduler = sched
-        self.priors = priors
         self.inference_params = inference_params
         self.num_samples_draw = num_samples_draw
         self.num_plot_corner = num_plot_corner
@@ -96,13 +95,12 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
             strain,
             parameters,
             self,
-            self.preprocessor,
             self.inference_params,
             self.num_samples_draw,
-            self.priors,
+            None,
         )
         self.test_results.append(res)
-        if batch_idx % 100 == 0 and self.num_plotted < self.num_plot_corner:
+        if batch_idx % 10 == 0 and self.num_plotted < self.num_plot_corner:
             skymap_filename = f"{self.num_plotted}_mollview.png"
             res.plot_corner(
                 save=True,
@@ -110,10 +108,10 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
                 levels=(0.5, 0.9),
             )
             utils.plot_mollview(
-                res.posterior["phi"],
+                res.posterior["phi"] - torch.pi,  # between -pi to pi in healpy
                 res.posterior["dec"],
                 truth=(
-                    res.injection_parameters["phi"],
+                    res.injection_parameters["phi"] - torch.pi,
                     res.injection_parameters["dec"],
                 ),
                 outpath=skymap_filename,
@@ -133,6 +131,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         del self.test_results, self.num_plotted
 
     def configure_optimizers(self):
-        opt = self.optimizer(self.parameters(), lr=1e-3)
+        opt = self.optimizer(self.parameters(), lr=torch.cuda.device_count() * 1e-3)
         sched = self.scheduler(opt)
         return {"optimizer": opt, "lr_scheduler": {"scheduler": sched, "monitor": "valid_loss"}}

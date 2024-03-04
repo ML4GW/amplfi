@@ -21,12 +21,10 @@ def cast_samples_as_bilby_result(
     # inference_params shape (1, num_params)
 
     injections = {k: float(v) for k, v in zip(inference_params, truth)}
-
     posterior = dict()
     for idx, k in enumerate(inference_params):
         posterior[k] = samples.T[idx].flatten()
     posterior = pd.DataFrame(posterior)
-
     return bilby.result.Result(
         label=label,
         injection_parameters=injections,
@@ -104,27 +102,29 @@ def load_and_initialize_flow(
 
 
 def draw_samples_from_model(
-    signal,
+    strain,
     param,
     flow: torch.nn.Module,
-    preprocessor: torch.nn.Module,
     inference_params: List[str],
     num_samples_draw: int,
     priors: dict,
     label: str = "testing_samples",
 ):
-    strain, scaled_param = preprocessor(signal, param)
     with torch.no_grad():
         samples = flow.sample([1, num_samples_draw], context=strain)
-        descaled_samples = preprocessor.scaler(
+        descaled_samples = flow.trainer.datamodule.preprocessor.scaler(
             samples[0].transpose(1, 0), reverse=True
         )
+    priors = flow.trainer.datamodule.prior
     descaled_samples = descaled_samples.unsqueeze(0).transpose(2, 1)
+    descaled_param = flow.trainer.datamodule.preprocessor.scaler(
+        param.transpose(1, 0), reverse=True  # note batch size of param is 1
+    ).transpose(1, 0)
     descaled_res = cast_samples_as_bilby_result(
         descaled_samples.cpu().numpy()[0],
-        param.cpu().numpy()[0],
+        descaled_param.cpu().numpy()[0],
         inference_params,
-        priors,
+        priors=None,
         label=label,
     )
     return descaled_res
