@@ -2,7 +2,7 @@ from typing import Optional
 
 import torch
 
-from ml4gw.transforms import Whitening
+from ml4gw.transforms import FixedWhiten
 
 
 class Preprocessor(torch.nn.Module):
@@ -31,15 +31,13 @@ class Preprocessor(torch.nn.Module):
     def __init__(
         self,
         num_ifos: int,
+        kernel_length: int,
         sample_rate: float,
-        fduration: Optional[float] = None,
         scaler: torch.nn.Module = torch.nn.Identity(),
     ) -> None:
         super().__init__()
-        self.whitener = Whitening(
-            num_ifos,
-            sample_rate,
-            fduration,
+        self.whitener = FixedWhiten(
+            num_ifos, kernel_length, sample_rate, dtype=torch.float64
         )
         self.scaler = scaler
 

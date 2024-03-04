@@ -9,7 +9,6 @@ from pyro.nn import ConditionalAutoRegressiveNN
 
 from mlpe.architectures.flows import utils
 from mlpe.architectures.flows.flow import NormalizingFlow
-from mlpe.data.transforms import Preprocessor
 
 
 class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
@@ -17,7 +16,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         self,
         shape: Tuple[int, int, int],
         embedding_net: torch.nn.Module,
-        preprocessor: Preprocessor,
         opt: torch.optim.SGD,
         sched: torch.optim.lr_scheduler.ConstantLR,
         inference_params: list,
@@ -37,16 +35,11 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         self.activation = activation
         self.optimizer = opt
         self.scheduler = sched
-        self.priors = priors
         self.inference_params = inference_params
         self.num_samples_draw = num_samples_draw
         self.num_plot_corner = num_plot_corner
         # define embedding net and base distribution
         self.embedding_net = embedding_net
-        self.preprocessor = preprocessor
-        # don't train preprocessor
-        for n, p in self.preprocessor.named_parameters():
-            p.required_grad = False
         # build the transform - sets the transforms attrib
         self.build_flow()
 
@@ -78,7 +71,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
 
     def training_step(self, batch, batch_idx):
         strain, parameters = batch
-        strain, parameters = self.preprocessor(strain, parameters)
         loss = -self.log_prob(parameters, context=strain).mean()
         self.log(
             "train_loss", loss, on_step=True, prog_bar=True, sync_dist=False
@@ -87,7 +79,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
 
     def validation_step(self, batch, batch_idx):
         strain, parameters = batch
-        strain, parameters = self.preprocessor(strain, parameters)
         loss = -self.log_prob(parameters, context=strain).mean()
         self.log(
             "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
@@ -104,13 +95,12 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
             strain,
             parameters,
             self,
-            self.preprocessor,
             self.inference_params,
             self.num_samples_draw,
-            self.priors,
+            None,
         )
         self.test_results.append(res)
-        if batch_idx % 100 == 0 and self.num_plotted < self.num_plot_corner:
+        if batch_idx % 10 == 0 and self.num_plotted < self.num_plot_corner:
             skymap_filename = f"{self.num_plotted}_mollview.png"
             res.plot_corner(
                 save=True,
@@ -118,10 +108,10 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
                 levels=(0.5, 0.9),
             )
             utils.plot_mollview(
-                res.posterior["phi"],
+                res.posterior["phi"] - torch.pi,  # between -pi to pi in healpy
                 res.posterior["dec"],
                 truth=(
-                    res.injection_parameters["phi"],
+                    res.injection_parameters["phi"] - torch.pi,
                     res.injection_parameters["dec"],
                 ),
                 outpath=skymap_filename,
@@ -141,6 +131,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         del self.test_results, self.num_plotted
 
     def configure_optimizers(self):
-        opt = self.optimizer(self.parameters())
+        opt = self.optimizer(self.parameters(), lr=torch.cuda.device_count() * 1e-3)
         sched = self.scheduler(opt)
-        return {"optimizer": opt, "lr_scheduler": {"scheduler": sched}}
+        return {"optimizer": opt, "lr_scheduler": {"scheduler": sched, "monitor": "valid_loss"}}
