@@ -1,11 +1,14 @@
-from ml4gw.nn.resnet.resnet_1d import ResNet1D
-from ml4gw.nn.norm import NormLayer
+from typing import Literal, Optional
+
 from train.architectures.embeddings.base import Embedding
-from typing import Optional, Literal
+
+from ml4gw.nn.norm import NormLayer
+from ml4gw.nn.resnet.resnet_1d import ResNet1D
+
 
 class ResNet(ResNet1D, Embedding):
     def __init__(
-        self, 
+        self,
         num_ifos: int,
         context_dim: int,
         strain_dim: int,
@@ -30,5 +33,3 @@ class ResNet(ResNet1D, Embedding):
             stride_type=stride_type,
             norm_layer=norm_layer,
         )
-        
-

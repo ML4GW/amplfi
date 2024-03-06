@@ -7,16 +7,16 @@ class PECLI(LightningCLI):
     def add_arguments_to_parser(self, parser):
         # link shape arguments required by the model
         # architecture from data module so we don't
-        # have to specify them twice. 
+        # have to specify them twice.
         parser.link_arguments(
             "data.num_ifos",
-            "model.init_args.arch.init_args.embedding_net.init_args.num_ifos",
+            "model.init_args.arch.init_args.embedding_net.init_args.num_ifos",  # noqa
             apply_on="instantiate",
         )
 
         parser.link_arguments(
             "model.init_args.arch.init_args.context_dim",
-            "model.init_args.arch.init_args.embedding_net.init_args.context_dim",
+            "model.init_args.arch.init_args.embedding_net.init_args.context_dim",  # noqa
             apply_on="parse",
         )
 
@@ -28,7 +28,7 @@ class PECLI(LightningCLI):
 
         parser.link_arguments(
             "data.strain_dim",
-            "model.init_args.arch.init_args.embedding_net.init_args.strain_dim",
+            "model.init_args.arch.init_args.embedding_net.init_args.strain_dim",  # noqa
             apply_on="instantiate",
         )
 
@@ -36,7 +36,7 @@ class PECLI(LightningCLI):
 def main(args=None):
     # any subclasses of PEModel and BaseDataset
     # will automatically be registered with the CLI
-    # and their arguments will be available at 
+    # and their arguments will be available at
     # the command line
     cli = PECLI(
         PEModel,

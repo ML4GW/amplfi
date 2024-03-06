@@ -1,16 +1,16 @@
-from typing import Callable, List
+from typing import Callable
 
 import torch
-from pyro.distributions import transforms
+from pyro.distributions import ConditionalTransformedDistribution, transforms
 from pyro.distributions.conditional import ConditionalComposeTransformModule
-from pyro.distributions import ConditionalTransformedDistribution
 from pyro.nn import PyroModule
+
 
 class FlowArchitecture(PyroModule):
     def __init__(
         self, num_params: int, context_dim: int, embedding_net: torch.nn.Module
     ):
-        
+
         super().__init__()
         self.num_params = num_params
         self.context_dim = context_dim
@@ -23,7 +23,7 @@ class FlowArchitecture(PyroModule):
 
     def distribution(self) -> torch.distributions.Distribution:
         raise NotImplementedError
-    
+
     def build_transforms(self) -> ConditionalComposeTransformModule:
         """Sets the ``transforms`` attribute"""
         raise NotImplementedError

@@ -2,10 +2,13 @@ from typing import Callable, Dict
 
 import torch
 
+
 class ParameterTransformer(torch.nn.Module):
     """
-    Helper class for applying preprocessing transformations to inference parameters
+    Helper class for applying preprocessing
+    transformations to inference parameters
     """
+
     def __init__(self, **transforms: Callable):
         super().__init__()
         self.transforms = transforms
@@ -31,6 +34,7 @@ class ParameterSampler(torch.nn.Module):
         N: int,
         device: str = "cpu",
     ):
-        parameters = {k: v.sample((N,)).to(device) for k, v in self.parameters.items()}
+        parameters = {
+            k: v.sample((N,)).to(device) for k, v in self.parameters.items()
+        }
         return parameters
-    

@@ -1,12 +1,10 @@
-from typing import Callable
-
 import torch
 import torch.distributions as dist
 from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.distributions.transforms import ConditionalAffineAutoregressive
 from pyro.nn import ConditionalAutoRegressiveNN
 from train.architectures.flows import FlowArchitecture
-from pyro.distributions import ConditionalTransformedDistribution
+
 
 class MaskedAutoRegressiveFlow(FlowArchitecture):
     def __init__(
@@ -18,7 +16,7 @@ class MaskedAutoRegressiveFlow(FlowArchitecture):
         activation: torch.nn.modules.activation = torch.nn.Tanh(),
         **kwargs,
     ):
-        
+
         super().__init__(*args, **kwargs)
         self.hidden_features = hidden_features
         self.num_blocks = num_blocks
@@ -29,7 +27,7 @@ class MaskedAutoRegressiveFlow(FlowArchitecture):
         # distributions are moved to the correct device
         self.register_buffer("mean", torch.zeros(self.num_params))
         self.register_buffer("std", torch.ones(self.num_params))
-        
+
         # build the sequence of transforms
         self.transforms = self.build_transforms()
 
@@ -50,18 +48,6 @@ class MaskedAutoRegressiveFlow(FlowArchitecture):
             torch.ones(self.num_params),
         )
 
-    def distribution(self):
-        """Returns the base distribution for the flow"""
-        return dist.Normal(
-            self.mean,
-            self.std,
-        )
-    
-    def flow(self):
-        return ConditionalTransformedDistribution(
-            self.distribution(), self.transforms
-        )
-    
     def build_transforms(self):
         """Build the transform"""
         transforms = []

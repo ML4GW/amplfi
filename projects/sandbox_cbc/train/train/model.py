@@ -1,10 +1,10 @@
 import logging
-from typing import Optional, Sequence, Union
+from typing import Optional
 
 import lightning.pytorch as pl
-from lightning.pytorch.callbacks import ModelCheckpoint
 import torch
 import train.testing as test_utils
+from lightning.pytorch.callbacks import ModelCheckpoint
 from train.architectures.flows import FlowArchitecture
 from train.callbacks import SaveAugmentedBatch
 
@@ -14,10 +14,10 @@ Tensor = torch.Tensor
 class PEModel(pl.LightningModule):
     """
     Args:
-        arch: 
-            Neural network architecture to train. 
+        arch:
+            Neural network architecture to train.
             This should be a subclass of `FlowArchitecture`.
-        patience: 
+        patience:
             Number of epochs to wait for validation loss to improve
         save_top_k_models:
             Maximum number of best-performing model checkpoints
@@ -50,7 +50,13 @@ class PEModel(pl.LightningModule):
         strain, parameters = batch
         loss = self(parameters, strain).mean()
         self.log(
-            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=False, logger=True
+            "train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=False,
+            logger=True,
         )
         return loss
 
@@ -58,7 +64,12 @@ class PEModel(pl.LightningModule):
         strain, parameters = batch
         loss = self(parameters, strain).mean()
         self.log(
-            "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True, logger=True
+            "valid_loss",
+            loss,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+            logger=True,
         )
         return loss
 
@@ -126,14 +137,15 @@ class PEModel(pl.LightningModule):
 
         lr = self.hparams.learning_rate * world_size
         optimizer = torch.optim.Adam(
-            self.model.parameters()
+            self.model.parameters(),
+            lr=lr,
+            weight_decay=self.hparams.weight_decay,
         )
-        
+
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            factor = 0.9, 
-            patience = 30, 
-            cooldown = 10, 
-            min_lr = 1e-8
+            optimizer, factor=0.9, patience=30, cooldown=10, min_lr=1e-8
         )
-        return {"optimizer": optimizer, "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"}}
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"},
+        }
