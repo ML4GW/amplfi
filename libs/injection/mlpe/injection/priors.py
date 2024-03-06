@@ -40,88 +40,104 @@ def sg_uniform():
 
 def nonspin_bbh_component_mass_parameter_sampler(device='cpu'):
     return ParameterSampler(
-        mass_1=torch.distributions.Uniform(
+        mass_1=distributions.Uniform(
             torch.as_tensor(30, device=device, dtype=torch.float32),
-            torch.as_tensor(40, device=device, dtype=torch.float32)
+            torch.as_tensor(40, device=device, dtype=torch.float32),
+            name="mass_1"
         ),
-        mass_2=torch.distributions.Uniform(
+        mass_2=distributions.Uniform(
             torch.as_tensor(20, device=device, dtype=torch.float32),
-            torch.as_tensor(30, device=device, dtype=torch.float32)
+            torch.as_tensor(30, device=device, dtype=torch.float32),
+            name="mass_2"
         ),
         luminosity_distance=distributions.PowerLaw(
             torch.as_tensor(10, device=device, dtype=torch.float32),
             torch.as_tensor(1000, device=device, dtype=torch.float32),
-            index=2
+            index=2,
+            name="luminosity_distance"
         ),
         dec=distributions.Cosine(
             torch.as_tensor(-torch.pi/2, device=device, dtype=torch.float32),
-            torch.as_tensor(torch.pi/2, device=device, dtype=torch.float32)
+            torch.as_tensor(torch.pi/2, device=device, dtype=torch.float32),
+            name="dec"
         ),
-        phi=torch.distributions.Uniform(
+        phi=distributions.Uniform(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(2*torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(2*torch.pi, device=device, dtype=torch.float32),
+            name="phi"
         ),
         theta_jn=distributions.Sine(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32),
+            name="theta_jn"
         ),
-        psi=torch.distributions.Uniform(
+        psi=distributions.Uniform(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32),
+            name="psi"
         ),
-        phase=torch.distributions.Uniform(
+        phase=distributions.Uniform(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(2 * torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(2 * torch.pi, device=device, dtype=torch.float32),
+            name="phase"
         ),
         a_1=distributions.DeltaFunction(
-            torch.as_tensor(0, device=device, dtype=torch.float32)
+            torch.as_tensor(0, device=device, dtype=torch.float32), name="a_1"
         ),
         a_2=distributions.DeltaFunction(
-            torch.as_tensor(0, device=device, dtype=torch.float32)
+            torch.as_tensor(0, device=device, dtype=torch.float32), name="a_2"
         ),
     )
 
 
 def nonspin_bbh_chirp_mass_q_parameter_sampler(device='cpu'):
     return ParameterSampler(
-        chirp_mass=torch.distributions.Uniform(
+        chirp_mass=distributions.Uniform(
             torch.as_tensor(20, device=device, dtype=torch.float32),
-            torch.as_tensor(40, device=device, dtype=torch.float32)
+            torch.as_tensor(40, device=device, dtype=torch.float32),
+            name="chirp_mass"
         ),
-        mass_ratio=torch.distributions.Uniform(
+        mass_ratio=distributions.Uniform(
             torch.as_tensor(0.125, device=device, dtype=torch.float32),
-            torch.as_tensor(0.999, device=device, dtype=torch.float32)
+            torch.as_tensor(0.999, device=device, dtype=torch.float32),
+            name="mass_ratio"
         ),
         luminosity_distance=distributions.PowerLaw(
             torch.as_tensor(10, device=device, dtype=torch.float32),
             torch.as_tensor(1000, device=device, dtype=torch.float32),
-            index=2
+            index=2,
+            name="luminosity_distance"
         ),
         dec=distributions.Cosine(
             torch.as_tensor(-torch.pi/2, device=device, dtype=torch.float32),
-            torch.as_tensor(torch.pi/2, device=device, dtype=torch.float32)
+            torch.as_tensor(torch.pi/2, device=device, dtype=torch.float32),
+            name="dec"
         ),
-        phi=torch.distributions.Uniform(
+        phi=distributions.Uniform(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(2*torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(2*torch.pi, device=device, dtype=torch.float32),
+            name="phi"
         ),
         theta_jn=distributions.Sine(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32),
+            name="theta_jn"
         ),
-        psi=torch.distributions.Uniform(
+        psi=distributions.Uniform(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(torch.pi, device=device, dtype=torch.float32),
+            name="psi"
         ),
-        phase=torch.distributions.Uniform(
+        phase=distributions.Uniform(
             torch.as_tensor(0, device=device, dtype=torch.float32),
-            torch.as_tensor(2 * torch.pi, device=device, dtype=torch.float32)
+            torch.as_tensor(2 * torch.pi, device=device, dtype=torch.float32),
+            name="phase"
         ),
         a_1=distributions.DeltaFunction(
-            torch.as_tensor(0, device=device, dtype=torch.float32)
+            torch.as_tensor(0, device=device, dtype=torch.float32), name="a_1"
         ),
         a_2=distributions.DeltaFunction(
-            torch.as_tensor(0, device=device, dtype=torch.float32)
+            torch.as_tensor(0, device=device, dtype=torch.float32), name="a_2"
         ),
     )
 

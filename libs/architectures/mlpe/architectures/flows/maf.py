@@ -19,7 +19,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
         opt: torch.optim.SGD,
         sched: torch.optim.lr_scheduler.ConstantLR,
         inference_params: list,
-        priors: dict,
         num_samples_draw: int = 3000,
         num_plot_corner: int = 20,
         hidden_features: int = 50,
@@ -97,7 +96,6 @@ class MaskedAutoRegressiveFlow(pl.LightningModule, NormalizingFlow):
             self,
             self.inference_params,
             self.num_samples_draw,
-            None,
         )
         self.test_results.append(res)
         if batch_idx % 10 == 0 and self.num_plotted < self.num_plot_corner:

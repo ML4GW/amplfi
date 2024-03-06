@@ -107,7 +107,6 @@ def draw_samples_from_model(
     flow: torch.nn.Module,
     inference_params: List[str],
     num_samples_draw: int,
-    priors: dict,
     label: str = "testing_samples",
 ):
     with torch.no_grad():
@@ -124,7 +123,7 @@ def draw_samples_from_model(
         descaled_samples.cpu().numpy()[0],
         descaled_param.cpu().numpy()[0],
         inference_params,
-        priors=None,
+        priors=priors.to_bilby_prior_dict(),
         label=label,
     )
     return descaled_res
