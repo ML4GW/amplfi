@@ -418,6 +418,7 @@ class BaseDataset(pl.LightningDataModule):
         background: torch.Tensor,
         waveforms: torch.Tensor,
         parameters: Dict[str, torch.Tensor],
+        batch_size: int,
     ):
         """
         Method to build a deterministic dataset of injections
@@ -484,7 +485,7 @@ class BaseDataset(pl.LightningDataModule):
         return torch.utils.data.DataLoader(
             dataset,
             pin_memory=True,
-            batch_size=self.val_batch_size,
+            batch_size=batch_size,
             num_workers=self.num_workers,
         )
 
@@ -513,7 +514,9 @@ class BaseDataset(pl.LightningDataModule):
         """
         background = self.val_background[0]
         waveforms, parameters = self.val_waveforms, self.val_parameters
-        return self.build_fixed_dataset(background, waveforms, parameters)
+        return self.build_fixed_dataset(
+            background, waveforms, parameters, self.val_batch_size
+        )
 
     def test_dataloader(self):
         """
@@ -522,4 +525,6 @@ class BaseDataset(pl.LightningDataModule):
         """
         background = self.test_background[0]
         waveforms, parameters = self.test_waveforms, self.test_parameters
-        return self.build_fixed_dataset(background, waveforms, parameters)
+        return self.build_fixed_dataset(
+            background, waveforms, parameters, batch_size=1
+        )

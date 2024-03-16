@@ -1,56 +1,56 @@
 from pathlib import Path
-from typing import Optional, Tuple
 
+import bilby
 import healpy as hp
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_mollview(
-    ra_samples: np.ndarray,
-    dec_samples: np.ndarray,
-    nside: int = 32,
-    truth: Optional[Tuple[float, float]] = None,
-    outpath: Path = None,
-):
-    """Plot mollview of posterior samples
+class Result(bilby.result.Result):
+    def plot_mollview(
+        self,
+        nside: int = 32,
+        outpath: Path = None,
+    ):
+        """Plot mollview of sky localization posterior samples
 
-    Args:
-        ra_samples: array of right ascension samples in radians (-pi, pi)
-        dec_samples: array of declination samples in radians (-pi/2, pi/2)
-        nside: nside parameter for healpy
-        truth: tuple of true ra and dec
-    """
+        Args:
+            nside: nside parameter for healpy
+            outpath: path to save the plot
+        """
 
-    # mask out non physical samples;
-    ra_samples_mask = (ra_samples > -np.pi) * (ra_samples < np.pi)
-    dec_samples += np.pi / 2
-    dec_samples_mask = (dec_samples > 0) * (dec_samples < np.pi)
+        ra = self.posterior["phi"]
+        dec = self.posterior["dec"]
+        dec += np.pi / 2
 
-    net_mask = ra_samples_mask * dec_samples_mask
-    ra_samples = ra_samples[net_mask]
-    dec_samples = dec_samples[net_mask]
+        # mask out non physical samples;
+        mask = (ra > -np.pi) * (ra < np.pi)
+        mask &= (dec > 0) * (dec < np.pi)
 
-    # calculate number of samples in each pixel
-    NPIX = hp.nside2npix(nside)
-    ipix = hp.ang2pix(nside, dec_samples, ra_samples)
-    ipix = np.sort(ipix)
-    uniq, counts = np.unique(ipix, return_counts=True)
+        ra = ra[mask]
+        dec = dec[mask]
 
-    # create empty map and then fill in non-zero pix with counts
-    m = np.zeros(NPIX)
-    m[np.in1d(range(NPIX), uniq)] = counts
+        # calculate number of samples in each pixel
+        NPIX = hp.nside2npix(nside)
+        ipix = hp.ang2pix(nside, dec, ra)
+        ipix = np.sort(ipix)
+        uniq, counts = np.unique(ipix, return_counts=True)
 
-    plt.close()
-    # plot molleweide
-    fig = hp.mollview(m)
-    if truth is not None:
-        ra_inj, dec_inj = truth
+        # create empty map and then fill in non-zero pix with counts
+        m = np.zeros(NPIX)
+        m[np.in1d(range(NPIX), uniq)] = counts
+
+        plt.close()
+        # plot molleweide
+        fig = hp.mollview(m)
+
+        ra_inj = self.injection_parameters["phi"]
+        dec_inj = self.injection_parameters["dec"]
         dec_inj += np.pi / 2
         hp.visufunc.projscatter(
             dec_inj, ra_inj, marker="x", color="red", s=150
         )
 
-    plt.savefig(outpath)
+        plt.savefig(outpath)
 
-    return fig
+        return fig

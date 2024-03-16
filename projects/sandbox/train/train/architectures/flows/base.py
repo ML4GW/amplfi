@@ -48,7 +48,6 @@ class FlowArchitecture(PyroModule):
         """
         if not hasattr(self, "transforms"):
             raise RuntimeError("Flow is not built")
-
         embedded_context = self.embedding_net(context)
         n = [n] if isinstance(n, int) else n
-        return self.flow.condition(embedded_context).sample(n)
+        return self.flow().condition(embedded_context).sample(n)

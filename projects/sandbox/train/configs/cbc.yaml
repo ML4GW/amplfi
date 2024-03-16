@@ -14,6 +14,7 @@ trainer:
 model:
   class_path: train.model.PEModel
   init_args:
+    outdir: "/home/ethan.marx/projects/PE/projects/sandbox/train/logs-cbc/results"
     arch:
       class_path: train.architectures.flows.MaskedAutoRegressiveFlow
       init_args:
@@ -49,7 +50,7 @@ data:
     fduration: 1
     psd_length: 10
     highpass: 32
-    batches_per_epoch: 2
+    batches_per_epoch: 200
     batch_size: 512
     ifos: ["H1", "L1"]
     parameter_sampler: train.priors.cbc_prior
