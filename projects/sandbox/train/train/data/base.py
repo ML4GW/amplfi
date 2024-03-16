@@ -28,6 +28,7 @@ class BaseDataset(pl.LightningDataModule):
     - fit_scaler: fit the standard scaler to parameters
     - get_val_waveforms: load validation waveforms and parameters
     - sample_waveforms: sample waveforms during training
+    - slice_waveforms: slice generated waveforms for injection into kernel
 
     The goal is to support subclasses for
     1. Generating waveforms on the fly in torch (see generator.py)
@@ -135,6 +136,11 @@ class BaseDataset(pl.LightningDataModule):
         )
 
     @property
+    def num_workers(self):
+        local_world_size = len(self.trainer.device_ids)
+        return min(6, int(os.cpu_count() / local_world_size))
+
+    @property
     def pre_whiten_size(self):
         """Size of kernel before whitening filter is cut off"""
         length = self.hparams.kernel_length + self.hparams.fduration
@@ -159,7 +165,7 @@ class BaseDataset(pl.LightningDataModule):
         return int(4 * self.hparams.batch_size)
 
     @property
-    def background_fnames(self):
+    def train_val_fnames(self):
         """List of background files used for both training and validation"""
         background_dir = self.data_dir / "train" / "background"
         fnames = list(background_dir.glob("*.hdf5"))
@@ -167,7 +173,7 @@ class BaseDataset(pl.LightningDataModule):
 
     @property
     def test_fnames(self):
-        """List of background files used for testing trained model"""
+        """List of background files used for testing a trained model"""
         test_dir = self.data_dir / "test" / "background"
         fnames = list(test_dir.glob("*.hdf5"))
         return fnames
@@ -177,7 +183,7 @@ class BaseDataset(pl.LightningDataModule):
         Split background files into training and validation sets
         based on the requested duration of the validation set
         """
-        fnames = sorted(self.background_fnames)
+        fnames = sorted(self.train_val_fnames)
         durations = [int(fname.stem.split("-")[-1]) for fname in fnames]
         valid_fnames = []
         valid_duration = 0
@@ -200,12 +206,12 @@ class BaseDataset(pl.LightningDataModule):
         """
         return self.parameter_transformer(parameters)
 
-    def scale(self, parameters):
+    def scale(self, parameters, reverse: bool = False):
         """
         Apply standard scaling to transformed parameters
         """
         parameters = parameters.transpose(1, 0)
-        scaled = self.standard_scaler(parameters)
+        scaled = self.standard_scaler(parameters, reverse=reverse)
         scaled = scaled.transpose(1, 0)
         return scaled
 
@@ -230,7 +236,8 @@ class BaseDataset(pl.LightningDataModule):
         self.val_waveforms, self.val_parameters = self.get_val_waveforms()
         self.val_background = self.load_background(self.val_fnames)
 
-        # load testing background
+        # load testing waveforms, parameters, and background
+        self.test_waveforms, self.test_parameters = self.get_test_waveforms()
         self.test_background = self.load_background(self.test_fnames)
 
         return world_size, rank
@@ -244,6 +251,10 @@ class BaseDataset(pl.LightningDataModule):
 
     def get_val_waveforms(self):
         """Method for constructing validation waveforms and parameters"""
+        raise NotImplementedError
+
+    def get_test_waveforms(self):
+        """Method for constructing testing waveforms and parameters"""
         raise NotImplementedError
 
     def load_background(self, fnames: Sequence[str]):
@@ -319,13 +330,21 @@ class BaseDataset(pl.LightningDataModule):
         """
 
         if self.trainer.training:
-
             [X] = batch
             self._move_to_device(X)
+            # parameters are transformed and scaled in the
+            # inject function.
+            # TODO: move that here for clarity?
             strain, parameters = self.inject(X)
 
         elif self.trainer.validating or self.trainer.sanity_checking:
-
+            # for validation, apply transforms and scaling here
+            (strain, parameters) = batch
+            parameters = self.transform(parameters)
+            parameters = self.scale(parameters)
+        elif self.trainer.testing:
+            # for testing, we don't wan't to transform
+            # or scale the parameters
             (strain, parameters) = batch
 
         return strain, parameters
@@ -394,14 +413,20 @@ class BaseDataset(pl.LightningDataModule):
 
         return X, parameters
 
-    def val_dataloader(self):
+    def build_fixed_dataset(
+        self,
+        background: torch.Tensor,
+        waveforms: torch.Tensor,
+        parameters: Dict[str, torch.Tensor],
+    ):
         """
-        Method that constructs validation batches from a background
-        timeseries and sequence of waveforms.
+        Method to build a deterministic dataset of injections
+        into background. Useful for validation and testing where
+        we want deterministic results.
         """
-        background = self.val_background[0]
+        # TODO: generalize to multiple background files
+
         _, rank = self.get_world_size_and_rank()
-        waveforms, parameters = self.val_waveforms, self.val_parameters
 
         # size of psd data + filter settle in + kernel
         sample_size = int(self.hparams.sample_rate * self.sample_length)
@@ -454,13 +479,13 @@ class BaseDataset(pl.LightningDataModule):
         }
         parameters = [torch.Tensor(v) for v in parameters.values()]
         parameters = torch.vstack(parameters).T
-        parameters = self.scale(parameters)
-
         dataset = torch.utils.data.TensorDataset(X, parameters)
+
         return torch.utils.data.DataLoader(
             dataset,
             pin_memory=True,
             batch_size=self.val_batch_size,
+            num_workers=self.num_workers,
         )
 
     def train_dataloader(self):
@@ -476,9 +501,25 @@ class BaseDataset(pl.LightningDataModule):
         pin_memory = isinstance(
             self.trainer.accelerator, pl.accelerators.CUDAAccelerator
         )
-        local_world_size = len(self.trainer.device_ids)
-        num_workers = min(6, int(os.cpu_count() / local_world_size))
         dataloader = torch.utils.data.DataLoader(
-            dataset, num_workers=num_workers, pin_memory=pin_memory
+            dataset, num_workers=self.num_workers, pin_memory=pin_memory
         )
         return dataloader
+
+    def val_dataloader(self):
+        """
+        Method that constructs validation batches from a background
+        timeseries and sequence of waveforms.
+        """
+        background = self.val_background[0]
+        waveforms, parameters = self.val_waveforms, self.val_parameters
+        return self.build_fixed_dataset(background, waveforms, parameters)
+
+    def test_dataloader(self):
+        """
+        Method that constructs testing batches from a background
+        timeseries and sequence of waveforms.
+        """
+        background = self.test_background[0]
+        waveforms, parameters = self.test_waveforms, self.test_parameters
+        return self.build_fixed_dataset(background, waveforms, parameters)

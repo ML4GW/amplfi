@@ -1,14 +1,22 @@
 import logging
+from dataclasses import dataclass
 from typing import Optional
 
+import bilby
 import lightning.pytorch as pl
+import numpy as np
+import pandas as pd
 import torch
-import train.testing as test_utils
 from lightning.pytorch.callbacks import ModelCheckpoint
 from train.architectures.flows import FlowArchitecture
 from train.callbacks import SaveAugmentedBatch
 
 Tensor = torch.Tensor
+
+
+@dataclass
+class PriorKey:
+    latex_label: str
 
 
 class PEModel(pl.LightningModule):
@@ -33,6 +41,7 @@ class PEModel(pl.LightningModule):
         arch: FlowArchitecture,
         learning_rate: float,
         weight_decay: float = 0.0,
+        num_samples_draw: int = 1000,
         patience: Optional[int] = None,
         save_top_k_models: int = 10,
     ) -> None:
@@ -77,49 +86,70 @@ class PEModel(pl.LightningModule):
         )
         return loss
 
+    def cast_as_bilby_result(
+        self,
+        samples: np.ndarray,
+        truth: np.ndarray,
+    ):
+        """Cast posterior samples as Bilby Result object
+        for ease of producing corner and pp plots
+
+        Args:
+            samples: posterior samples (1, num_samples, num_params)
+            truth: true values of the parameters  (1, num_params)
+            priors: dictionary of prior objects
+            label: label for the bilby result object
+
+        """
+
+        inference_params = self.trainer.datamodule.inference_params
+        injection_parameters = {
+            k: float(v) for k, v in zip(inference_params, truth)
+        }
+
+        # create dummy prior for bilby result
+        dummy_prior = {
+            param: PriorKey(latex_label=param) for param in inference_params
+        }
+        posterior = dict()
+        for idx, k in enumerate(inference_params):
+            posterior[k] = samples.T[idx].flatten()
+        posterior = pd.DataFrame(posterior)
+
+        return bilby.result.Result(
+            label="PEModel",
+            injection_parameters=injection_parameters,
+            posterior=posterior,
+            search_parameter_keys=inference_params,
+            priors=dummy_prior,
+        )
+
     def on_test_epoch_start(self):
         self.test_results = []
-        self.num_plotted = 0
 
     def test_step(self, batch, batch_idx):
+        # whitened strain and de-scaled parameters
         strain, parameters = batch
-        res = test_utils.draw_samples_from_model(
-            strain,
-            parameters,
-            self,
-            self.preprocessor,
-            self.inference_params,
-            self.num_samples_draw,
-            self.priors,
+
+        samples = self.model.sample(
+            [1, self.hparams.num_samples_draw], context=strain
         )
-        self.test_results.append(res)
-        if batch_idx % 100 == 0 and self.num_plotted < self.num_plot_corner:
-            skymap_filename = f"{self.num_plotted}_mollview.png"
-            res.plot_corner(
-                save=True,
-                filename=f"{self.num_plotted}_corner.png",
-                levels=(0.5, 0.9),
-            )
-            test_utils.plot_mollview(
-                res.posterior["phi"],
-                res.posterior["dec"],
-                truth=(
-                    res.injection_parameters["phi"],
-                    res.injection_parameters["dec"],
-                ),
-                outpath=skymap_filename,
-            )
-            self.num_plotted += 1
-            self.print("Made corner plots and skymap for ", batch_idx)
+        descaled = self.trainer.datamodule.scale(samples[0], reverse=True)
+
+        result = self.cast_as_bilby_result(
+            descaled,
+            parameters,
+        )
+        self.test_results.append(result)
+
+        # TODO corner plots
 
     def on_test_epoch_end(self):
-        import bilby
-
         bilby.result.make_pp_plot(
             self.test_results,
             save=True,
             filename="pp-plot.png",
-            keys=self.inference_params,
+            keys=self.trainer.datamodule.inference_params,
         )
         del self.test_results, self.num_plotted
 

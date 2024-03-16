@@ -28,6 +28,9 @@ class WaveformGeneratorDataset(BaseDataset):
         num_val_waveforms:
             Total number of validaton waveforms to use.
             This total will be split up among all devices
+        num_test_waveforms:
+            Total number of test waveforms to use.
+            Testing is currently done on a single device
         num_fit_params: N
             Number of parameters to use for fitting the standard scaler
     """
@@ -37,12 +40,14 @@ class WaveformGeneratorDataset(BaseDataset):
         *args,
         parameter_sampler: ParameterSampler,
         num_val_waveforms: int = 10000,
+        num_test_waveforms: int = 10000,
         num_fit_params: int = 100000,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.num_val_waveforms = num_val_waveforms
         self.num_fit_params = num_fit_params
+        self.num_test_waveforms = num_test_waveforms
         self.parameter_sampler = parameter_sampler
         self.waveform_generator = self.get_waveform_generator()
 
@@ -78,17 +83,21 @@ class WaveformGeneratorDataset(BaseDataset):
         scaler.fit(parameters)
         return scaler
 
-    def get_val_waveforms(self):
+    def get_waveforms(self, num_waveforms: int):
         cross, plus, parameters = self.sample_waveforms(
-            self.val_waveforms_per_device, device="cpu"
+            num_waveforms, device="cpu"
         )
-        dec, phi, psi = self.sample_extrinsic(
-            self.val_waveforms_per_device, device="cpu"
-        )
+        dec, phi, psi = self.sample_extrinsic(num_waveforms, device="cpu")
         waveforms = self.projector(dec, phi, psi, cross=cross, plus=plus)
         parameters.update({"dec": dec, "phi": phi, "psi": psi})
         parameters = self.transform(parameters)
         return waveforms, parameters
+
+    def get_val_waveforms(self):
+        return self.get_waveforms(self.val_waveforms_per_device)
+
+    def get_test_waveforms(self):
+        return self.get_waveforms(self.num_test_waveforms)
 
     def sample_waveforms(self, N: int, device: torch.device):
         # sample intrinsic parameters and generate

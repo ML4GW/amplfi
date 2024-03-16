@@ -8,7 +8,7 @@ trainer:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         save_dir: "/home/ethan.marx/projects/PE/projects/sandbox/train/logs-cbc"
-  max_epochs: 100
+  max_epochs: 1
   check_val_every_n_epoch: 1
   benchmark: false
 model:
@@ -49,7 +49,7 @@ data:
     fduration: 1
     psd_length: 10
     highpass: 32
-    batches_per_epoch: 200
+    batches_per_epoch: 2
     batch_size: 512
     ifos: ["H1", "L1"]
     parameter_sampler: train.priors.cbc_prior

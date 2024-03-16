@@ -21,8 +21,8 @@ sine_gaussian_transformer = ParameterTransformer(hrss=torch.log)
 # priors and parameter transformers for cbc use case
 cbc_prior = ParameterSampler(
     chirp_mass=torch.distributions.Uniform(
-        torch.as_tensor(10, dtype=torch.float32),
-        torch.as_tensor(1000, dtype=torch.float32),
+        torch.as_tensor(20, dtype=torch.float32),
+        torch.as_tensor(40, dtype=torch.float32),
     ),
     mass_ratio=torch.distributions.Uniform(
         torch.as_tensor(0.125, dtype=torch.float32),
@@ -30,7 +30,7 @@ cbc_prior = ParameterSampler(
     ),
     distance=distributions.PowerLaw(
         torch.as_tensor(10, dtype=torch.float32),
-        torch.as_tensor(30, dtype=torch.float32),
+        torch.as_tensor(1000, dtype=torch.float32),
         index=2,
     ),
     inclination=distributions.Sine(

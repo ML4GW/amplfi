@@ -33,7 +33,7 @@ class PECLI(LightningCLI):
         )
 
         parser.add_argument(
-            "test",
+            "--test",
             type=bool,
             default=True,
         )
@@ -54,9 +54,9 @@ def main(args=None):
         seed_everything_default=101588,
         args=args,
     )
-    cli.trainer.fit(cli.model, cli.datamodule)
 
-    if cli.test:
+    cli.trainer.fit(cli.model, cli.datamodule)
+    if cli.config.test:
         cli.trainer.test(
             cli.model, datamodule=cli.datamodule, ckpt_path="best"
         )
