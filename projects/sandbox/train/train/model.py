@@ -47,6 +47,7 @@ class PEModel(pl.LightningModule):
         # construct our model up front and record all
         # our hyperparameters to our logdir
         self.model = arch
+        outdir.mkdir(exist_ok=True, parents=True)
         self.outdir = outdir
         self.num_samples_draw = num_samples_draw
         self.num_corner = num_corner
@@ -56,6 +57,18 @@ class PEModel(pl.LightningModule):
     def get_logger(self):
         logger_name = "PEModel"
         return logging.getLogger(logger_name)
+
+    def on_fit_start(self):
+        datamodule = self.trainer.datamodule
+        for item in datamodule.__dict__.values():
+            if isinstance(item, torch.nn.Module):
+                item.to(self.device)
+
+    def on_test_start(self):
+        datamodule = self.trainer.datamodule
+        for item in datamodule.__dict__.values():
+            if isinstance(item, torch.nn.Module):
+                item.to(self.device)
 
     def forward(self, parameters, strain) -> Tensor:
         return -self.model.log_prob(parameters, context=strain)
@@ -139,16 +152,17 @@ class PEModel(pl.LightningModule):
         )
         descaled = self.trainer.datamodule.scale(samples, reverse=True)
         result = self.cast_as_bilby_result(
-            descaled.numpy(),
-            parameters.numpy()[0],
+            descaled.cpu().numpy(),
+            parameters.cpu().numpy()[0],
         )
         self.test_results.append(result)
 
         if batch_idx % 100 == 0 and self.num_plotted < self.num_corner:
             skymap_filename = self.outdir / f"{self.num_plotted}_mollview.png"
+            corner_filename = self.outdir / f"{self.num_plotted}_corner.png"
             result.plot_corner(
                 save=True,
-                filename=f"{self.num_plotted}_corner.png",
+                filename=corner_filename,
                 levels=(0.5, 0.9),
             )
             result.plot_mollview(

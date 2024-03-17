@@ -40,7 +40,7 @@ class WaveformGeneratorDataset(BaseDataset):
         *args,
         parameter_sampler: ParameterSampler,
         num_val_waveforms: int = 10000,
-        num_test_waveforms: int = 10000,
+        num_test_waveforms: int = 1000,
         num_fit_params: int = 100000,
         **kwargs,
     ):
@@ -87,6 +87,7 @@ class WaveformGeneratorDataset(BaseDataset):
         cross, plus, parameters = self.sample_waveforms(
             num_waveforms, device="cpu"
         )
+        self.waveform_generator = self.waveform_generator.to("cpu")
         dec, phi, psi = self.sample_extrinsic(num_waveforms, device="cpu")
         waveforms = self.projector(dec, phi, psi, cross=cross, plus=plus)
         parameters.update({"dec": dec, "phi": phi, "psi": psi})

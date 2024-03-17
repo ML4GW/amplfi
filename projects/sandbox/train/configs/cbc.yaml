@@ -4,11 +4,12 @@ trainer:
   accelerator: auto
   strategy: auto
   devices: auto
+  profiler: "simple"
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
         save_dir: "/home/ethan.marx/projects/PE/projects/sandbox/train/logs-cbc"
-  max_epochs: 1
+  max_epochs: 200
   check_val_every_n_epoch: 1
   benchmark: false
 model:
@@ -54,7 +55,6 @@ data:
     batch_size: 512
     ifos: ["H1", "L1"]
     parameter_sampler: train.priors.cbc_prior
-    device: cpu
     dec: 
       class_path: ml4gw.distributions.Cosine
     psi: 

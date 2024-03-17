@@ -10,6 +10,7 @@ class SaveAugmentedBatch(Callback):
             # save an example training batch
             # and parameters to disk
             X = next(iter(trainer.train_dataloader))
+            X = X.to(pl_module.device)
             X, parameters = trainer.datamodule.inject(X[0])
             save_dir = trainer.logger.log_dir or trainer.logger.save_dir
 
@@ -20,6 +21,7 @@ class SaveAugmentedBatch(Callback):
             # save an example validation batch
             # and parameters to disk
             X, parameters = next(iter(trainer.datamodule.val_dataloader()))
+            X = X.to(pl_module.device)
             with h5py.File(os.path.join(save_dir, "val-batch.h5"), "w") as f:
                 f["X"] = X.cpu().numpy()
                 f["parameters"] = parameters.cpu().numpy()

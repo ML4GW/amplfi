@@ -55,12 +55,11 @@ def main(args=None):
         args=args,
     )
 
+    cli.trainer.fit(cli.model, cli.datamodule)
     if cli.config.test:
         cli.trainer.test(
-            cli.model, datamodule=cli.datamodule
-        )  # ckpt_path="best"
-
-    # cli.trainer.fit(cli.model, cli.datamodule)
+            cli.model, datamodule=cli.datamodule, ckpt_path="best"
+        )
 
 
 if __name__ == "__main__":

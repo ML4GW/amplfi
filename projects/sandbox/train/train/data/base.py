@@ -118,7 +118,7 @@ class BaseDataset(pl.LightningDataModule):
             return world_size, rank
 
     def get_logger(self, world_size, rank):
-        logger_name = "AframeDataset"
+        logger_name = "PEDataset"
         if world_size > 1:
             logger_name += f":{rank}"
         return logging.getLogger(logger_name)
@@ -230,15 +230,31 @@ class BaseDataset(pl.LightningDataModule):
         self._logger.info("Building augmentation modules")
         self.build_modules()
 
-        self._logger.info("Building validation and testing datasets")
-        # load validation waveforms, parameters, and background;
+        # load validation/testing waveforms, parameters, and background
+        # and build the fixed background dataset while data and augmentations
+        # modules are all still on CPU.
         # get_val_waveforms should be implemented by subclassses
-        self.val_waveforms, self.val_parameters = self.get_val_waveforms()
-        self.val_background = self.load_background(self.val_fnames)
+        if stage == "fit":
+            val_waveforms, val_parameters = self.get_val_waveforms()
+            val_background = self.load_background(self.val_fnames)
 
-        # load testing waveforms, parameters, and background
-        self.test_waveforms, self.test_parameters = self.get_test_waveforms()
-        self.test_background = self.load_background(self.test_fnames)
+            self.val_dataset = self.build_fixed_dataset(
+                val_background[0],
+                val_waveforms,
+                val_parameters,
+                self.val_batch_size,
+            )
+
+        elif stage == "test":
+            self.waveform_generator = self.waveform_generator.to("cpu")
+            test_waveforms, test_parameters = self.get_test_waveforms()
+            test_background = self.load_background(self.test_fnames)
+            self.test_dataset = self.build_fixed_dataset(
+                test_background[0],
+                test_waveforms,
+                test_parameters,
+                batch_size=1,
+            )
 
         return world_size, rank
 
@@ -304,21 +320,6 @@ class BaseDataset(pl.LightningDataModule):
     # after tensors have been transferred to GPU
     # ================================================ #
 
-    def _move_to_device(self, device):
-        """
-        This is dumb, but I genuinely cannot find a way
-        to ensure that our transforms end up on the target
-        device (see NOTE under self.get_local_device), so
-        here's a lazy workaround to move our transforms once
-        we encounter the first on-device tensor from our dataloaders.
-        """
-        if self._on_device:
-            return
-        for item in self.__dict__.values():
-            if isinstance(item, torch.nn.Module):
-                item.to(device)
-        self._on_device = True
-
     def on_after_batch_transfer(self, batch, _):
         """
         This is a method inherited from the DataModule
@@ -331,7 +332,6 @@ class BaseDataset(pl.LightningDataModule):
 
         if self.trainer.training:
             [X] = batch
-            self._move_to_device(X)
             # parameters are transformed and scaled in the
             # inject function.
             # TODO: move that here for clarity?
@@ -342,6 +342,7 @@ class BaseDataset(pl.LightningDataModule):
             (strain, parameters) = batch
             parameters = self.transform(parameters)
             parameters = self.scale(parameters)
+
         elif self.trainer.testing:
             # for testing, we don't wan't to transform
             # or scale the parameters
@@ -383,6 +384,7 @@ class BaseDataset(pl.LightningDataModule):
         N = len(X)
 
         # split and estimate psd and whiten data
+
         X, psds = self.psd_estimator(X)
 
         # sample waveforms, extrinsic
@@ -484,7 +486,7 @@ class BaseDataset(pl.LightningDataModule):
 
         return torch.utils.data.DataLoader(
             dataset,
-            pin_memory=True,
+            pin_memory=False,
             batch_size=batch_size,
             num_workers=self.num_workers,
         )
@@ -508,23 +510,7 @@ class BaseDataset(pl.LightningDataModule):
         return dataloader
 
     def val_dataloader(self):
-        """
-        Method that constructs validation batches from a background
-        timeseries and sequence of waveforms.
-        """
-        background = self.val_background[0]
-        waveforms, parameters = self.val_waveforms, self.val_parameters
-        return self.build_fixed_dataset(
-            background, waveforms, parameters, self.val_batch_size
-        )
+        return self.val_dataset
 
     def test_dataloader(self):
-        """
-        Method that constructs testing batches from a background
-        timeseries and sequence of waveforms.
-        """
-        background = self.test_background[0]
-        waveforms, parameters = self.test_waveforms, self.test_parameters
-        return self.build_fixed_dataset(
-            background, waveforms, parameters, batch_size=1
-        )
+        return self.test_dataset
