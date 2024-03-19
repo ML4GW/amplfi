@@ -31,6 +31,9 @@ class WaveformGenerator(torch.nn.Module):
                 The minimum frequency of the waveform in Hz
             f_max:
                 The maximum frequency of the waveform in Hz
+            padding:
+                The amount of padding to add to the right
+                of the waveform in seconds
             waveform_arguments:
                 A dictionary of fixed arguments to pass to the waveform model
         """
