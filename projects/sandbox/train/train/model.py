@@ -142,7 +142,7 @@ class PEModel(pl.LightningModule):
 
     def on_test_epoch_start(self):
         self.test_results = []
-        self.num_plotted = 0
+        self.idx = 0
 
     def test_step(self, batch, batch_idx):
         # whitened strain and de-scaled parameters
@@ -157,9 +157,9 @@ class PEModel(pl.LightningModule):
         )
         self.test_results.append(result)
 
-        if batch_idx % 100 == 0 and self.num_plotted < self.num_corner:
-            skymap_filename = self.outdir / f"{self.num_plotted}_mollview.png"
-            corner_filename = self.outdir / f"{self.num_plotted}_corner.png"
+        if self.idx < self.num_corner:
+            skymap_filename = self.outdir / f"{self.idx}_mollview.png"
+            corner_filename = self.outdir / f"{self.idx}_corner.png"
             result.plot_corner(
                 save=True,
                 filename=corner_filename,
@@ -168,7 +168,7 @@ class PEModel(pl.LightningModule):
             result.plot_mollview(
                 outpath=skymap_filename,
             )
-            self.num_plotted += 1
+        self.idx += 1
 
     def on_test_epoch_end(self):
         bilby.result.make_pp_plot(
