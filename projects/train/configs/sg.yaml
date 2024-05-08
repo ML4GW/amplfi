@@ -8,7 +8,7 @@ trainer:
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
-        save_dir: "/home/ethan.marx/projects/PE/projects/sandbox/train/logs-cbc"
+        save_dir: "/home/ethan.marx/amplfi/runs/first-lightning-run/train/"
   max_epochs: 200
   check_val_every_n_epoch: 1
   log_every_n_steps: 20
@@ -16,7 +16,7 @@ trainer:
 model:
   class_path: train.models.flow.FlowModel
   init_args:
-    outdir: "/home/ethan.marx/projects/PE/projects/sandbox/train/logs-cbc/results"
+    outdir: "/home/ethan.marx/amplfi/runs/first-lightning-run/"
     arch:
       class_path: train.architectures.flows.MaskedAutoRegressiveFlow
       init_args:
@@ -51,7 +51,6 @@ data:
     fduration: 1
     psd_length: 12
     fftlength: 2
-    val_stride: 0.0625
     batches_per_epoch: 100
     batch_size: 512
     ifos: ["H1", "L1"]

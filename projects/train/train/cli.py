@@ -57,6 +57,11 @@ class AmplifiCLI(LightningCLI):
             type=bool,
             default=True,
         )
+        parser.add_argument(
+            "--ckpt_path",
+            type=str,
+            default=None,
+        )
 
 
 def main(args=None):
@@ -75,7 +80,9 @@ def main(args=None):
         args=args,
     )
 
-    cli.trainer.fit(cli.model, cli.datamodule)
+    cli.trainer.fit(
+        cli.model, cli.datamodule, ckpt_path=cli.config["ckpt_path"]
+    )
     if cli.config.test:
         cli.trainer.test(cli.model, datamodule=cli.datamodule)
 
