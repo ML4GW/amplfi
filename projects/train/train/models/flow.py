@@ -1,28 +1,23 @@
-import logging
 from pathlib import Path
-from typing import Optional
 
 import bilby
-import lightning.pytorch as pl
 import numpy as np
 import pandas as pd
 import torch
-from lightning.pytorch.callbacks import ModelCheckpoint
 from train.architectures.flows import FlowArchitecture
-from train.callbacks import SaveAugmentedBatch
+from train.models.base import AmplfiModel
 from train.testing import Result
 
 Tensor = torch.Tensor
 
 
-class PEModel(pl.LightningModule):
+class FlowModel(AmplfiModel):
     """
+    A LightningModule for training normalizing flows
     Args:
         arch:
             Neural network architecture to train.
             This should be a subclass of `FlowArchitecture`.
-        patience:
-            Number of epochs to wait for validation loss to improve
         learning_rate;
             Learning rate for the optimizer
         weight_decay:
@@ -34,48 +29,31 @@ class PEModel(pl.LightningModule):
 
     def __init__(
         self,
+        *args,
         outdir: Path,
         arch: FlowArchitecture,
-        learning_rate: float,
-        weight_decay: float = 0.0,
         num_samples_draw: int = 1000,
         num_corner: int = 10,
-        patience: Optional[int] = None,
-        save_top_k_models: int = 10,
+        **kwargs,
     ) -> None:
-        super().__init__()
+        super().__init__(*args, **kwargs)
         # construct our model up front and record all
         # our hyperparameters to our logdir
         self.model = arch
-        outdir.mkdir(exist_ok=True, parents=True)
         self.outdir = outdir
         self.num_samples_draw = num_samples_draw
         self.num_corner = num_corner
+
+        outdir.mkdir(exist_ok=True, parents=True)
         self.save_hyperparameters(ignore=["arch"])
         self._logger = self.get_logger()
 
-    def get_logger(self):
-        logger_name = "PEModel"
-        return logging.getLogger(logger_name)
-
-    def on_fit_start(self):
-        datamodule = self.trainer.datamodule
-        for item in datamodule.__dict__.values():
-            if isinstance(item, torch.nn.Module):
-                item.to(self.device)
-
-    def on_test_start(self):
-        datamodule = self.trainer.datamodule
-        for item in datamodule.__dict__.values():
-            if isinstance(item, torch.nn.Module):
-                item.to(self.device)
-
-    def forward(self, parameters, strain) -> Tensor:
+    def forward(self, strain, parameters) -> Tensor:
         return -self.model.log_prob(parameters, context=strain)
 
     def training_step(self, batch, _):
         strain, parameters = batch
-        loss = self(parameters, strain).mean()
+        loss = self(strain, parameters).mean()
         self.log(
             "train_loss",
             loss,
@@ -89,10 +67,11 @@ class PEModel(pl.LightningModule):
 
     def validation_step(self, batch, _):
         strain, parameters = batch
-        loss = self(parameters, strain).mean()
+        loss = self(strain, parameters).mean()
         self.log(
             "valid_loss",
             loss,
+            on_step=True,
             on_epoch=True,
             prog_bar=True,
             sync_dist=True,
@@ -116,19 +95,18 @@ class PEModel(pl.LightningModule):
 
         """
 
-        inference_params = self.trainer.datamodule.inference_params
         injection_parameters = {
-            k: float(v) for k, v in zip(inference_params, truth)
+            k: float(v) for k, v in zip(self.hparams.inference_params, truth)
         }
 
         # create dummy prior with correct attributes
         # for making our results compatible with bilbys make_pp_plot
         priors = {
             param: bilby.core.prior.base.Prior(latex_label=param)
-            for param in inference_params
+            for param in self.inference_params
         }
         posterior = dict()
-        for idx, k in enumerate(inference_params):
+        for idx, k in enumerate(self.inference_params):
             posterior[k] = samples.T[idx].flatten()
         posterior = pd.DataFrame(posterior)
 
@@ -136,7 +114,7 @@ class PEModel(pl.LightningModule):
             label="PEModel",
             injection_parameters=injection_parameters,
             posterior=posterior,
-            search_parameter_keys=inference_params,
+            search_parameter_keys=self.inference_params,
             priors=priors,
         )
 
@@ -150,7 +128,7 @@ class PEModel(pl.LightningModule):
         samples = self.model.sample(
             self.hparams.num_samples_draw, context=strain
         )
-        descaled = self.trainer.datamodule.scale(samples, reverse=True)
+        descaled = self.scale(samples, reverse=True)
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             parameters.cpu().numpy()[0],
@@ -175,35 +153,6 @@ class PEModel(pl.LightningModule):
             self.test_results,
             save=True,
             filename=self.outdir / "pp-plot.png",
-            keys=self.trainer.datamodule.inference_params,
+            keys=self.inference_params,
         )
         del self.test_results, self.num_plotted
-
-    def configure_callbacks(self):
-        checkpoint = ModelCheckpoint(
-            monitor="valid_loss",
-            save_top_k=self.hparams.save_top_k_models,
-            save_last=True,
-            auto_insert_metric_name=False,
-            mode="min",
-        )
-        return [SaveAugmentedBatch(), checkpoint]
-
-    def configure_optimizers(self):
-        if not torch.distributed.is_initialized():
-            world_size = 1
-        else:
-            world_size = torch.distributed.get_world_size()
-
-        lr = self.hparams.learning_rate * world_size
-        optimizer = torch.optim.Adam(
-            self.model.parameters(),
-            lr=lr,
-            weight_decay=self.hparams.weight_decay,
-        )
-
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"},
-        }

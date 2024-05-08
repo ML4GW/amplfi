@@ -1,4 +1,6 @@
-from typing import Callable
+from contextlib import nullcontext
+from pathlib import Path
+from typing import Callable, Optional
 
 import torch
 from pyro.distributions import ConditionalTransformedDistribution, transforms
@@ -8,13 +10,26 @@ from pyro.nn import PyroModule
 
 class FlowArchitecture(PyroModule):
     def __init__(
-        self, num_params: int, context_dim: int, embedding_net: torch.nn.Module
+        self,
+        num_params: int,
+        context_dim: int,
+        embedding_net: torch.nn.Module,
+        embedding_weights: Optional[Path] = None,
+        freeze_embedding: bool = False,
     ):
 
         super().__init__()
         self.num_params = num_params
         self.context_dim = context_dim
         self.embedding_net = embedding_net
+
+        if freeze_embedding:
+            self.embedding_context = torch.no_grad
+        else:
+            self.embedding_context = nullcontext
+
+        if embedding_weights is not None:
+            self.embedding_net.load_state_dict(torch.load(embedding_weights))
 
     def transform_block(
         self, *args, **kwargs
@@ -39,7 +54,9 @@ class FlowArchitecture(PyroModule):
         """
         if not hasattr(self, "transforms"):
             raise RuntimeError("Flow is not built")
-        embedded_context = self.embedding_net(context)
+
+        with self.embedding_context():
+            embedded_context = self.embedding_net(context)
         return self.flow().condition(embedded_context).log_prob(x)
 
     def sample(self, n, context):

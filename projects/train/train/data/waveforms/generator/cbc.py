@@ -3,21 +3,29 @@ from functools import partial
 from typing import Any, Callable, Dict
 
 import torch
+from train.data.waveforms.generator.generator import WaveformGenerator
 
 
-class WaveformGenerator(torch.nn.Module):
+class CBCGenerator(WaveformGenerator):
+    """
+    A torch module for generating CBC waveforms on the fly using
+    ml4gw waveform models.
+
+    Args:
+    """
+
     def __init__(
         self,
-        waveform: Callable,
-        duration: float,
-        sample_rate: float,
+        *args,
+        approximant: Callable,
         f_min: float = 0.0,
         f_max: float = 0.0,
         padding: float = 0.0,
         waveform_arguments: Dict[str, Any] = None,
+        **kwargs
     ):
         """
-        A torch module that generates waveforms
+        A torch module for generating waveforms on the fly.
 
         Args:
             waveform:
@@ -37,17 +45,13 @@ class WaveformGenerator(torch.nn.Module):
             waveform_arguments:
                 A dictionary of fixed arguments to pass to the waveform model
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         waveform_arguments = waveform_arguments or {}
-        self.waveform = partial(waveform, **waveform_arguments)
-        self.duration = duration
-        self.sample_rate = sample_rate
+        self.waveform = partial(approximant, **waveform_arguments)
         self.f_min = f_min
         self.f_max = f_max
         self.padding = padding
 
-        # register as buffer so that will get sent to correct
-        # device when module is moved
         frequencies = torch.linspace(0, self.nyquist, self.num_freqs)
         self.register_buffer("frequencies", frequencies)
 
@@ -111,5 +115,17 @@ class WaveformGenerator(torch.nn.Module):
     def frequency_domain_strain(self, **parameters):
         return self.waveform(self.frequencies[self.freq_mask], **parameters)
 
+    def slice_waveforms(self, waveforms: torch.Tensor):
+        # for cbc waveforms, the padding (see above)
+        # determines where the coalescence time lies
+        # relative to the right edge, so just subtract
+        # the pre-whiten kernel size from the right edge and slice
+        start = waveforms.shape[-1] - self.waveform_size
+        return waveforms[..., start:]
+
     def forward(self, **parameters):
-        return self.time_domain_strain(**parameters)
+        hc, hp = self.time_domain_strain(**parameters)
+        waveforms = torch.stack([hc, hp], dim=1)
+        waveforms = self.slice_waveforms(waveforms)
+        hc, hp = waveforms.transpose(1, 0)
+        return hc, hp

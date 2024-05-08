@@ -20,29 +20,31 @@ sine_gaussian_transformer = ParameterTransformer(hrss=torch.log)
 
 # priors and parameter transformers for cbc use case
 cbc_prior = ParameterSampler(
-    chirp_mass=torch.distributions.Uniform(
-        torch.as_tensor(20, dtype=torch.float32),
-        torch.as_tensor(40, dtype=torch.float32),
+    chirp_mass=Uniform(
+        torch.as_tensor(10, dtype=torch.float32),
+        torch.as_tensor(100, dtype=torch.float32),
     ),
-    mass_ratio=torch.distributions.Uniform(
+    mass_ratio=Uniform(
         torch.as_tensor(0.125, dtype=torch.float32),
         torch.as_tensor(0.999, dtype=torch.float32),
     ),
     distance=distributions.PowerLaw(
-        torch.as_tensor(10, dtype=torch.float32),
-        torch.as_tensor(1000, dtype=torch.float32),
+        torch.as_tensor(100, dtype=torch.float32),
+        torch.as_tensor(3000, dtype=torch.float32),
         index=2,
     ),
     inclination=distributions.Sine(
         torch.as_tensor(0, dtype=torch.float32),
         torch.as_tensor(torch.pi, dtype=torch.float32),
     ),
-    phic=torch.distributions.Uniform(
+    phic=Uniform(
         torch.as_tensor(0, dtype=torch.float32),
         torch.as_tensor(2 * torch.pi, dtype=torch.float32),
     ),
     chi1=distributions.DeltaFunction(
         torch.as_tensor(0, dtype=torch.float32),
     ),
-    chi2=distributions.DeltaFunction(torch.as_tensor(0, dtype=torch.float32)),
+    chi2=distributions.DeltaFunction(
+        torch.as_tensor(0, dtype=torch.float32),
+    ),
 )

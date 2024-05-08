@@ -11,7 +11,6 @@ class ResNet(ResNet1D, Embedding):
         self,
         num_ifos: int,
         context_dim: int,
-        strain_dim: int,
         layers: list[int],
         kernel_size: int = 3,
         zero_init_residual: bool = False,
@@ -21,7 +20,6 @@ class ResNet(ResNet1D, Embedding):
         norm_layer: Optional[NormLayer] = None,
         **kwargs
     ):
-        # TODO: is using classes as context_dim correct?
         super().__init__(
             num_ifos,
             layers=layers,
