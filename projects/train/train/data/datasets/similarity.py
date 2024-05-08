@@ -3,6 +3,15 @@ from train.data.datasets.base import AmplfiDataset
 
 
 class SimilarityDataset(AmplfiDataset):
+    """
+    Lightning DataModule for training similarity networks
+
+    Args:
+        augmentor:
+            A torch module that transforms waveforms according to some
+            symmetry that is meant to be marginalized over.
+    """
+
     def __init__(self, *args, augmentor: torch.nn.Module, **kwargs):
         super().__init__(*args, **kwargs)
         self.augmentor = augmentor

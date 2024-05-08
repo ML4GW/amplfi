@@ -19,9 +19,48 @@ Distribution = torch.distributions.Distribution
 
 class AmplfiDataset(pl.LightningDataModule):
     """
-    Dataset for loading strain data from disk to train Amplfi models.
+    Base LightningDataModule for loading data to train AMPLFI models.
+
+    Subclasses must define the `inject` method
+    which encodes how background strain,
+    cross/plus polarizations and parameters
+    are processed before being passed to a model
 
     Args:
+        data_dir:
+            Path to directory containing training and testing data
+        inference_params:
+            List of parameters to perform inference on. Can be a subset
+            of the parameters that fully describes the waveforms
+        highpass:
+            Highpass frequency in Hz
+        sample_rate:
+            Rate data is sampled in Hz
+        kernel_length:
+            Length of the kernel seen by model in seconds
+        fduration:
+            The length of the whitening filter's impulse
+            response, in seconds. `fduration / 2` seconds
+            worth of data will be cropped from the edges
+            of the whitened timeseries.
+        psd_length:
+            Length of data used to calculate psd in seconds
+        batches_per_epoch:
+            Number of batches for each training epoch.
+        batch_size:
+            Number of samples in each batch
+        ifos:
+            List of interferometers
+        waveform_sampler:
+            `WaveformSampler` object that produces waveforms and parameters
+            for training, validation and testing.
+            See `train.data.waveforms.sampler`
+            for methods this object should define.
+        fftlength:
+            Length of the fft used to calculate the psd.
+            Defaults to `kernel_length`
+        min_valid_duration:
+            Minimum number of seconds of validation background data
 
     """
 
@@ -34,7 +73,6 @@ class AmplfiDataset(pl.LightningDataModule):
         kernel_length: float,
         fduration: float,
         psd_length: float,
-        val_stride: float,
         batches_per_epoch: int,
         batch_size: int,
         ifos: List[str],
