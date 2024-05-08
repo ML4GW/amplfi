@@ -38,7 +38,7 @@ model:
                 groups: 16
     patience: null
     save_top_k_models: 10
-    learning_rate: 7.54e-4
+    learning_rate: 3.77e-4
     weight_decay: 0.0
 data:
   class_path: train.data.datasets.FlowDataset
@@ -51,7 +51,7 @@ data:
     fduration: 1
     psd_length: 12
     fftlength: 2
-    batches_per_epoch: 100
+    batches_per_epoch: 200
     batch_size: 512
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
