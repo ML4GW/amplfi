@@ -4,64 +4,73 @@ trainer:
   accelerator: auto
   strategy: auto
   devices: auto
+  profiler: "simple"
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
-        save_dir: "/home/ethan.marx/projects/PE/projects/sandbox_cbc/train/sg-logs"
-  max_epochs: 100
+        save_dir: "/home/ethan.marx/projects/PE/projects/sandbox/train/logs-cbc"
+  max_epochs: 200
   check_val_every_n_epoch: 1
+  log_every_n_steps: 20
   benchmark: false
 model:
-  class_path: train.model.PEModel
+  class_path: train.models.flow.FlowModel
   init_args:
-    outdir: "/home/ethan.marx/projects/PE/projects/sandbox/train/sg-logs/results"
+    outdir: "/home/ethan.marx/projects/PE/projects/sandbox/train/logs-cbc/results"
     arch:
       class_path: train.architectures.flows.MaskedAutoRegressiveFlow
       init_args:
-        hidden_features: 100
-        num_transforms: 20
-        num_blocks: 5
-        context_dim: 128
+        hidden_features: 150
+        num_transforms: 80
+        num_blocks: 6
+        context_dim: 8
+        # uncomment below to load 
+        # in pre-trained embedding weights
+        # embedding_weights: "path/to/embedding/weights"
+        # freeze_embedding: false
         embedding_net: 
           class_path: train.architectures.embeddings.ResNet
-          init_args: 
-            layers: [3, 4, 6, 3]
+          init_args:
+            layers: [5, 3, 3]
             norm_layer:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
               init_args:
                 groups: 16
     patience: null
     save_top_k_models: 10
-    learning_rate: 5e-3
-    weight_decay: 1e-7
+    learning_rate: 7.54e-4
+    weight_decay: 0.0
 data:
-  class_path: train.data.generator.SgGeneratorDataset
+  class_path: train.data.datasets.FlowDataset
   init_args:
-    inference_params: ["frequency", "quality", "hrss", "phase", "dec", "psi", "phi"] 
-    data_dir: "/home/ethan.marx/projects/PE/projects/sandbox/train/datadir_tmp/"
-    val_stride: 0.0625 
+    data_dir: "/home/ethan.marx/projects/PE/projects/train/datadir_tmp/"
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
+    highpass: 25
     sample_rate: 2048
-    kernel_length: 2
+    kernel_length: 5
     fduration: 1
-    psd_length: 10
-    highpass: 32
-    batches_per_epoch: 200
+    psd_length: 12
+    fftlength: 2
+    val_stride: 0.0625
+    batches_per_epoch: 100
     batch_size: 512
     ifos: ["H1", "L1"]
-    #waveform_generator: ml4gw.waveforms.SineGaussian
-    parameter_sampler: train.priors.sine_gaussian
-    #parameter_transformer: train.data.utils.ParameterTransformer
-    device: cpu
-    dec: 
-      class_path: ml4gw.distributions.Cosine
-    psi: 
-      class_path: torch.distributions.Uniform
-      init_args:
-        low: 0
-        high: 3.14 
-    phi: 
-      class_path: torch.distributions.Uniform
-      init_args:
-        low: -3.14
-        high: 3.14
     min_valid_duration: 10000.0
+    waveform_sampler: 
+      class_path: train.data.waveforms.generator.sg.SGGenerator
+      init_args:
+        num_fit_params: 100000
+        parameter_sampler: train.priors.sg_prior
+        dec: 
+          class_path: ml4gw.distributions.Cosine
+        psi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: 0
+            high: 3.14 
+        phi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: -3.14
+            high: 3.14
+        num_val_waveforms: 10000

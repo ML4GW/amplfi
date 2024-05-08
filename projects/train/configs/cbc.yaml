@@ -24,9 +24,13 @@ model:
         num_transforms: 80
         num_blocks: 6
         context_dim: 8
+        # uncomment below to load 
+        # in pre-trained embedding weights
+        # embedding_weights: "path/to/embedding/weights"
+        # freeze_embedding: false
         embedding_net: 
           class_path: train.architectures.embeddings.ResNet
-          init_args: 
+          init_args:
             layers: [5, 3, 3]
             norm_layer:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
@@ -51,6 +55,7 @@ data:
     batches_per_epoch: 100
     batch_size: 512
     ifos: ["H1", "L1"]
+    min_valid_duration: 10000.0
     waveform_sampler: 
       class_path: train.data.waveforms.generator.cbc.CBCGenerator
       init_args:
@@ -75,4 +80,3 @@ data:
         padding: 1.0
         waveform_arguments:
           f_ref: 40
-    min_valid_duration: 10000.0
