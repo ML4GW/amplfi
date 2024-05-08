@@ -7,7 +7,7 @@ from train.data.utils import ParameterSampler, ParameterTransformer
 from ml4gw import distributions
 
 # prior and parameter transformer for sg use case
-sine_gaussian = ParameterSampler(
+sg_prior = ParameterSampler(
     frequency=Uniform(32, 1024),
     quality=Uniform(2, 100),
     hrss=distributions.LogUniform(1e-23, 5e-20),
@@ -15,7 +15,7 @@ sine_gaussian = ParameterSampler(
     eccentricity=Uniform(0, 1),
 )
 
-sine_gaussian_transformer = ParameterTransformer(hrss=torch.log)
+sg_transformer = ParameterTransformer(hrss=torch.log)
 
 
 # priors and parameter transformers for cbc use case

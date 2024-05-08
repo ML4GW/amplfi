@@ -44,7 +44,7 @@ data:
   class_path: train.data.datasets.FlowDataset
   init_args:
     data_dir: "/home/ethan.marx/projects/PE/projects/train/datadir_tmp/"
-    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
+    inference_params: ["frequency", "quality", "hrss", "phase",  "eccentricity", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048
     kernel_length: 5
@@ -60,6 +60,7 @@ data:
       class_path: train.data.waveforms.generator.sg.SGGenerator
       init_args:
         num_fit_params: 100000
+        parameter_transformer: train.priors.sg_transformer
         parameter_sampler: train.priors.sg_prior
         dec: 
           class_path: ml4gw.distributions.Cosine
