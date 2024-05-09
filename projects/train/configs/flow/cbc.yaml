@@ -56,7 +56,7 @@ data:
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
     waveform_sampler: 
-      class_path: train.data.waveforms.generator.cbc.CBCGenerator
+      class_path: train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
         num_fit_params: 100000
         parameter_sampler: train.priors.cbc_prior
