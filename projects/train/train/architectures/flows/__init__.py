@@ -1,3 +1,3 @@
 from .base import FlowArchitecture
 from .coupling import CouplingFlow
-from .maf import MaskedAutoRegressiveFlow
+from .iaf import InverseAutoregressiveFlow

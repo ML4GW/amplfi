@@ -6,7 +6,7 @@ from pyro.nn import ConditionalAutoRegressiveNN
 from train.architectures.flows import FlowArchitecture
 
 
-class MaskedAutoRegressiveFlow(FlowArchitecture):
+class InverseAutoregressiveFlow(FlowArchitecture):
     def __init__(
         self,
         *args,
