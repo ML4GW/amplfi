@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import torch
 from train.architectures.flows import FlowArchitecture
+from train.callbacks import SaveAugmentedBatch
 from train.models.base import AmplfiModel
 from train.testing import Result
 
@@ -80,6 +81,11 @@ class FlowModel(AmplfiModel):
             logger=True,
         )
         return loss
+
+    def configure_callbacks(self):
+        callbacks = super().configure_callbacks()
+        callbacks.append(SaveAugmentedBatch())
+        return callbacks
 
     def cast_as_bilby_result(
         self,

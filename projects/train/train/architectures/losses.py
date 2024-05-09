@@ -6,7 +6,7 @@ from torch import nn
 
 # implemented from https://github.com/violatingcp/codec
 class VICRegLoss(nn.Module):
-    def forward(self, x, y, wt_repr=1.0, wt_cov=1.0, wt_std=1.0):
+    def forward(self, x, y, wt_repr=1.0, wt_cov=1.0, wt_std=5.0):
         repr_loss = F.mse_loss(x, y)
 
         x = x - x.mean(dim=0)
@@ -20,9 +20,6 @@ class VICRegLoss(nn.Module):
             torch.mean(F.relu(1 - std_x)) / 2
             + torch.mean(F.relu(1 - std_y)) / 2
         )
-
-        x = (x - x.mean(dim=0)) / x.std(dim=0)
-        y = (y - y.mean(dim=0)) / y.std(dim=0)
 
         # transpose dims 1 and 2; keep batch dim i.e. 0, unchanged
         cov_x = (x.transpose(1, 2) @ x) / (N - 1)

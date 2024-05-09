@@ -3,8 +3,37 @@ from train.data.datasets.base import AmplfiDataset
 from train.models.base import AmplfiModel
 
 
-class AmplfiCLI(LightningCLI):
-    def link_flow_arguments(self, parser):
+class AmplfiBaseCLI(LightningCLI):
+    def add_arguments_to_parser(self, parser):
+        parser.link_arguments(
+            "data.init_args.sample_rate",
+            "data.init_args.waveform_sampler.init_args.sample_rate",
+            apply_on="parse",
+        )
+
+        parser.link_arguments(
+            ("data.init_args.kernel_length", "data.init_args.fduration"),
+            "data.init_args.waveform_sampler.init_args.duration",
+            compute_fn=lambda *x: sum(x),
+            apply_on="parse",
+        )
+
+        parser.link_arguments(
+            "data.init_args.inference_params",
+            "data.init_args.waveform_sampler.init_args.inference_params",
+            apply_on="parse",
+        )
+
+        parser.link_arguments(
+            "data.init_args.inference_params",
+            "model.init_args.inference_params",
+            apply_on="parse",
+        )
+
+
+class AmplfiFlowCli(AmplfiBaseCLI):
+    def add_arguments_to_parser(self, parser):
+        super().add_arguments_to_parser(parser)
         parser.link_arguments(
             "data.init_args.inference_params",
             "model.init_args.arch.init_args.num_params",
@@ -27,43 +56,23 @@ class AmplfiCLI(LightningCLI):
 
         return parser
 
-    def link_waveform_sampler_arguments(self, parser):
-        parser.link_arguments(
-            "data.init_args.sample_rate",
-            "data.init_args.waveform_sampler.init_args.sample_rate",
-            apply_on="parse",
-        )
+
+class AmplfiSimilarityCli(AmplfiBaseCLI):
+    def add_arguments_to_parser(self, parser):
+        super().add_arguments_to_parser(parser)
 
         parser.link_arguments(
-            ("data.init_args.kernel_length", "data.init_args.fduration"),
-            "data.init_args.waveform_sampler.init_args.duration",
-            compute_fn=lambda *x: sum(x),
-            apply_on="parse",
-        )
-
-        parser.link_arguments(
-            "data.init_args.inference_params",
-            "data.init_args.waveform_sampler.init_args.inference_params",
+            "data.init_args.ifos",
+            "model.init_args.arch.init_args.num_ifos",
+            compute_fn=lambda x: len(x),
             apply_on="parse",
         )
         return parser
 
-    def add_arguments_to_parser(self, parser):
-        parser = self.link_waveform_sampler_arguments(parser)
-        parser = self.link_flow_arguments(parser)
-        parser.link_arguments(
-            "data.init_args.inference_params",
-            "model.init_args.inference_params",
-            apply_on="parse",
-        )
-
 
 def main(args=None):
-    # any subclasses of AmplifiModel and BaseDataset
-    # will automatically be registered with the CLI
-    # and their arguments will be available at
-    # the command line
-    cli = AmplfiCLI(
+
+    cli = AmplfiSimilarityCli(
         AmplfiModel,
         AmplfiDataset,
         subclass_mode_model=True,

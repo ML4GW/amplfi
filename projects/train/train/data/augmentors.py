@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 
 
 class TimeTranslator(torch.nn.Module):
@@ -18,10 +19,27 @@ class TimeTranslator(torch.nn.Module):
         super().__init__()
         self.jitter = jitter
         self.sample_rate = sample_rate
+        self.pad = int(self.jitter * self.sample_rate)
 
-    def forward(self, waveforms: torch.Tensor, parameters):
+    def forward(self, waveforms: torch.Tensor):
+        # some array magic to shift waveforms
+        # in time domain by different amounts
         shifts = torch.rand(waveforms.size(0), device=waveforms.device)
         shifts = 2 * self.jitter * shifts - self.jitter
         shifts *= self.sample_rate
-        waveforms = torch.roll(waveforms, shifts, dims=-1)
-        return waveforms, parameters
+        shifts = shifts.long()
+
+        indices = (
+            torch.arange(waveforms.size(-1), device=waveforms.device)
+            .unsqueeze(0)
+            .unsqueeze(0)
+        )
+        indices = indices.expand(*waveforms.shape)
+        indices = indices + self.pad
+        shifted = indices + shifts.view(-1, 1, 1)
+
+        waveforms = F.pad(
+            waveforms, (self.pad, self.pad), mode="constant", value=0
+        )
+        waveforms = waveforms.gather(2, shifted)
+        return waveforms

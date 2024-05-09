@@ -17,27 +17,27 @@ class SimilarityDataset(AmplfiDataset):
         self.augmentor = augmentor
 
     def inject(self, X, cross, plus, parameters):
-        N = len(X)
         X, psds = self.psd_estimator(X)
-        dec, psi, phi = self.waveform_sampler.sample_extrinsic(
-            N, device=X.device
-        )
+        dec, psi, phi = self.waveform_sampler.sample_extrinsic(X)
+
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
         augmented = self.augmentor(waveforms)
-        waveforms = self.waveform_sampler.slice_waveforms(waveforms)
-        augmented = self.waveform_sampler.slice_waveforms(augmented)
 
         # append extrinisc parameters to parameters
         parameters.update({"dec": dec, "phi": phi, "psi": psi})
 
         # downselect to requested inference parameters
         parameters = {
-            k: v for k, v in parameters.items() if k in self.inference_params
+            k: v
+            for k, v in parameters.items()
+            if k in self.hparams.inference_params
         }
 
         # make any requested parameter transforms
         parameters = self.transform(parameters)
-        parameters = [torch.Tensor(v) for v in parameters.values()]
+        parameters = [
+            torch.Tensor(parameters[k]) for k in self.hparams.inference_params
+        ]
         parameters = torch.vstack(parameters).T
 
         X_ref = X + waveforms
@@ -48,4 +48,4 @@ class SimilarityDataset(AmplfiDataset):
         # scale parameters
         parameters = self.scale(parameters)
 
-        return X_ref, X_aug, parameters
+        return [X_ref, X_aug], parameters

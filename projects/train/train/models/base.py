@@ -4,7 +4,6 @@ from typing import Optional
 import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
-from train.callbacks import SaveAugmentedBatch
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
@@ -31,7 +30,7 @@ class AmplfiModel(pl.LightningModule):
         self.save_hyperparameters()
 
     def get_logger(self):
-        logger_name = "AmplfiModel"
+        logger_name = self.__class__.__name__
         return logging.getLogger(logger_name)
 
     def configure_optimizers(self):
@@ -61,4 +60,4 @@ class AmplfiModel(pl.LightningModule):
             auto_insert_metric_name=False,
             mode="min",
         )
-        return [checkpoint, SaveAugmentedBatch()]
+        return [checkpoint]
