@@ -6,7 +6,7 @@ import torch
 from train.data.waveforms.generator.generator import WaveformGenerator
 
 
-class CBCGenerator(WaveformGenerator):
+class FrequencyDomainCBCGenerator(WaveformGenerator):
     """
     A torch module for generating CBC waveforms on the fly using
     ml4gw waveform models.
