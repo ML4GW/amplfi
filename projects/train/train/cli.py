@@ -3,7 +3,7 @@ from train.data.datasets.base import AmplfiDataset
 from train.models.base import AmplfiModel
 
 
-class AmplifiCLI(LightningCLI):
+class AmplfiCLI(LightningCLI):
     def link_flow_arguments(self, parser):
         parser.link_arguments(
             "data.init_args.inference_params",
@@ -51,7 +51,6 @@ class AmplifiCLI(LightningCLI):
     def add_arguments_to_parser(self, parser):
         parser = self.link_waveform_sampler_arguments(parser)
         parser = self.link_flow_arguments(parser)
-
         parser.link_arguments(
             "data.init_args.inference_params",
             "model.init_args.inference_params",
@@ -64,7 +63,7 @@ def main(args=None):
     # will automatically be registered with the CLI
     # and their arguments will be available at
     # the command line
-    cli = AmplifiCLI(
+    cli = AmplfiCLI(
         AmplfiModel,
         AmplfiDataset,
         subclass_mode_model=True,
@@ -72,6 +71,7 @@ def main(args=None):
         save_config_kwargs={"overwrite": True},
         seed_everything_default=101588,
         args=args,
+        parser_kwargs={"parser_mode": "omegaconf"},
     )
     return cli
 
