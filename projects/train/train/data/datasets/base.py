@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
@@ -79,12 +80,22 @@ class AmplfiDataset(pl.LightningDataModule):
         waveform_sampler: WaveformSampler,
         fftlength: Optional[int] = None,
         min_valid_duration: float = 10000,
+        verbose: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["waveform_sampler"])
+        self.init_logging(verbose)
         self.data_dir = data_dir
         self.waveform_sampler = waveform_sampler
         self.train_fnames, self.val_fnames = self.train_val_split()
+
+    def init_logging(self, verbose: bool):
+        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        logging.basicConfig(
+            format=log_format,
+            level=logging.DEBUG if verbose else logging.INFO,
+            stream=sys.stdout,
+        )
 
     # ================================================ #
     # Distribution utilities
@@ -102,7 +113,7 @@ class AmplfiDataset(pl.LightningDataModule):
             return world_size, rank
 
     def get_logger(self, world_size, rank):
-        logger_name = "AmpfliDataset"
+        logger_name = "AmplfiDataset"
         if world_size > 1:
             logger_name += f":{rank}"
         return logging.getLogger(logger_name)
@@ -202,6 +213,7 @@ class AmplfiDataset(pl.LightningDataModule):
         augmentation and preprocessing. Transfer these modules
         to the appropiate device
         """
+        self._logger.info("Building torch Modules and transferring to device")
         window_length = self.hparams.kernel_length + self.hparams.fduration
         fftlength = self.hparams.fftlength or window_length
         self.psd_estimator = PsdEstimator(
@@ -236,10 +248,14 @@ class AmplfiDataset(pl.LightningDataModule):
         world_size, rank = self.get_world_size_and_rank()
         self._logger = self.get_logger(world_size, rank)
 
+        self._logger.info(f"Setting up data for stage {stage}")
+
         # infer sample rate directly from background data
         with h5py.File(self.train_fnames[0], "r") as f:
             sample_rate = 1 / f[self.hparams.ifos[0]].attrs["dx"]
             assert sample_rate == self.hparams.sample_rate
+
+        self._logger.info(f"Inferred sample rate of {sample_rate} Hz")
 
         # load validation/testing waveforms, parameters, and background
         # and build the fixed background dataset while data and augmentations
@@ -247,9 +263,14 @@ class AmplfiDataset(pl.LightningDataModule):
         # get_val_waveforms should be implemented by waveform_sampler object
         if stage in ["fit", "validate"]:
             self.val_background = self.load_background(self.val_fnames)
+            self._logger.info(
+                f"Loaded background files {self.val_fnames} for validation"
+            )
+
             cross, plus, parameters = self.waveform_sampler.get_val_waveforms(
                 rank, world_size
             )
+            self._logger.info(f"Loaded {len(cross)} waveforms for validation")
             params = []
             for k in self.hparams.inference_params:
                 if k in parameters.keys():
@@ -260,11 +281,16 @@ class AmplfiDataset(pl.LightningDataModule):
 
         elif stage == "test":
             self.test_background = self.load_background(self.test_fnames)
+            self._logger.info(
+                f"Loaded background files {self.test_fnames} for testing"
+            )
             (
                 cross,
                 plus,
                 parameters,
             ) = self.waveform_sampler.get_test_waveforms()
+
+            self._logger.info(f"Loaded {len(cross)} waveforms for testing")
 
             params = []
             for k in self.hparams.inference_params:
@@ -365,6 +391,9 @@ class AmplfiDataset(pl.LightningDataModule):
                 coincident=False,
             )
 
+        self._logger.info(
+            f"Using a {dataset.__class__.__name__} class for training"
+        )
         pin_memory = isinstance(
             self.trainer.accelerator, pl.accelerators.CUDAAccelerator
         )

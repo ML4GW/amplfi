@@ -17,6 +17,7 @@ class TimeTranslator(torch.nn.Module):
     def __init__(self, jitter: float, sample_rate: float):
         super().__init__()
         self.jitter = jitter
+        self.sample_rate = sample_rate
 
     def forward(self, waveforms: torch.Tensor, parameters):
         shifts = torch.rand(waveforms.size(0), device=waveforms.device)

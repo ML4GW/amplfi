@@ -17,7 +17,6 @@ model:
   class_path: train.models.flow.FlowModel
   init_args:
     outdir: "/home/ethan.marx/amplfi/runs/first-lightning-run/"
-    inference_params: ${data.inference_params}
     arch:
       class_path: train.architectures.flows.InverseAutoregressiveFlow
       init_args:
@@ -53,7 +52,7 @@ data:
     psd_length: 12
     fftlength: 2
     batches_per_epoch: 200
-    batch_size: 512
+    batch_size: 400
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
     waveform_sampler: 

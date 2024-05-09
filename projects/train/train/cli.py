@@ -71,7 +71,6 @@ def main(args=None):
         save_config_kwargs={"overwrite": True},
         seed_everything_default=101588,
         args=args,
-        parser_kwargs={"parser_mode": "omegaconf"},
     )
     return cli
 

@@ -11,17 +11,12 @@ class SimilarityModel(AmplfiModel):
         embedding:
             A neural network architecture that maps waveforms
             to lower dimensional embedded space
-        augmentor:
-            A torch.nn.Module that augments waveforms
-            for training similarity embeddings. The embedding
-            will be trained to be invariant to the augmentation
     """
 
     def __init__(
         self,
         *args,
         embedding: torch.nn.Module,
-        augmentor: torch.nn.Module,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
