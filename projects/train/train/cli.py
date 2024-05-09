@@ -58,17 +58,6 @@ class AmplifiCLI(LightningCLI):
             apply_on="parse",
         )
 
-        parser.add_argument(
-            "--test",
-            type=bool,
-            default=True,
-        )
-        parser.add_argument(
-            "--ckpt_path",
-            type=str,
-            default=None,
-        )
-
 
 def main(args=None):
     # any subclasses of AmplifiModel and BaseDataset
@@ -80,21 +69,11 @@ def main(args=None):
         AmplfiDataset,
         subclass_mode_model=True,
         subclass_mode_data=True,
-        run=False,
         save_config_kwargs={"overwrite": True},
         seed_everything_default=101588,
         args=args,
     )
-
-    # cli.trainer.fit(
-    #    cli.model, cli.datamodule, ckpt_path=cli.config["ckpt_path"]
-    # )
-    if cli.config.test:
-        cli.trainer.test(
-            cli.model,
-            datamodule=cli.datamodule,
-            ckpt_path=cli.config["ckpt_path"],
-        )
+    return cli
 
 
 if __name__ == "__main__":
