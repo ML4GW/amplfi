@@ -52,6 +52,12 @@ class AmplifiCLI(LightningCLI):
         parser = self.link_waveform_sampler_arguments(parser)
         parser = self.link_flow_arguments(parser)
 
+        parser.link_arguments(
+            "data.init_args.inference_params",
+            "model.init_args.inference_params",
+            apply_on="parse",
+        )
+
         parser.add_argument(
             "--test",
             type=bool,
@@ -80,11 +86,15 @@ def main(args=None):
         args=args,
     )
 
-    cli.trainer.fit(
-        cli.model, cli.datamodule, ckpt_path=cli.config["ckpt_path"]
-    )
+    # cli.trainer.fit(
+    #    cli.model, cli.datamodule, ckpt_path=cli.config["ckpt_path"]
+    # )
     if cli.config.test:
-        cli.trainer.test(cli.model, datamodule=cli.datamodule)
+        cli.trainer.test(
+            cli.model,
+            datamodule=cli.datamodule,
+            ckpt_path=cli.config["ckpt_path"],
+        )
 
 
 if __name__ == "__main__":

@@ -20,12 +20,14 @@ class AmplfiModel(pl.LightningModule):
 
     def __init__(
         self,
+        inference_params: list[str],
         learning_rate: float,
         weight_decay: float = 0.0,
         save_top_k_models: int = 10,
         patience: Optional[int] = None,
     ):
         super().__init__()
+        self.inference_params = inference_params
         self.save_hyperparameters()
 
     def get_logger(self):

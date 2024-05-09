@@ -73,6 +73,7 @@ data:
             low: -3.14
             high: 3.14
         num_val_waveforms: 10000
+        num_test_waveforms: 100
         approximant: ml4gw.waveforms.IMRPhenomD
         f_min: 20
         f_max: 1024

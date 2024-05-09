@@ -25,6 +25,8 @@ class FlowModel(AmplfiModel):
         save_top_k_models:
             Maximum number of best-performing model checkpoints
             to keep during training
+        samples_per_event:
+            Number of samples to draw per event for testing
     """
 
     def __init__(
@@ -32,7 +34,7 @@ class FlowModel(AmplfiModel):
         *args,
         outdir: Path,
         arch: FlowArchitecture,
-        num_samples_draw: int = 1000,
+        samples_per_event: int = 20000,
         num_corner: int = 10,
         **kwargs,
     ) -> None:
@@ -41,7 +43,7 @@ class FlowModel(AmplfiModel):
         # our hyperparameters to our logdir
         self.model = arch
         self.outdir = outdir
-        self.num_samples_draw = num_samples_draw
+        self.samples_per_event = samples_per_event
         self.num_corner = num_corner
 
         outdir.mkdir(exist_ok=True, parents=True)
@@ -96,7 +98,7 @@ class FlowModel(AmplfiModel):
         """
 
         injection_parameters = {
-            k: float(v) for k, v in zip(self.hparams.inference_params, truth)
+            k: float(v) for k, v in zip(self.inference_params, truth)
         }
 
         # create dummy prior with correct attributes
@@ -122,13 +124,15 @@ class FlowModel(AmplfiModel):
         self.test_results = []
         self.idx = 0
 
-    def test_step(self, batch, batch_idx):
-        # whitened strain and de-scaled parameters
+    def test_step(self, batch, _):
         strain, parameters = batch
+
         samples = self.model.sample(
-            self.hparams.num_samples_draw, context=strain
+            self.hparams.samples_per_event, context=strain
         )
-        descaled = self.scale(samples, reverse=True)
+        descaled = self.trainer.datamodule.scale(samples, reverse=True)
+        parameters = self.trainer.datamodule.scale(parameters, reverse=True)
+
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             parameters.cpu().numpy()[0],
@@ -155,4 +159,3 @@ class FlowModel(AmplfiModel):
             filename=self.outdir / "pp-plot.png",
             keys=self.inference_params,
         )
-        del self.test_results, self.num_plotted

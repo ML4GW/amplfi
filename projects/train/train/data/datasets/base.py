@@ -260,6 +260,19 @@ class AmplfiDataset(pl.LightningDataModule):
 
         elif stage == "test":
             self.test_background = self.load_background(self.test_fnames)
+            (
+                cross,
+                plus,
+                parameters,
+            ) = self.waveform_sampler.get_test_waveforms()
+
+            params = []
+            for k in self.hparams.inference_params:
+                if k in parameters.keys():
+                    params.append(torch.Tensor(parameters[k]))
+
+            self.test_waveforms = torch.stack([cross, plus], dim=0)
+            self.test_parameters = torch.column_stack(params)
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
@@ -309,10 +322,19 @@ class AmplfiDataset(pl.LightningDataModule):
             )
 
         elif self.trainer.testing:
-            # if we're testing, dataloader returns strain
-            # fixed test waveforms / parameters
-            X, cross, plus, parameters = batch
-            strain, parameters = self.inject(batch, cross, plus, parameters)
+            [cross, plus, parameters], [background] = batch
+            cross = cross.to(self.device)
+            plus = plus.to(self.device)
+            parameters = parameters.to(self.device)
+            keys = [
+                k
+                for k in self.hparams.inference_params
+                if k not in ["dec", "psi", "phi"]
+            ]
+            parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
+            strain, parameters = self.inject(
+                background, cross, plus, parameters
+            )
 
         return strain, parameters
 
@@ -393,17 +415,34 @@ class AmplfiDataset(pl.LightningDataModule):
     def test_dataloader(self):
         # TODO: allow for multiple test segment files
 
-        dataset = InMemoryDataset(
+        # build waveform dataloader
+        cross, plus = self.test_waveforms
+        waveform_dataset = torch.utils.data.TensorDataset(
+            cross, plus, self.test_parameters
+        )
+        waveform_dataloader = torch.utils.data.DataLoader(
+            waveform_dataset,
+            batch_size=1,
+            shuffle=False,
+            pin_memory=False,
+        )
+
+        background_dataset = InMemoryDataset(
             self.test_background[0],
             kernel_size=int(self.hparams.sample_rate * self.sample_length),
             batch_size=1,
-            batches_per_epoch=1000,
+            batches_per_epoch=len(waveform_dataloader),
             coincident=False,
             shuffle=False,
         )
 
-        dataloader = torch.utils.data.DataLoader(dataset, pin_memory=False)
-        return dataloader
+        background_dataloader = torch.utils.data.DataLoader(
+            background_dataset, pin_memory=False
+        )
+        return ZippedDataset(
+            waveform_dataloader,
+            background_dataloader,
+        )
 
     def inject(self, *args, **kwargs):
         """

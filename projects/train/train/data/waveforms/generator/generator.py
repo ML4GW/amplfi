@@ -13,6 +13,7 @@ class WaveformGenerator(WaveformSampler):
         self,
         *args,
         num_val_waveforms: int,
+        num_test_waveforms: int,
         parameter_sampler: ParameterSampler,
         num_fit_params: int,
         **kwargs,
@@ -24,6 +25,9 @@ class WaveformGenerator(WaveformSampler):
             num_val_waveforms:
                 Total number of validation waveforms to use.
                 This total will be split up among all devices
+            num_test_waveforms:
+                Total number of testing waveforms to use.
+                Testing is performed on one device.
             parameter_sampler:
                 A callable that takes an integer N and
                 returns a dictionary of parameter Tensors, each of length `N`
@@ -34,6 +38,7 @@ class WaveformGenerator(WaveformSampler):
         super().__init__(*args, **kwargs)
         self.parameter_sampler = parameter_sampler
         self.num_val_waveforms = num_val_waveforms
+        self.num_test_waveforms = num_test_waveforms
         self.num_fit_params = num_fit_params
 
     def get_val_waveforms(self, _, world_size):
@@ -42,8 +47,10 @@ class WaveformGenerator(WaveformSampler):
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
-    def get_test_waveforms(self, rank, world_size):
-        pass
+    def get_test_waveforms(self):
+        parameters = self.parameter_sampler(self.num_test_waveforms)
+        hc, hp = self(**parameters)
+        return hc, hp, parameters
 
     def sample(self, X):
         N = len(X)
