@@ -37,6 +37,7 @@ class SimilarityModel(AmplfiModel):
         self.log(
             "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
         )
+        return loss
 
     def training_step(self, batch, _):
         [ref, aug], _ = batch
@@ -47,7 +48,6 @@ class SimilarityModel(AmplfiModel):
         return loss
 
     def configure_callbacks(self):
-
         callbacks = super().configure_callbacks()
         callbacks.append(SaveAugmentedSimilarityBatch())
         return callbacks

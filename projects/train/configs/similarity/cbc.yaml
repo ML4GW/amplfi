@@ -40,7 +40,7 @@ data:
     fduration: 1
     psd_length: 12
     fftlength: 2
-    batches_per_epoch: 200
+    batches_per_epoch: 100
     batch_size: 256
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0

@@ -68,7 +68,6 @@ class SaveAugmentedSimilarityBatch(Callback):
                 f["aug"] = aug.cpu().numpy()
                 f["parameters"] = parameters.cpu().numpy()
 
-            """
             # save an example validation batch
             # and parameters to disk
             [cross, plus, parameters], [background] = next(
@@ -86,10 +85,10 @@ class SaveAugmentedSimilarityBatch(Callback):
                 if k not in ["dec", "psi", "phi"]
             ]
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
-            strain, parameters = datamodule.inject(
+            [ref, aug], parameters = datamodule.inject(
                 background, cross, plus, parameters
             )
             with h5py.File(os.path.join(save_dir, "val-batch.h5"), "w") as f:
-                f["strain"] = X.cpu().numpy()
+                f["ref"] = ref.cpu().numpy()
+                f["aug"] = aug.cpu().numpy()
                 f["parameters"] = parameters.cpu().numpy()
-            """
