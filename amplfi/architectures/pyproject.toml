@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "amplfi.architectures"
+version = "0.1.0"
+description = "Architectures for amplfi"
+authors = ["Ethan Jacob Marx <ethan.marx@ligo.org>"]
+packages = [{include = "amplfi"}]
+
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+pyro-ppl = "^1.9.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
