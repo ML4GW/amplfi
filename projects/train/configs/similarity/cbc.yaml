@@ -8,7 +8,7 @@ trainer:
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
-        save_dir: "/home/ethan.marx/amplfi/runs/first-similarity-run/"
+        save_dir: ${oc.env:AMPLFI_OUTDIR}/train
   max_epochs: 50
   check_val_every_n_epoch: 1
   log_every_n_steps: 20
@@ -32,7 +32,7 @@ model:
 data:
   class_path: train.data.datasets.SimilarityDataset
   init_args:
-    data_dir: "/home/ethan.marx/amplfi/data/"
+    data_dir: ${oc.env:AMPLFI_DATADIR}
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048

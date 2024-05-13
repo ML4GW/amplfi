@@ -1,34 +1,6 @@
-from lightning.pytorch.cli import LightningCLI
+from train.cli.base import AmplfiBaseCLI
 from train.data.datasets.base import AmplfiDataset
 from train.models.base import AmplfiModel
-
-
-class AmplfiBaseCLI(LightningCLI):
-    def add_arguments_to_parser(self, parser):
-        parser.link_arguments(
-            "data.init_args.sample_rate",
-            "data.init_args.waveform_sampler.init_args.sample_rate",
-            apply_on="parse",
-        )
-
-        parser.link_arguments(
-            ("data.init_args.kernel_length", "data.init_args.fduration"),
-            "data.init_args.waveform_sampler.init_args.duration",
-            compute_fn=lambda *x: sum(x),
-            apply_on="parse",
-        )
-
-        parser.link_arguments(
-            "data.init_args.inference_params",
-            "data.init_args.waveform_sampler.init_args.inference_params",
-            apply_on="parse",
-        )
-
-        parser.link_arguments(
-            "data.init_args.inference_params",
-            "model.init_args.inference_params",
-            apply_on="parse",
-        )
 
 
 class AmplfiFlowCli(AmplfiBaseCLI):
@@ -54,19 +26,6 @@ class AmplfiFlowCli(AmplfiBaseCLI):
             apply_on="parse",
         )
 
-        return parser
-
-
-class AmplfiSimilarityCli(AmplfiBaseCLI):
-    def add_arguments_to_parser(self, parser):
-        super().add_arguments_to_parser(parser)
-
-        parser.link_arguments(
-            "data.init_args.ifos",
-            "model.init_args.arch.init_args.num_ifos",
-            compute_fn=lambda x: len(x),
-            apply_on="parse",
-        )
         return parser
 
 
