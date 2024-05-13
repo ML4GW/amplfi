@@ -140,7 +140,7 @@ class AmplfiDataset(pl.LightningDataModule):
         Apply standard scaling to transformed parameters
         """
         parameters = parameters.transpose(1, 0)
-        scaled = self.standard_scaler(parameters, reverse=reverse)
+        scaled = self.scaler(parameters, reverse=reverse)
         scaled = scaled.transpose(1, 0)
         return scaled
 
@@ -233,10 +233,8 @@ class AmplfiDataset(pl.LightningDataModule):
         # build standard scaler object and fit to parameters;
         # waveform_sampler subclasses will decide how to generate
         # parameters to fit the scaler
-        standard_scaler = ChannelWiseScaler(self.num_params).to(self.device)
-        self.standard_scaler = self.waveform_sampler.fit_scaler(
-            standard_scaler
-        )
+        scaler = ChannelWiseScaler(self.num_params).to(self.device)
+        self.scaler = self.waveform_sampler.fit_scaler(scaler)
 
         self.projector = WaveformProjector(
             self.hparams.ifos, self.hparams.sample_rate

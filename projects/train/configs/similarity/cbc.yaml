@@ -32,7 +32,7 @@ model:
 data:
   class_path: train.data.datasets.SimilarityDataset
   init_args:
-    data_dir: "/home/ethan.marx/projects/PE/projects/train/datadir_tmp/"
+    data_dir: "/home/ethan.marx/amplfi/data/"
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048

@@ -33,6 +33,12 @@ class AmplfiModel(pl.LightningModule):
         logger_name = self.__class__.__name__
         return logging.getLogger(logger_name)
 
+    def setup(self, stage):
+        # store an instance of the scaler in the model
+        # so that it can be checkpointed/saved with the model
+        if stage == "fit":
+            self.scaler = self.trainer.datamodule.scaler
+
     def configure_optimizers(self):
         if not torch.distributed.is_initialized():
             world_size = 1

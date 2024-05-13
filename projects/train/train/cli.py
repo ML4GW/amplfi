@@ -72,7 +72,7 @@ class AmplfiSimilarityCli(AmplfiBaseCLI):
 
 def main(args=None):
 
-    cli = AmplfiSimilarityCli(
+    cli = AmplfiFlowCli(
         AmplfiModel,
         AmplfiDataset,
         subclass_mode_model=True,

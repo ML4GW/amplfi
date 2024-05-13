@@ -8,7 +8,7 @@ trainer:
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
-        save_dir: "/home/ethan.marx/amplfi/runs/first-lightning-run/train/"
+        save_dir: "/home/ethan.marx/amplfi/runs/scaler-save-test/train/"
   max_epochs: 200
   check_val_every_n_epoch: 1
   log_every_n_steps: 20
@@ -16,14 +16,14 @@ trainer:
 model:
   class_path: train.models.flow.FlowModel
   init_args:
-    outdir: "/home/ethan.marx/amplfi/runs/first-lightning-run/"
+    outdir: "/home/ethan.marx/amplfi/runs/scaler-save-test/"
     arch:
       class_path: train.architectures.flows.InverseAutoregressiveFlow
       init_args:
         hidden_features: 150
         num_transforms: 80
         num_blocks: 6
-        context_dim: 8
+        context_dim: 7
         # uncomment below to load 
         # in pre-trained embedding weights
         # embedding_weights: "path/to/embedding/weights"
@@ -35,24 +35,24 @@ model:
             norm_layer:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
               init_args:
-                groups: 16
+                groups: 8
     patience: null
     save_top_k_models: 10
-    learning_rate: 3.77e-4
+    learning_rate: 3.7e-4
     weight_decay: 0.0
 data:
   class_path: train.data.datasets.FlowDataset
   init_args:
-    data_dir: "/home/ethan.marx/projects/PE/projects/train/datadir_tmp/"
+    data_dir: "/home/ethan.marx/amplfi/data/"
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048
-    kernel_length: 5
+    kernel_length: 3
     fduration: 1
-    psd_length: 12
+    psd_length: 10
     fftlength: 2
     batches_per_epoch: 200
-    batch_size: 400
+    batch_size: 512
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
     waveform_sampler: 
@@ -77,6 +77,6 @@ data:
         approximant: ml4gw.waveforms.IMRPhenomD
         f_min: 20
         f_max: 1024
-        padding: 1.0
+        padding: 1
         waveform_arguments:
           f_ref: 40
