@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Optional
 
 import lightning.pytorch as pl
@@ -22,12 +23,15 @@ class AmplfiModel(pl.LightningModule):
     def __init__(
         self,
         inference_params: list[str],
+        outdir: Path,
         learning_rate: float,
         weight_decay: float = 0.0,
         save_top_k_models: int = 10,
         patience: Optional[int] = None,
     ):
         super().__init__()
+        self.outdir = outdir
+        outdir.mkdir(exist_ok=True, parents=True)
         self.inference_params = inference_params
         self.save_hyperparameters()
 

@@ -7,8 +7,6 @@ trainer:
   profiler: "simple"
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
-      init_args:
-        save_dir: "/home/ethan.marx/amplfi/runs/first-lightning-run/train/"
   max_epochs: 200
   check_val_every_n_epoch: 1
   log_every_n_steps: 20
@@ -16,9 +14,8 @@ trainer:
 model:
   class_path: train.models.flow.FlowModel
   init_args:
-    outdir: "/home/ethan.marx/amplfi/runs/first-lightning-run/"
     arch:
-      class_path: train.architectures.flows.InverseAutoregressiveFlow
+      class_path: amplfi.architectures.flows.InverseAutoregressiveFlow
       init_args:
         hidden_features: 150
         num_transforms: 80
@@ -29,7 +26,7 @@ model:
         # embedding_weights: "path/to/embedding/weights"
         # freeze_embedding: false
         embedding_net: 
-          class_path: train.architectures.embeddings.ResNet
+          class_path: amplfi.architectures.embeddings.ResNet
           init_args:
             layers: [5, 3, 3]
             norm_layer:

@@ -1,13 +1,12 @@
-from pathlib import Path
-
 import bilby
 import numpy as np
 import pandas as pd
 import torch
-from train.architectures.flows import FlowArchitecture
 from train.callbacks import SaveAugmentedBatch
 from train.models.base import AmplfiModel
 from train.testing import Result
+
+from amplfi.architectures.flows import FlowArchitecture
 
 Tensor = torch.Tensor
 
@@ -33,7 +32,6 @@ class FlowModel(AmplfiModel):
     def __init__(
         self,
         *args,
-        outdir: Path,
         arch: FlowArchitecture,
         samples_per_event: int = 20000,
         num_corner: int = 10,
@@ -43,11 +41,8 @@ class FlowModel(AmplfiModel):
         # construct our model up front and record all
         # our hyperparameters to our logdir
         self.model = arch
-        self.outdir = outdir
         self.samples_per_event = samples_per_event
         self.num_corner = num_corner
-
-        outdir.mkdir(exist_ok=True, parents=True)
         self.save_hyperparameters(ignore=["arch"])
         self._logger = self.get_logger()
 

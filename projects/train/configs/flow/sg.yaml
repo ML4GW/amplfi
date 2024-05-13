@@ -18,7 +18,7 @@ model:
   init_args:
     outdir: "/home/ethan.marx/amplfi/runs/first-lightning-run/"
     arch:
-      class_path: train.architectures.flows.MaskedAutoRegressiveFlow
+      class_path: amplfi.architectures.flows.MaskedAutoRegressiveFlow
       init_args:
         hidden_features: 150
         num_transforms: 80
@@ -29,7 +29,7 @@ model:
         # embedding_weights: "path/to/embedding/weights"
         # freeze_embedding: false
         embedding_net: 
-          class_path: train.architectures.embeddings.ResNet
+          class_path: amplfi.architectures.embeddings.ResNet
           init_args:
             layers: [5, 3, 3]
             norm_layer:

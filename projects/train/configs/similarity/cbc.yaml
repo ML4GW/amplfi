@@ -17,7 +17,7 @@ model:
   class_path: train.models.SimilarityModel
   init_args:
     arch:
-      class_path: train.architectures.embeddings.ResNet
+      class_path: amplfi.architectures.embeddings.ResNet
       init_args:
         context_dim: 8
         layers: [5, 3, 3]
