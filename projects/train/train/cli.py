@@ -71,7 +71,6 @@ class AmplfiSimilarityCli(AmplfiBaseCLI):
 
 
 def main(args=None):
-
     cli = AmplfiFlowCli(
         AmplfiModel,
         AmplfiDataset,
@@ -80,7 +79,7 @@ def main(args=None):
         save_config_kwargs={"overwrite": True},
         seed_everything_default=101588,
         args=args,
-        parser_kwargs={"default_env": True},
+        parser_kwargs={"parser_mode": "omegaconf"},
     )
     return cli
 
