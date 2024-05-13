@@ -233,6 +233,7 @@ class AmplfiDataset(pl.LightningDataModule):
         # build standard scaler object and fit to parameters;
         # waveform_sampler subclasses will decide how to generate
         # parameters to fit the scaler
+        self._logger.info("Fitting standard scaler to parameters")
         scaler = ChannelWiseScaler(self.num_params).to(self.device)
         self.scaler = self.waveform_sampler.fit_scaler(scaler)
 

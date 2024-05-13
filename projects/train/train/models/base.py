@@ -5,6 +5,8 @@ import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
 
+from ml4gw.transforms import ChannelWiseScaler
+
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
 
@@ -29,14 +31,19 @@ class AmplfiModel(pl.LightningModule):
         self.inference_params = inference_params
         self.save_hyperparameters()
 
+        # initialize an unfit scaler here so that it is available
+        # for the LightningModule to save and load from checkpoints
+        self.scaler = ChannelWiseScaler(len(inference_params))
+
     def get_logger(self):
         logger_name = self.__class__.__name__
         return logging.getLogger(logger_name)
 
     def setup(self, stage):
-        # store an instance of the scaler in the model
-        # so that it can be checkpointed/saved with the model
         if stage == "fit":
+            # if we're fitting, store an instance of the
+            # fit scaler in the model
+            # so that its weights can be checkpointed
             self.scaler = self.trainer.datamodule.scaler
 
     def configure_optimizers(self):

@@ -133,8 +133,6 @@ class FlowModel(AmplfiModel):
     def test_step(self, batch, _):
         strain, parameters = batch
 
-        parameters = self.scale(parameters)
-
         samples = self.model.sample(
             self.hparams.samples_per_event, context=strain
         )
