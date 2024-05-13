@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import torch
 from train.data.utils import ParameterSampler
@@ -15,6 +15,7 @@ class WaveformGenerator(WaveformSampler):
         num_val_waveforms: int,
         num_test_waveforms: int,
         parameter_sampler: ParameterSampler,
+        test_parameter_sampler: Optional[ParameterSampler] = None,
         num_fit_params: int,
         **kwargs,
     ):
@@ -37,6 +38,9 @@ class WaveformGenerator(WaveformSampler):
         """
         super().__init__(*args, **kwargs)
         self.parameter_sampler = parameter_sampler
+        self.test_parameter_sampler = (
+            test_parameter_sampler or parameter_sampler
+        )
         self.num_val_waveforms = num_val_waveforms
         self.num_test_waveforms = num_test_waveforms
         self.num_fit_params = num_fit_params
@@ -48,7 +52,7 @@ class WaveformGenerator(WaveformSampler):
         return hc, hp, parameters
 
     def get_test_waveforms(self):
-        parameters = self.parameter_sampler(self.num_test_waveforms)
+        parameters = self.test_parameter_sampler(self.num_test_waveforms)
         hc, hp = self(**parameters)
         return hc, hp, parameters
 

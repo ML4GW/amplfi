@@ -207,7 +207,7 @@ class AmplfiDataset(pl.LightningDataModule):
     # ================================================ #
     # Utilities for initial data loading and preparation
     # ================================================ #
-    def build_modules(self):
+    def build_modules(self, stage):
         """
         Build torch.nn.Modules that will be used for on-device
         augmentation and preprocessing. Transfer these modules
@@ -301,7 +301,7 @@ class AmplfiDataset(pl.LightningDataModule):
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
         # and transfer them to appropiate device
-        self.build_modules()
+        self.build_modules(stage)
 
     def load_background(self, fnames: Sequence[str]):
         background = []
