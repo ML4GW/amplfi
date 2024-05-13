@@ -43,7 +43,8 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
                 The amount of padding to add to the right
                 of the waveform in seconds
             waveform_arguments:
-                A dictionary of fixed arguments to pass to the waveform model
+                A dictionary of fixed arguments to pass to the waveform model,
+                e.g. `f_ref` for CBC waveforms
         """
         super().__init__(*args, **kwargs)
         waveform_arguments = waveform_arguments or {}
