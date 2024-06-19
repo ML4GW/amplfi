@@ -1,8 +1,8 @@
 from typing import Optional, Tuple
 
 import torch
-from ml4gw import gw
 from ml4gw.transforms import SpectralDensity
+from ml4gw import gw
 
 Tensor = torch.Tensor
 

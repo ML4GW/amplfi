@@ -1,6 +1,8 @@
-from mldatafind.law.parameters import PathParameter
 import os
+
 import luigi
+from mldatafind.law.parameters import PathParameter
+
 
 class paths(luigi.Config):
     data_dir = PathParameter(default=os.getenv("AMPLFI_DATADIR"))
