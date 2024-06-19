@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "amplfi.law"
+version = "0.1.0"
+description = "Law tasks for running amplfi analyses"
+authors = ["Ethan Jacob Marx <ethan.marx@ligo.org>"]
+packages = [{include = "amplfi"}]
+
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+law = {git = "https://github.com/riga/law.git", branch = "master"}
+mldatafind = {git = "https://github.com/ML4GW/mldatafind.git", branch = "law-overhaul"}
+luigi = "^3.5.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
