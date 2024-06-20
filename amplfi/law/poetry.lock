@@ -141,7 +141,7 @@ description = "Luigi/Law Tasks for streamlining gravitational wave data discover
 optional = false
 python-versions = ">=3.9,<3.12"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 boto3 = "^1.34.4"
@@ -150,10 +150,8 @@ law = {git = "https://github.com/riga/law.git", branch = "master"}
 luigi = "^3.5.1"
 
 [package.source]
-type = "git"
-url = "https://github.com/ML4GW/mldatafind.git"
-reference = "law-overhaul"
-resolved_reference = "3b2506a6f6a1a62b7e659ebfa113f145263e9e3a"
+type = "directory"
+url = "../../mldatafind"
 
 [[package]]
 name = "python-daemon"
@@ -314,4 +312,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.12"
-content-hash = "b1b0e0f5a09d5e20176570ada8e4b83f39ba5c500be34fbca132fddb0aeb245d"
+content-hash = "c7ff1b486f962cb23f2f485b3e3f9d828c75b6ffb2bbfe978aeb810eaac46d1a"

@@ -1,27 +1,47 @@
 import law
-from mldatafind.law.tasks import Fetch
 
+from amplfi.law.base import AmplfiDataTaskMixin
 from amplfi.law.paths import paths
+from mldatafind.law.tasks import Fetch
+from mldatafind.law.tasks import Query as _Query
 
 
-# rename for clarity in config file
-class FetchTrain(Fetch):
+# add mixin for appending amplfi specific
+# environment variables to condor and containers
+class Query(AmplfiDataTaskMixin, _Query):
     pass
 
 
-class FetchTest(Fetch):
-    pass
+# override FetchTrain and FetchTest
+# tasks to use Query with mixin
+class FetchTrain(AmplfiDataTaskMixin, Fetch):
+    def workflow_requires(self):
+        reqs = {}
+        reqs["segments"] = Query.req(self, segments_file=self.segments_file)
+        return reqs
+
+
+class FetchTest(AmplfiDataTaskMixin, Fetch):
+    def workflow_requires(self):
+        reqs = {}
+        reqs["segments"] = Query.req(self, segments_file=self.segments_file)
+        return reqs
 
 
 class DataGeneration(law.WrapperTask):
+    """
+    Pipeline for launching FetchTrain and FetchTest tasks
+    """
+
     def requires(self):
         yield FetchTrain.req(
             self,
             data_dir=paths().data_dir / "train" / "background",
-            condor_dir=paths().condor_dir / "train",
+            condor_directory=paths().condor_dir / "train",
         )
+
         yield FetchTest.req(
             self,
             data_dir=paths().data_dir / "test" / "background",
-            condor_dir=paths().condor_dir / "test",
+            condor_directory=paths().condor_dir / "test",
         )
