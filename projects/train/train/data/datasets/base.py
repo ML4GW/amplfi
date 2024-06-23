@@ -7,12 +7,12 @@ from typing import Dict, List, Optional, Sequence
 import h5py
 import lightning.pytorch as pl
 import torch
+from ml4gw.dataloading import Hdf5TimeSeriesDataset, InMemoryDataset
+from ml4gw.transforms import ChannelWiseScaler, Whiten
+
 from train.augmentations import PsdEstimator, WaveformProjector
 from train.data.utils import ZippedDataset
 from train.data.waveforms.sampler import WaveformSampler
-
-from ml4gw.dataloading import Hdf5TimeSeriesDataset, InMemoryDataset
-from ml4gw.transforms import ChannelWiseScaler, Whiten
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution

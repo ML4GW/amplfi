@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 import torch
 
-from mlpe.data.transforms import Preprocessor
+from amplfi.data.transforms import Preprocessor
 
 
 @pytest.fixture(params=[2, 10])

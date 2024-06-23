@@ -2,11 +2,11 @@ import bilby
 import numpy as np
 import pandas as pd
 import torch
+
+from amplfi.architectures.flows import FlowArchitecture
 from train.callbacks import SaveAugmentedBatch
 from train.models.base import AmplfiModel
 from train.testing import Result
-
-from amplfi.architectures.flows import FlowArchitecture
 
 Tensor = torch.Tensor
 
