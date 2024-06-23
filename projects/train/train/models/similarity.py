@@ -1,4 +1,5 @@
 import torch
+
 from train.callbacks import SaveAugmentedSimilarityBatch
 from train.losses import VICRegLoss
 from train.models.base import AmplfiModel

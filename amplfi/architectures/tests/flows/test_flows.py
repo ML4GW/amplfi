@@ -2,7 +2,6 @@ from unittest.mock import Mock
 
 import pytest
 import torch
-
 from mlpe.data.transforms import Preprocessor
 
 

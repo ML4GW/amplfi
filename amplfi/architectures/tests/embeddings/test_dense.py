@@ -1,6 +1,5 @@
 import pytest
 import torch
-
 from mlpe.architectures.embeddings.dense import DenseEmbedding
 
 

@@ -1,6 +1,7 @@
 from typing import Optional
 
 import torch
+
 from train.data.utils import ParameterTransformer
 
 Distribution = torch.distributions.Distribution

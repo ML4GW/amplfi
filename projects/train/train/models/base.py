@@ -5,7 +5,6 @@ from typing import Optional
 import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import ModelCheckpoint
-
 from ml4gw.transforms import ChannelWiseScaler
 
 Tensor = torch.Tensor
