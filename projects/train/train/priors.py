@@ -1,8 +1,8 @@
 from math import pi
 
 import torch
-from torch.distributions import Uniform
 from ml4gw import distributions
+from torch.distributions import Uniform
 
 from train.data.utils import ParameterSampler, ParameterTransformer
 

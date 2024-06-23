@@ -3,8 +3,6 @@ from ml4gw.waveforms import SineGaussian
 
 from train.data.waveforms.generator.generator import WaveformGenerator
 
-from train.data.waveforms.generator.generator import WaveformGenerator
-
 
 class SGGenerator(WaveformGenerator):
     def __init__(self, *args, **kwargs):
