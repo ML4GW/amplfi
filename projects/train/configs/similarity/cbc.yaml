@@ -34,6 +34,7 @@ data:
   class_path: train.data.datasets.SimilarityDataset
   init_args:
     data_dir: ${oc.env:AMPLFI_DATADIR}
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048
     kernel_length: 5
