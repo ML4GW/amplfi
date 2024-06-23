@@ -2,9 +2,9 @@ from math import pi
 
 import torch
 from torch.distributions import Uniform
-from train.data.utils import ParameterSampler, ParameterTransformer
 
 from ml4gw import distributions
+from train.data.utils import ParameterSampler, ParameterTransformer
 
 # prior and parameter transformer for sg use case
 sg_prior = ParameterSampler(

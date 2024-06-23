@@ -3,6 +3,7 @@ from functools import partial
 from typing import Any, Callable, Dict
 
 import torch
+
 from train.data.waveforms.generator.generator import WaveformGenerator
 
 

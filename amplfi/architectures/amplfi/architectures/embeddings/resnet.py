@@ -1,8 +1,9 @@
 from typing import Literal, Optional
 
-from amplfi.architectures.embeddings.base import Embedding
 from ml4gw.nn.norm import NormLayer
 from ml4gw.nn.resnet.resnet_1d import ResNet1D
+
+from amplfi.architectures.embeddings.base import Embedding
 
 
 class ResNet(ResNet1D, Embedding):
