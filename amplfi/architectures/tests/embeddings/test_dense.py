@@ -1,6 +1,7 @@
 import pytest
 import torch
-from mlpe.architectures.embeddings.dense import DenseEmbedding
+
+from amplfi.architectures.embeddings.dense import DenseEmbedding
 
 
 @pytest.fixture(params=[1, 2, 3])
