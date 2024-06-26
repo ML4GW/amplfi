@@ -16,6 +16,7 @@ trainer:
 model:
   class_path: train.models.SimilarityModel
   init_args:
+    outdir: ${oc.env:AMPLFI_OUTDIR}
     arch:
       class_path: amplfi.architectures.embeddings.ResNet
       init_args:
