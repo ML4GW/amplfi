@@ -1,0 +1,12 @@
+Bootstrap: docker
+From: ghcr.io/ml4gw/mldatafind/law-overhaul:latest 
+Stage: build
+
+%files
+../../amplfi/law/ /opt/amplfi/law
+../../mldatafind /opt/mldatafind
+
+%post
+cd /opt/amplfi/law
+micromamba run -p /opt/env \
+    pip install --no-deps -e .
