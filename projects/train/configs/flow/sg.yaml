@@ -18,7 +18,7 @@ model:
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
     arch:
-      class_path: amplfi.architectures.flows.MaskedAutoRegressiveFlow
+      class_path: amplfi.architectures.flows.InverseAutoregressiveFlow
       init_args:
         hidden_features: 150
         num_transforms: 80
@@ -59,6 +59,7 @@ data:
       class_path: train.data.waveforms.generator.sg.SGGenerator
       init_args:
         num_fit_params: 100000
+        num_test_waveforms: 1000
         parameter_transformer: train.priors.sg_transformer
         parameter_sampler: train.priors.sg_prior
         dec: 
