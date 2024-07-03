@@ -49,6 +49,10 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         """
         super().__init__(*args, **kwargs)
         waveform_arguments = waveform_arguments or {}
+
+        # set approximant (possibly torch.nn.Module) as an attribute
+        # so that it will get moved to the proper device when `.to` is called
+        self.approximant = approximant
         self.waveform = partial(approximant, **waveform_arguments)
         self.f_min = f_min
         self.f_max = f_max

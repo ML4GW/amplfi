@@ -207,7 +207,16 @@ class AmplfiDataset(pl.LightningDataModule):
     # ================================================ #
     # Utilities for initial data loading and preparation
     # ================================================ #
-    def build_modules(self, stage):
+
+    def transforms_to_device(self):
+        """
+        Move all `torch.nn.Modules` to the local device
+        """
+        for item in self.__dict__.values():
+            if isinstance(item, torch.nn.Module):
+                item.to(self.device)
+
+    def build_transforms(self, stage):
         """
         Build torch.nn.Modules that will be used for on-device
         augmentation and preprocessing. Transfer these modules
@@ -222,26 +231,24 @@ class AmplfiDataset(pl.LightningDataModule):
             fftlength,
             fast=self.hparams.highpass is not None,
             average="median",
-        ).to(self.device)
+        )
 
         self.whitener = Whiten(
             self.hparams.fduration,
             self.hparams.sample_rate,
             self.hparams.highpass,
-        ).to(self.device)
+        )
 
         # build standard scaler object and fit to parameters;
         # waveform_sampler subclasses will decide how to generate
         # parameters to fit the scaler
         self._logger.info("Fitting standard scaler to parameters")
-        scaler = ChannelWiseScaler(self.num_params).to(self.device)
+        scaler = ChannelWiseScaler(self.num_params)
         self.scaler = self.waveform_sampler.fit_scaler(scaler)
 
         self.projector = WaveformProjector(
             self.hparams.ifos, self.hparams.sample_rate
-        ).to(self.device)
-
-        self.waveform_sampler.to(self.device)
+        )
 
     def setup(self, stage: str) -> None:
         world_size, rank = self.get_world_size_and_rank()
@@ -302,7 +309,8 @@ class AmplfiDataset(pl.LightningDataModule):
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
         # and transfer them to appropiate device
-        self.build_modules(stage)
+        self.build_transforms(stage)
+        self.transforms_to_device()
 
     def load_background(self, fnames: Sequence[str]):
         background = []
@@ -333,9 +341,6 @@ class AmplfiDataset(pl.LightningDataModule):
             [cross, plus, parameters], [background] = batch
 
             background = background[: len(cross)]
-            cross = cross.to(self.device)
-            plus = plus.to(self.device)
-            parameters = parameters.to(self.device)
             keys = [
                 k
                 for k in self.hparams.inference_params
@@ -348,9 +353,6 @@ class AmplfiDataset(pl.LightningDataModule):
 
         elif self.trainer.testing:
             [cross, plus, parameters], [background] = batch
-            cross = cross.to(self.device)
-            plus = plus.to(self.device)
-            parameters = parameters.to(self.device)
             keys = [
                 k
                 for k in self.hparams.inference_params
