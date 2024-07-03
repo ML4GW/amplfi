@@ -18,6 +18,7 @@ class SimilarityDataset(AmplfiDataset):
         self.augmentor = augmentor
 
     def inject(self, X, cross, plus, parameters):
+
         X, psds = self.psd_estimator(X)
         dec, psi, phi = self.waveform_sampler.sample_extrinsic(X)
 
@@ -40,7 +41,6 @@ class SimilarityDataset(AmplfiDataset):
             torch.Tensor(parameters[k]) for k in self.hparams.inference_params
         ]
         parameters = torch.vstack(parameters).T
-
         X_ref = X + waveforms
         X_aug = X + augmented
         X_ref = self.whitener(X_ref, psds)
