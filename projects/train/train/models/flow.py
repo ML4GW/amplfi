@@ -113,13 +113,15 @@ class FlowModel(AmplfiModel):
             posterior[k] = samples.T[idx].flatten()
         posterior = pd.DataFrame(posterior)
 
-        return Result(
+        r = Result(
             label="PEModel",
             injection_parameters=injection_parameters,
             posterior=posterior,
             search_parameter_keys=self.inference_params,
             priors=priors,
         )
+        r.get_sky_projection(nside=32)
+        return r
 
     def on_test_epoch_start(self):
         self.test_results = []
