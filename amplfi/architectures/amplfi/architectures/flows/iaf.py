@@ -56,3 +56,12 @@ class InverseAutoregressiveFlow(FlowArchitecture):
             transform = self.transform_block()
             transforms.extend([transform])
         return ConditionalComposeTransformModule(transforms)
+
+
+class MaskedAutoregressiveFlow(InverseAutoregressiveFlow):
+    """Affine autoregressive transforms that allow density
+    evaluation in a single forward pass."""
+
+    def transform_block(self):
+        t = super().transform_block()
+        return t.inv

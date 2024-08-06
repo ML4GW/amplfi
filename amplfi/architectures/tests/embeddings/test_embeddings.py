@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+from amplfi.architectures.embeddings import ResNet
 from amplfi.architectures.embeddings.dense import DenseEmbedding
 
 
@@ -16,8 +17,8 @@ def length(request):
 
 @pytest.fixture(
     params=[
-        10,
-        20,
+        3,
+        5,
     ]
 )
 def kernel_size(request):
@@ -35,3 +36,10 @@ def test_dense_embedding(n_ifos, length):
     y = embedding(x)
 
     assert y.shape == (8, n_ifos, 10)
+
+
+def test_resnet(n_ifos, length, out_features, kernel_size):
+    embedding = ResNet(n_ifos, out_features, [3, 3], kernel_size)
+    x = torch.randn(100, n_ifos, length)
+    y = embedding(x)
+    assert y.shape == (100, out_features)
