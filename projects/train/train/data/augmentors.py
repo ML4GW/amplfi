@@ -56,9 +56,6 @@ class TimeAndPhaseShifter(torch.nn.Module):
     Args:
         time_jitter:
             The maximum magnitude of time to shift waveforms in seconds.
-
-        sample_rate:
-            The rate at which waveforms are sampled in Hz
     """
 
     def __init__(self, time_jitter: float = 1.0):
@@ -86,14 +83,15 @@ class TimeAndPhaseShifter(torch.nn.Module):
         time_shifts = self.time_jitter * torch.rand(
             batch_size, device=waveforms.device
         )
+        # random time shift up to time_jitter
         phase_shift = torch.exp(
             1j * 2 * torch.pi * torch.outer(time_shifts, frequency)
         )
-
+        # random phase angle up to two pi
         phase_angle = 2 * torch.pi * torch.rand(batch_size)
         phase_shift *= torch.exp(
             1j * 2 * torch.outer(phase_angle, torch.ones_like(frequency))
         )
-
+        # repeat phase shifts across polarizations
         phase_shift = phase_shift.unsqueeze(1).repeat(1, num_polarization, 1)
         return waveforms * phase_shift
