@@ -88,7 +88,9 @@ class TimeAndPhaseShifter(torch.nn.Module):
             1j * 2 * torch.pi * torch.outer(time_shifts, frequency)
         )
         # random phase angle up to two pi
-        phase_angle = 2 * torch.pi * torch.rand(batch_size)
+        phase_angle = (
+            2 * torch.pi * torch.rand(batch_size, device=waveforms.device)
+        )
         phase_shift *= torch.exp(
             1j * 2 * torch.outer(phase_angle, torch.ones_like(frequency))
         )
