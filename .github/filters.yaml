@@ -9,24 +9,6 @@ workflow: &workflow
   - '.github/workflows/pre-commit.yaml'
 
 # libraries
-libs/injection/:
+amplfi/architectures/:
   - *workflow
-  - 'libs/injection/**'
-  - 'libs/base/**'
-
-libs/architectures/:
-  - *workflow
-  - 'libs/architectures/**'
-  
-libs/data/:
-  - *workflow
-  - 'libs/data/**'
-  - 'ml4gw/**'
-  - 'libs/base/**'
-
-# projects
-projects/sandbox/data_generation/:
-  - *workflow
-  - 'ml4gw/**'
-  - 'projects/sandbox/data_generation/**'
-  - 'libs/injection/**'
+  - 'amplfi/architectures/**'
