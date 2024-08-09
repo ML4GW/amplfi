@@ -8,7 +8,7 @@ Stage: build
 # accidentally get created in this repo
 . /opt/amplfi/projects/train
 ../../ml4gw /opt/amplfi/ml4gw
-./../amplfi/architectures /opt/amplfi/amplfi/architectures
+../../amplfi/architectures /opt/amplfi/amplfi/architectures
 
 %post
 # installing the local package editably via pip
