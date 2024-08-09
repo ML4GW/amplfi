@@ -1,6 +1,45 @@
 import os
+from pathlib import Path
+
+import law
 
 from amplfi.law.paths import paths
+from mldatafind.law.base import DataSandbox
+
+root = Path(__file__).resolve().parent.parent.parent.parent.parent
+DATA_SANDBOX = f"amplfi::{paths().container_root / 'data.sif'}"
+
+
+class AmplfiDataSandbox(DataSandbox):
+    """
+    Subclass of `mldatafind.law.base.DataSandbox` for running amplfi tasks;
+
+    Appends amplfi specific environment variables to the container
+    and mounts the local amplfi repo into the container in dev mode
+    """
+
+    sandbox_type = "amplfi"
+
+    def _get_volumes(self):
+        # if running in dev mode, mount the local
+        # mldatafind repo into the container so
+        # python code changes are reflected
+        volumes = super()._get_volumes()
+        if self.task and getattr(self.task, "dev", False):
+            volumes[str(root)] = "/opt/amplfi"
+        return volumes
+
+    def _get_env(self):
+        env = super()._get_env()
+
+        # append amplfi specific environment variables
+        for envvar, value in os.environ.items():
+            if envvar.startswith("AMPLFI_"):
+                env[envvar] = value
+        return env
+
+
+law.config.update(AmplfiDataSandbox.config())
 
 
 class AmplfiDataTaskMixin:
@@ -11,25 +50,6 @@ class AmplfiDataTaskMixin:
     This class should be inherited
     alongside a subclass of `mldatafind.law.DataTask`
     """
-
-    def __init__(self, *args, **kwargs):
-        # calls `mldatafind.law.DataTask` constructor
-        super().__init__(*args, **kwargs)
-        self.image = paths().container_root / "data.sif"
-
-    def sandbox_env(self, env: dict[str, str]) -> dict[str, str]:
-        """
-        Append amplfi specific environment variables to the sandbox environment
-        """
-        # get environment variables defined by
-        # `mldatafind.law.DataTask` parent class
-        env = super().sandbox_env(env)
-
-        # append amplfi specific environment variables
-        for envvar, value in os.environ.items():
-            if envvar.startswith("AMPLFI_"):
-                env[envvar] = value
-        return env
 
     def build_environment(self) -> str:
         """

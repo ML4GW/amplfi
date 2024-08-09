@@ -1,6 +1,7 @@
 import law
+import luigi
 
-from amplfi.law.base import AmplfiDataTaskMixin
+from amplfi.law.base import DATA_SANDBOX, AmplfiDataTaskMixin
 from amplfi.law.paths import paths
 from mldatafind.law.tasks import Fetch
 from mldatafind.law.tasks import Query as _Query
@@ -33,15 +34,21 @@ class DataGeneration(law.WrapperTask):
     Pipeline for launching FetchTrain and FetchTest tasks
     """
 
+    dev = luigi.BoolParameter(
+        default=False, description="Run the task in development mode."
+    )
+
     def requires(self):
         yield FetchTrain.req(
             self,
+            sandbox=DATA_SANDBOX,
             data_dir=paths().data_dir / "train" / "background",
             condor_directory=paths().condor_dir / "train",
         )
 
         yield FetchTest.req(
             self,
+            sandbox=DATA_SANDBOX,
             data_dir=paths().data_dir / "test" / "background",
             condor_directory=paths().condor_dir / "test",
         )
