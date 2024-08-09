@@ -7,32 +7,30 @@ import numpy as np
 
 
 class Result(bilby.result.Result):
-    def plot_mollview(
+    def get_sky_projection(
         self,
         nside: int = 32,
-        outpath: Path = None,
     ):
-        """Plot mollview of sky localization posterior samples
+        """Store a HEALPix array with the sky coordinates
 
         Args:
             nside: nside parameter for healpy
-            outpath: path to save the plot
         """
-
         ra = self.posterior["phi"]
         dec = self.posterior["dec"]
-        dec += np.pi / 2
+        theta = np.pi / 2 - dec
 
         # mask out non physical samples;
         mask = (ra > -np.pi) * (ra < np.pi)
-        mask &= (dec > 0) * (dec < np.pi)
+        mask &= (theta > 0) * (theta < np.pi)
 
         ra = ra[mask]
         dec = dec[mask]
+        theta = theta[mask]
 
         # calculate number of samples in each pixel
         NPIX = hp.nside2npix(nside)
-        ipix = hp.ang2pix(nside, dec, ra)
+        ipix = hp.ang2pix(nside, theta, ra, nest=True)
         ipix = np.sort(ipix)
         uniq, counts = np.unique(ipix, return_counts=True)
 
@@ -40,15 +38,32 @@ class Result(bilby.result.Result):
         m = np.zeros(NPIX)
         m[np.in1d(range(NPIX), uniq)] = counts
 
-        plt.close()
-        # plot molleweide
-        fig = hp.mollview(m)
-
+        # searched area calculation
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
-        dec_inj += np.pi / 2
+        theta_inj = np.pi / 2 - dec_inj
+        true_ipix = hp.ang2pix(nside, theta_inj, ra_inj, nest=True)
+
+        sorted_idxs = np.argsort(m)[::-1]  # sort pixels in descending order
+        # count number of pixels before hitting the pixel with injection
+        # in the sorted array
+        num_pix_before_injection = 1 + np.argmax(sorted_idxs == true_ipix)
+        searched_area = num_pix_before_injection * hp.nside2pixarea(
+            nside, degrees=True
+        )
+        # store as attributes
+        self.searched_area = searched_area
+        self.healpix_array = m
+
+    def plot_mollview(self, outpath: Path = None):
+        ra_inj = self.injection_parameters["phi"]
+        dec_inj = self.injection_parameters["dec"]
+        theta_inj = np.pi / 2 - dec_inj
+        plt.close()
+        # plot molleweide
+        fig = hp.mollview(self.healpix_array)
         hp.visufunc.projscatter(
-            dec_inj, ra_inj, marker="x", color="red", s=150
+            theta_inj, ra_inj, marker="x", color="red", s=150
         )
 
         plt.savefig(outpath)

@@ -36,12 +36,16 @@ poetry install
 ```
 
 Finally, build the `train` and `data` project apptainer images. Set the `$AMPLFI_CONTAINER_ROOT` environment variable
-to a location where you want the images to be stored, e.g. `~/amplfi/images`
+to a location where you want the images to be stored, e.g. `~/amplfi/images`. 
+
+Make sure you are in the respective projects home directory when building the container. For example, from the 
+`amplfi` repositories home directory
 
 ```console
-apptainer build $AMPLFI_CONTAINER_ROOT/data.sif projects/data/apptainer.def
-apptainer build $AMPLFI_CONTAINER_ROOT/train.sif projects/train/apptainer.def
+cd projects/data
+apptainer build $AMPLFI_CONTAINER_ROOT/data.sif apptainer.def
 ```
+will build the `data` image. Make sure you do the same for the `train` image!
 
 ## Generating Data
 Training and testing background strain data can be generated with the `amplfi.law.DataGeneration` workflow.
