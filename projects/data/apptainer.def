@@ -3,10 +3,10 @@ From: ghcr.io/ml4gw/mldatafind/law-overhaul:latest
 Stage: build
 
 %files
-../../amplfi/law/ /opt/amplfi/law
-../../mldatafind /opt/mldatafind
+../../amplfi/ /opt/amplfi/amplfi
+../../mldatafind /opt/amplfi/mldatafind
 
 %post
-cd /opt/amplfi/law
+cd /opt/amplfi/amplfi/law
 micromamba run -p /opt/env \
     pip install --no-deps -e .
