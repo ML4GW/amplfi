@@ -17,5 +17,3 @@ micromamba run -p /opt/env \
 # is invoked
 export PATH=/opt/env/bin:$PATH
 echo export PATH=$PATH >> /etc/profile
-
-
