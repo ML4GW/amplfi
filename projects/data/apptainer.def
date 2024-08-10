@@ -6,7 +6,16 @@ Stage: build
 ../../amplfi/ /opt/amplfi/amplfi
 ../../mldatafind /opt/amplfi/mldatafind
 
+
 %post
 cd /opt/amplfi/amplfi/law
 micromamba run -p /opt/env \
     pip install --no-deps -e .
+
+# set path, and add it to /etc/profile
+# so that it will be set if login shell
+# is invoked
+export PATH=/opt/env/bin:$PATH
+echo export PATH=$PATH >> /etc/profile
+
+
