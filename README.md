@@ -70,3 +70,11 @@ cd amplfi/projects/train/
 export AMPLFI_OUTDIR=~/amplfi/my-first-run/training/
 poetry run python train/cli/flow.py --config configs/flow/cbc.yaml
 ```
+
+or by running inside the container
+
+```console
+APPTAINERENV_AMPLFI_OUTDIR=$AMPLFI_OUTDIR APPTAINERENV_AMPLFI_DATADIR=$AMPLFI_DATADIR \
+    apptainer run --nv $AMPLFI_CONTAINER_ROOT/train.sif python /opt/amplfi/projects/train/train/cli/flow.py fit \
+    --config /path/to/config.yaml
+```
