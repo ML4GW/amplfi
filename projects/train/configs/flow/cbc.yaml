@@ -20,7 +20,7 @@ model:
   class_path: train.models.flow.FlowModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
-    # uncomment below when running `trainer.test` to load in a checkpoint
+    # add path below when running `trainer.test` to load in a checkpoint
     checkpoint: null
     arch:
       class_path: amplfi.architectures.flows.InverseAutoregressiveFlow
