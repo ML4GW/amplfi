@@ -21,7 +21,7 @@ model:
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
     # uncomment below when running `trainer.test` to load in a checkpoint
-    # checkpoint:
+    checkpoint: null
     arch:
       class_path: amplfi.architectures.flows.InverseAutoregressiveFlow
       init_args:
