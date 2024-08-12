@@ -21,7 +21,10 @@ class AmplfiModel(pl.LightningModule):
 
     Args:
         checkpoint:
-            Path to a model checkpoint to load
+            Path to a model checkpoint to load. This will load in weights
+            for both flow and embedding. Should only be specified when
+            running `trainer.test`. For resuming a `trainer.fit` run from
+            a checkpoint, use the --ckpt_path `Trainer` argument.
     """
 
     def __init__(
