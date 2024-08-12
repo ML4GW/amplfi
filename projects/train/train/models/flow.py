@@ -1,6 +1,3 @@
-from pathlib import Path
-from typing import Optional
-
 import bilby
 import numpy as np
 import pandas as pd
@@ -30,8 +27,6 @@ class FlowModel(AmplfiModel):
             to keep during training
         samples_per_event:
             Number of samples to draw per event for testing
-        checkpoint:
-            Path to a model checkpoint to load
     """
 
     def __init__(
@@ -40,26 +35,21 @@ class FlowModel(AmplfiModel):
         arch: FlowArchitecture,
         samples_per_event: int = 20000,
         num_corner: int = 10,
-        checkpoint: Optional[Path] = None,
         **kwargs,
     ) -> None:
+
         super().__init__(*args, **kwargs)
-        # construct our model up front and record all
-        # our hyperparameters to our logdir
+        # construct our model
         self.model = arch
         self.samples_per_event = samples_per_event
         self.num_corner = num_corner
-        self.checkpoint = checkpoint
+
+        # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
 
-        # optional checkpoint for initializing model
-        # weights - use only when running trainer.test
-        if checkpoint is not None:
-            self._logger.info(
-                f"Loading model weights from checkpoint path: {checkpoint}"
-            )
-            checkpoint = torch.load(checkpoint)
-            self.load_state_dict(checkpoint["state_dict"])
+        # if checkpoint is not None, load in model weights;
+        # checkpint should only be specified here if running trainer.test
+        self.maybe_load_checkpoint(self.checkpoint)
 
     def forward(self, strain, parameters) -> Tensor:
         return -self.model.log_prob(parameters, context=strain)

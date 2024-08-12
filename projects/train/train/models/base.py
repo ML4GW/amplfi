@@ -18,6 +18,10 @@ class AmplfiModel(pl.LightningModule):
 
     Encodes common functionality for all models,
     such as on-device augmentation and preprocessing,
+
+    Args:
+        checkpoint:
+            Path to a model checkpoint to load
     """
 
     def __init__(
@@ -28,19 +32,28 @@ class AmplfiModel(pl.LightningModule):
         weight_decay: float = 0.0,
         save_top_k_models: int = 10,
         patience: Optional[int] = None,
+        checkpoint: Optional[Path] = None,
         verbose: bool = False,
     ):
         super().__init__()
         self._logger = self.init_logging(verbose)
-
         self.outdir = outdir
         outdir.mkdir(exist_ok=True, parents=True)
         self.inference_params = inference_params
+        self.checkpoint = checkpoint
         self.save_hyperparameters()
 
         # initialize an unfit scaler here so that it is available
         # for the LightningModule to save and load from checkpoints
         self.scaler = ChannelWiseScaler(len(inference_params))
+
+    def maybe_load_checkpoint(self, checkpoint: Optional[Path] = None):
+        if checkpoint is not None:
+            self._logger.info(
+                f"Loading model weights from checkpoint path: {checkpoint}"
+            )
+            checkpoint = torch.load(checkpoint)
+            self.load_state_dict(checkpoint["state_dict"])
 
     def init_logging(self, verbose):
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

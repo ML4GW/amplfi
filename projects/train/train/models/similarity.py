@@ -26,6 +26,11 @@ class SimilarityModel(AmplfiModel):
         self.model = arch
         self.loss = VICRegLoss()
 
+        # if checkpoint is not None, load in model weights;
+        # checkpoint should only be specified in this way
+        # if running trainer.test
+        self.maybe_load_checkpoint(self.checkpoint)
+
     def forward(self, ref, aug):
         ref = self.model(ref)
         aug = self.model(aug)
