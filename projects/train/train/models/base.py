@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -17,6 +18,13 @@ class AmplfiModel(pl.LightningModule):
 
     Encodes common functionality for all models,
     such as on-device augmentation and preprocessing,
+
+    Args:
+        checkpoint:
+            Path to a model checkpoint to load. This will load in weights
+            for both flow and embedding. Should only be specified when
+            running `trainer.test`. For resuming a `trainer.fit` run from
+            a checkpoint, use the --ckpt_path `Trainer` argument.
     """
 
     def __init__(
@@ -27,20 +35,54 @@ class AmplfiModel(pl.LightningModule):
         weight_decay: float = 0.0,
         save_top_k_models: int = 10,
         patience: Optional[int] = None,
+        checkpoint: Optional[Path] = None,
+        verbose: bool = False,
     ):
         super().__init__()
+        self._logger = self.init_logging(verbose)
         self.outdir = outdir
         outdir.mkdir(exist_ok=True, parents=True)
         self.inference_params = inference_params
+        self.checkpoint = checkpoint
         self.save_hyperparameters()
 
         # initialize an unfit scaler here so that it is available
         # for the LightningModule to save and load from checkpoints
         self.scaler = ChannelWiseScaler(len(inference_params))
 
-    def get_logger(self):
+    def maybe_load_checkpoint(self, checkpoint: Optional[Path] = None):
+        if checkpoint is not None:
+            self._logger.info(
+                f"Loading model weights from checkpoint path: {checkpoint}"
+            )
+            checkpoint = torch.load(checkpoint)
+            self.load_state_dict(checkpoint["state_dict"])
+
+    def init_logging(self, verbose):
+        log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        logging.basicConfig(
+            format=log_format,
+            level=logging.DEBUG if verbose else logging.INFO,
+            stream=sys.stdout,
+        )
+
+        world_size, rank = self.get_world_size_and_rank()
         logger_name = self.__class__.__name__
+        if world_size > 1:
+            logger_name += f":{rank}"
         return logging.getLogger(logger_name)
+
+    def get_world_size_and_rank(self) -> tuple[int, int]:
+        """
+        Name says it all, but generalizes to the case
+        where we aren't running distributed training.
+        """
+        if not torch.distributed.is_initialized():
+            return 1, 0
+        else:
+            world_size = torch.distributed.get_world_size()
+            rank = torch.distributed.get_rank()
+            return world_size, rank
 
     def setup(self, stage):
         if stage == "fit":

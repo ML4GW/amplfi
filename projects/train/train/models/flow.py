@@ -37,14 +37,19 @@ class FlowModel(AmplfiModel):
         num_corner: int = 10,
         **kwargs,
     ) -> None:
+
         super().__init__(*args, **kwargs)
-        # construct our model up front and record all
-        # our hyperparameters to our logdir
+        # construct our model
         self.model = arch
         self.samples_per_event = samples_per_event
         self.num_corner = num_corner
+
+        # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
-        self._logger = self.get_logger()
+
+        # if checkpoint is not None, load in model weights;
+        # checkpint should only be specified here if running trainer.test
+        self.maybe_load_checkpoint(self.checkpoint)
 
     def forward(self, strain, parameters) -> Tensor:
         return -self.model.log_prob(parameters, context=strain)
@@ -58,7 +63,7 @@ class FlowModel(AmplfiModel):
             on_step=True,
             on_epoch=True,
             prog_bar=True,
-            sync_dist=False,
+            sync_dist=True,
             logger=True,
         )
         return loss
