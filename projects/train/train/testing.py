@@ -30,7 +30,7 @@ class Result(bilby.result.Result):
 
         # calculate number of samples in each pixel
         NPIX = hp.nside2npix(nside)
-        ipix = hp.ang2pix(nside, theta, ra, nest=True)
+        ipix = hp.ang2pix(nside, theta, ra)
         ipix = np.sort(ipix)
         uniq, counts = np.unique(ipix, return_counts=True)
 
@@ -42,7 +42,7 @@ class Result(bilby.result.Result):
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
         theta_inj = np.pi / 2 - dec_inj
-        true_ipix = hp.ang2pix(nside, theta_inj, ra_inj, nest=True)
+        true_ipix = hp.ang2pix(nside, theta_inj, ra_inj)
 
         sorted_idxs = np.argsort(m)[::-1]  # sort pixels in descending order
         # count number of pixels before hitting the pixel with injection
