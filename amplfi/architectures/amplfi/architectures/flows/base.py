@@ -7,6 +7,7 @@ from pyro.distributions import ConditionalTransformedDistribution, transforms
 from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.nn import PyroModule
 
+from ml4gw.transforms import ChannelWiseScaler
 
 class FlowArchitecture(PyroModule):
     def __init__(
@@ -28,8 +29,30 @@ class FlowArchitecture(PyroModule):
         else:
             self.embedding_context = nullcontext
 
-        if embedding_weights is not None:
-            self.embedding_net.load_state_dict(torch.load(embedding_weights))
+        def load_weights(weights: Path):
+            checkpoint = torch.load(weights)
+            arch_weights = {
+                k[6:]: v
+                for k, v in checkpoint["state_dict"].items()
+                if k.startswith("model.")
+            }
+
+            scaler_weights = {
+                    k[7:]: v
+                for k, v in checkpoint["state_dict"].items()
+                if k.startswith("scaler.")
+            }
+    
+            return arch_weights, scaler_weights
+
+        arch_weights, scaler_weights = load_weights(embedding_weights)
+        self.scaler = ChannelWiseScaler(num_params)
+        self.scaler.load_state_dict(scaler_weights)
+        self.embedding_net.load_state_dict(arch_weights)
+
+
+        #if embedding_weights is not None:
+        #    self.embedding_net.load_state_dict(torch.load(embedding_weights))
 
     def transform_block(
         self, *args, **kwargs
