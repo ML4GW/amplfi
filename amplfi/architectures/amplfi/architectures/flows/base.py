@@ -8,6 +8,7 @@ from pyro.distributions import ConditionalTransformedDistribution, transforms
 from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.nn import PyroModule
 
+
 class FlowArchitecture(PyroModule):
     def __init__(
         self,
@@ -41,7 +42,6 @@ class FlowArchitecture(PyroModule):
                 for k, v in checkpoint["state_dict"].items()
                 if k.startswith("scaler.")
             }
-    
             return arch_weights, scaler_weights
 
         arch_weights, scaler_weights = load_weights(embedding_weights)
