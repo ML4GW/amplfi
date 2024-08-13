@@ -11,7 +11,7 @@ trainer:
         save_dir: ${oc.env:AMPLFI_OUTDIR}/train
         project: amplfi
         # uncomment and set to name your run
-        name: emeddings_1
+        #name:
   max_epochs: 50
   check_val_every_n_epoch: 1
   log_every_n_steps: 20
@@ -20,6 +20,7 @@ model:
   class_path: train.models.SimilarityModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
+    checkpoint: null
     arch:
       class_path: amplfi.architectures.embeddings.ResNet
       init_args:
@@ -47,7 +48,7 @@ data:
     batches_per_epoch: 150
     batch_size: 256
     ifos: ["H1", "L1"]
-    min_valid_duration: 1000.0
+    min_valid_duration: 10000.0
     augmentor: 
       class_path: train.data.augmentors.TimeTranslator
       init_args:
