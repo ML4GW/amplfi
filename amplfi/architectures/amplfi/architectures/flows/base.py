@@ -3,11 +3,10 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import torch
+from ml4gw.transforms import ChannelWiseScaler
 from pyro.distributions import ConditionalTransformedDistribution, transforms
 from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.nn import PyroModule
-
-from ml4gw.transforms import ChannelWiseScaler
 
 class FlowArchitecture(PyroModule):
     def __init__(
