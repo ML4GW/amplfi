@@ -1,10 +1,10 @@
 import law
 import luigi
+from mldatafind.law.tasks import Fetch
+from mldatafind.law.tasks import Query as _Query
 
 from amplfi.law.base import DATA_SANDBOX, AmplfiDataTaskMixin
 from amplfi.law.paths import paths
-from mldatafind.law.tasks import Fetch
-from mldatafind.law.tasks import Query as _Query
 
 
 # add mixin for appending amplfi specific

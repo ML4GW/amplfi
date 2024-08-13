@@ -1,9 +1,8 @@
 import os
-import torch
-import h5py
-import lightning.pytorch as pl
 import shutil
 
+import h5py
+import lightning.pytorch as pl
 
 
 class SaveAugmentedBatch(pl.Callback):
@@ -99,6 +98,4 @@ class SaveAugmentedSimilarityBatch(pl.Callback):
 class ModelCheckpoint(pl.callbacks.ModelCheckpoint):
     def on_train_end(self, trainer, pl_module):
         save_dir = trainer.logger.save_dir
-        shutil.copy(
-            self.best_model_path, os.path.join(save_dir, "best.ckpt")
-        )
+        shutil.copy(self.best_model_path, os.path.join(save_dir, "best.ckpt"))
