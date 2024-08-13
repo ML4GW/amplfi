@@ -1,6 +1,7 @@
 import os
 
 import luigi
+
 from mldatafind.law.parameters import PathParameter
 
 
