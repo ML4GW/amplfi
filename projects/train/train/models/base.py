@@ -5,8 +5,10 @@ from typing import Optional
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
+from lightning.pytorch.callbacks import LearningRateMonitor
 from ml4gw.transforms import ChannelWiseScaler
+
+from train.callbacks import ModelCheckpoint
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution

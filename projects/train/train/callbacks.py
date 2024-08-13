@@ -1,10 +1,11 @@
 import os
+import shutil
 
 import h5py
-from lightning.pytorch import Callback
+import lightning.pytorch as pl
 
 
-class SaveAugmentedBatch(Callback):
+class SaveAugmentedBatch(pl.Callback):
     def on_train_start(self, trainer, pl_module):
         if trainer.global_rank == 0:
             datamodule = trainer.datamodule
@@ -47,7 +48,7 @@ class SaveAugmentedBatch(Callback):
                 f["parameters"] = parameters.cpu().numpy()
 
 
-class SaveAugmentedSimilarityBatch(Callback):
+class SaveAugmentedSimilarityBatch(pl.Callback):
     def on_train_start(self, trainer, pl_module):
         if trainer.global_rank == 0:
             datamodule = trainer.datamodule
@@ -92,3 +93,9 @@ class SaveAugmentedSimilarityBatch(Callback):
                 f["ref"] = ref.cpu().numpy()
                 f["aug"] = aug.cpu().numpy()
                 f["parameters"] = parameters.cpu().numpy()
+
+
+class ModelCheckpoint(pl.callbacks.ModelCheckpoint):
+    def on_train_end(self, trainer, pl_module):
+        save_dir = trainer.logger.save_dir
+        shutil.copy(self.best_model_path, os.path.join(save_dir, "best.ckpt"))
