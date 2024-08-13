@@ -38,7 +38,7 @@ class FlowArchitecture(PyroModule):
             }
 
             scaler_weights = {
-                    k[7:]: v
+                k[7:]: v
                 for k, v in checkpoint["state_dict"].items()
                 if k.startswith("scaler.")
             }
@@ -49,10 +49,6 @@ class FlowArchitecture(PyroModule):
         self.scaler = ChannelWiseScaler(num_params)
         self.scaler.load_state_dict(scaler_weights)
         self.embedding_net.load_state_dict(arch_weights)
-
-
-        #if embedding_weights is not None:
-        #    self.embedding_net.load_state_dict(torch.load(embedding_weights))
 
     def transform_block(
         self, *args, **kwargs
