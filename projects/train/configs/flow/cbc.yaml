@@ -20,6 +20,7 @@ model:
   class_path: train.models.flow.FlowModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
+    checkpoint: null
     arch:
       class_path: amplfi.architectures.flows.InverseAutoregressiveFlow
       init_args:
@@ -29,8 +30,8 @@ model:
         context_dim: 8
         # uncomment below to load 
         # in pre-trained embedding weights
-        embedding_weights: "/projects/bcse/saggarwal/binds/checkpoints/last.ckpt"
-        freeze_embedding: false
+        #embedding_weights: "path/to/embedding/weights"
+        #freeze_embedding: false
         embedding_net: 
           class_path: amplfi.architectures.embeddings.ResNet
           init_args:
@@ -57,7 +58,7 @@ data:
     batches_per_epoch: 200
     batch_size: 800
     ifos: ["H1", "L1"]
-    min_valid_duration: 1000.0
+    min_valid_duration: 10000.0
     waveform_sampler: 
       class_path: train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
