@@ -98,5 +98,6 @@ class PsdEstimator(torch.nn.Module):
         if X.ndim == 3 and X.size(0) == 2:
             background = background[0]
 
+        self.spectral_density.to(device=background.device)
         psds = self.spectral_density(background.double())
         return X, psds

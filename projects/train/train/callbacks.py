@@ -15,7 +15,15 @@ class SaveAugmentedBatch(pl.Callback):
             [X] = next(iter(trainer.train_dataloader))
             X = X.to(device)
 
-            cross, plus, parameters = datamodule.waveform_sampler.sample(X)
+            cross, plus, parameters = datamodule.waveform_sampler.sample(
+                len(X), device=device
+            )
+            dec, psi, phi = datamodule.waveform_sampler.sample_extrinsic(
+                len(X), device=device
+            )
+            parameters.update({"dec": dec, "psi": psi, "phi": phi})
+            X = X.repeat(datamodule.waveform_sampler.oversampling_factor, 1, 1)
+
             strain, parameters = datamodule.inject(X, cross, plus, parameters)
 
             save_dir = trainer.logger.log_dir or trainer.logger.save_dir
@@ -34,12 +42,10 @@ class SaveAugmentedBatch(pl.Callback):
                 parameters.to(device),
             )
             background = background.to(device)
-            keys = [
-                k
-                for k in datamodule.hparams.inference_params
-                if k not in ["dec", "psi", "phi"]
-            ]
-            parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
+            parameters = {
+                k: parameters[:, i]
+                for i, k in enumerate(datamodule.hparams.inference_params)
+            }
             strain, parameters = datamodule.inject(
                 background, cross, plus, parameters
             )
@@ -58,7 +64,9 @@ class SaveAugmentedSimilarityBatch(pl.Callback):
             [X] = next(iter(trainer.train_dataloader))
             X = X.to(device)
 
-            cross, plus, parameters = datamodule.waveform_sampler.sample(X)
+            cross, plus, parameters = datamodule.waveform_sampler.sample(
+                len(X)
+            )
             [ref, aug], parameters = datamodule.inject(
                 X, cross, plus, parameters
             )

@@ -69,6 +69,6 @@ class WaveformSampler(torch.nn.Module):
     def fit_scaler(self, scaler: torch.nn.Module) -> torch.nn.Module:
         raise NotImplementedError
 
-    def sample(self, X: torch.Tensor):
+    def sample(self, N: int):
         """Defines how to sample waveforms for training"""
         raise NotImplementedError

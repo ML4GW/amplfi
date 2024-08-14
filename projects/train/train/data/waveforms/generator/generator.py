@@ -57,9 +57,8 @@ class WaveformGenerator(WaveformSampler):
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
-    def sample(self, X):
-        N = len(X)
-        parameters = self.parameter_sampler(N, device=X.device)
+    def sample(self, N, device="cpu"):
+        parameters = self.parameter_sampler(N, device=device)
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
@@ -80,3 +79,53 @@ class WaveformGenerator(WaveformSampler):
 
     def forward(self):
         raise NotImplementedError
+
+
+class WaveformGeneratorOversamplingProjections(WaveformGenerator):
+    def __init__(self, *args, oversampling_factor: int = 1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.oversampling_factor = oversampling_factor
+
+    def sample_extrinsic(self, N, device="cpu"):
+        N *= self.oversampling_factor
+        dec = self.dec.sample((N,)).to(device)
+        psi = self.psi.sample((N,)).to(device)
+        phi = self.phi.sample((N,)).to(device)
+        return dec, psi, phi
+
+    def sample(self, N, device="cpu"):
+        hc, hp, params = super().sample(N, device=device)
+        # repeat waveforms along batch axis
+        # shape is (batch, strain_dim)
+        hp = hp.repeat(self.oversampling_factor, 1)
+        hc = hc.repeat(self.oversampling_factor, 1)
+        for _n, _p in params.items():
+            # repeat each parameter
+            params[_n] = _p.repeat(self.oversampling_factor)
+        return hc, hp, params
+
+    def fit_scaler(
+        self, scaler: "ChannelWiseScaler", device="cpu"
+    ) -> "ChannelWiseScaler":
+        parameters = self.parameter_sampler(
+            self.oversampling_factor * self.num_fit_params, device=device
+        )
+        # sample_extrinsic oversamples by design
+        dec, psi, phi = self.sample_extrinsic(self.num_fit_params)
+        parameters.update({"dec": dec, "psi": psi, "phi": phi})
+        transformed = self.parameter_transformer(parameters)
+
+        fit = []
+        for key in self.inference_params:
+            fit.append(transformed[key])
+
+        fit = torch.row_stack(fit)
+        scaler.fit(fit)
+        return scaler
+
+    def get_val_waveforms(self, _, world_size, device="cpu"):
+        num_waveforms = self.num_val_waveforms // world_size
+        hc, hp, parameters = self.sample(num_waveforms, device=device)
+        dec, psi, phi = self.sample_extrinsic(num_waveforms, device=device)
+        parameters.update({"dec": dec, "psi": psi, "phi": phi})
+        return hc, hp, parameters
