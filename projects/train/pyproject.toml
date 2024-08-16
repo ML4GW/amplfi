@@ -8,7 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12" #^3.8,<3.12"
 lightning = "^2.2.1"
-"ml4gw" = {path = "../../ml4gw", develop = true}
+ml4gw = "^0.5"
 h5py = "^3.10.0"
 ray = "^2.9.3"
 bilby = "^2.2.3"
