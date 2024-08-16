@@ -7,7 +7,6 @@ From: /sw/external/NGC/pytorch_23.05-py3.sif
 
 %files
 . /amplfi/projects/train
-../../ml4gw /amplfi/ml4gw
 ../../amplfi/architectures /amplfi/amplfi/architectures
 
 %post

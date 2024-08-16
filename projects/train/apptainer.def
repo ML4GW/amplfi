@@ -7,7 +7,6 @@ Stage: build
 # light and protect against any large files that might
 # accidentally get created in this repo
 . /opt/amplfi/projects/train
-../../ml4gw /opt/amplfi/ml4gw
 ../../amplfi/architectures /opt/amplfi/amplfi/architectures
 
 %post
