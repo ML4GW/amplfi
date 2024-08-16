@@ -8,7 +8,7 @@ packages = [{include = "amplfi"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
-ml4gw = "^0.5"
+ml4gw = ">=0.4"
 pyro-ppl = "^1.9"
 
 [tool.poetry.group.test.dependencies]
