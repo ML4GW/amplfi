@@ -21,7 +21,7 @@ Stage: build
 # TODO: there's got to be a better solution here
 python -m pip install poetry
 cd /opt/amplfi/projects/train
-poetry export -o requirements.txt --without-hashes \
+poetry export --with dev -o requirements.txt --without-hashes \
     && sed -i 's|\(.*\) @ file://|-e |' requirements.txt
 
 Bootstrap: docker
