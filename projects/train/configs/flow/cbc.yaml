@@ -83,5 +83,6 @@ data:
         f_min: 20
         f_max: 1024
         padding: 1
+        oversampling_factor: 3
         waveform_arguments:
           f_ref: 40

@@ -170,8 +170,7 @@ class AmplfiDataset(pl.LightningDataModule):
 
     @property
     def val_batch_size(self):
-        """Use larger batch sizes when we don't need gradients."""
-        return int(2 * self.hparams.batch_size)
+        return int(self.hparams.batch_size)
 
     @property
     def train_val_fnames(self):
@@ -215,6 +214,7 @@ class AmplfiDataset(pl.LightningDataModule):
         for item in self.__dict__.values():
             if isinstance(item, torch.nn.Module):
                 item.to(self.device)
+        self.projector.to(self.device)
 
     def build_transforms(self, stage):
         """
@@ -334,31 +334,36 @@ class AmplfiDataset(pl.LightningDataModule):
         """
         if self.trainer.training:
             [batch] = batch
-            cross, plus, parameters = self.waveform_sampler.sample(batch)
+            cross, plus, parameters = self.waveform_sampler.sample(
+                len(batch), device=self.device
+            )
+            dec, psi, phi = self.waveform_sampler.sample_extrinsic(
+                len(batch), device=self.device
+            )
+            parameters.update({"dec": dec, "psi": psi, "phi": phi})
+            batch = batch.repeat(
+                self.waveform_sampler.oversampling_factor, 1, 1
+            )
             strain, parameters = self.inject(batch, cross, plus, parameters)
 
         elif self.trainer.validating or self.trainer.sanity_checking:
             [cross, plus, parameters], [background] = batch
 
             background = background[: len(cross)]
-            keys = [
-                k
-                for k in self.hparams.inference_params
-                if k not in ["dec", "psi", "phi"]
-            ]
-            parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
+            parameters = {
+                k: parameters[:, i]
+                for i, k in enumerate(self.hparams.inference_params)
+            }
             strain, parameters = self.inject(
                 background, cross, plus, parameters
             )
 
         elif self.trainer.testing:
             [cross, plus, parameters], [background] = batch
-            keys = [
-                k
-                for k in self.hparams.inference_params
-                if k not in ["dec", "psi", "phi"]
-            ]
-            parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
+            parameters = {
+                k: parameters[:, i]
+                for i, k in enumerate(self.hparams.inference_params)
+            }
             strain, parameters = self.inject(
                 background, cross, plus, parameters
             )
@@ -393,7 +398,7 @@ class AmplfiDataset(pl.LightningDataModule):
             )
 
         self._logger.info(
-            f"Using a {dataset.__class__.__name__} class for training"
+            f"Using {dataset.__class__.__name__} class for training"
         )
         pin_memory = isinstance(
             self.trainer.accelerator, pl.accelerators.CUDAAccelerator
@@ -409,7 +414,7 @@ class AmplfiDataset(pl.LightningDataModule):
         # offset the start of the validation background data
         # by the device id to add more diversity in the validation set
         _, rank = self.get_world_size_and_rank()
-
+        self._logger.debug("Calling validation dataloader")
         # build waveform dataloader
         cross, plus = self.val_waveforms
         waveform_dataset = torch.utils.data.TensorDataset(
