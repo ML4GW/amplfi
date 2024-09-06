@@ -68,7 +68,7 @@ class AmplfiDataset(pl.LightningDataModule):
 
     def __init__(
         self,
-        data_dir: Path,
+        data_dir: str,
         inference_params: list[str],
         highpass: float,
         sample_rate: float,
@@ -86,9 +86,7 @@ class AmplfiDataset(pl.LightningDataModule):
         super().__init__()
         self.save_hyperparameters(ignore=["waveform_sampler"])
         self.init_logging(verbose)
-        self.data_dir = data_dir
         self.waveform_sampler = waveform_sampler
-        self.train_fnames, self.val_fnames = self.train_val_split()
 
         # generate our local node data directory
         # if our specified data source is remote
@@ -273,6 +271,8 @@ class AmplfiDataset(pl.LightningDataModule):
     def setup(self, stage: str) -> None:
         world_size, rank = self.get_world_size_and_rank()
         self._logger = self.get_logger(world_size, rank)
+        self.data_dir = Path(self.data_dir)
+        self.train_fnames, self.val_fnames = self.train_val_split()
 
         self._logger.info(f"Setting up data for stage {stage}")
 
