@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 import torch
 
-from train.data.utils import ParameterSampler
+from train.data.utils.utils import ParameterSampler
 from train.data.waveforms.sampler import WaveformSampler
 
 if TYPE_CHECKING:

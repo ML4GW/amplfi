@@ -11,7 +11,8 @@ from ml4gw.dataloading import Hdf5TimeSeriesDataset, InMemoryDataset
 from ml4gw.transforms import ChannelWiseScaler, Whiten
 
 from train.augmentations import PsdEstimator, WaveformProjector
-from train.data.utils import ZippedDataset
+from train.data.utils import fs as fs_utils
+from train.data.utils.utils import ZippedDataset
 from train.data.waveforms.sampler import WaveformSampler
 
 Tensor = torch.Tensor
@@ -89,6 +90,10 @@ class AmplfiDataset(pl.LightningDataModule):
         self.waveform_sampler = waveform_sampler
         self.train_fnames, self.val_fnames = self.train_val_split()
 
+        # generate our local node data directory
+        # if our specified data source is remote
+        self.data_dir = fs_utils.get_data_dir(self.hparams.data_dir)
+
     def init_logging(self, verbose: bool):
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         logging.basicConfig(
@@ -96,6 +101,21 @@ class AmplfiDataset(pl.LightningDataModule):
             level=logging.DEBUG if verbose else logging.INFO,
             stream=sys.stdout,
         )
+
+    def prepare_data(self):
+        """
+        Download s3 data if it doesn't exist.
+        """
+        logger = logging.getLogger("AframeDataset")
+        bucket, _ = fs_utils.split_data_dir(self.hparams.data_dir)
+        if bucket is None:
+            return
+        logger.info(
+            "Downloading data from S3 bucket {} to {}".format(
+                bucket, self.data_dir
+            )
+        )
+        fs_utils.download_training_data(bucket, self.data_dir)
 
     # ================================================ #
     # Distribution utilities

@@ -4,7 +4,7 @@ import torch
 from ml4gw import distributions
 from torch.distributions import Uniform
 
-from train.data.utils import ParameterSampler, ParameterTransformer
+from train.data.utils.utils import ParameterSampler, ParameterTransformer
 
 # prior and parameter transformer for sg use case
 sg_prior = ParameterSampler(
