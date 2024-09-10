@@ -81,23 +81,7 @@ jobs:
           --privileged \
           --entrypoint /bin/bash \
           quay.io/singularity/singularity:v3.8.1 \
-          -c 'singularity build --sandbox /opt/amplfi/sandbox apptainer.def'
-
-    # run tests inside the sandbox;
-    # if this is a push event, tar the sandbox
-    # so that we can import it into docker
-    # container and push it to the registry;
-    # otherwise (e.g. for a PR) just run the tests
-    - name: run tests and tar sandbox
-      run: |
-        docker run \
-          --rm \
-          -v ${{ github.workspace }}:/opt/amplfi \
-          --workdir /opt/amplfi/projects/${{ matrix.project }} \
-          --privileged \
-          --entrypoint /bin/bash \
-          quay.io/singularity/singularity:v3.8.1 \
-          -c 'singularity exec --env PATH=${{ env.PATH }} tar -czf /opt/amplfi/app.tar.gz -C /opt/amplfi/sandbox .'
+          -c 'singularity build --sandbox /opt/amplfi/sandbox apptainer.def && tar -czf /opt/amplfi/app.tar.gz -C /opt/amplfi/sandbox .'
 
     # now copy the fs contents into an empty
     # container and push it to the registry,
