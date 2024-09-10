@@ -5,8 +5,8 @@
 # to workflow
 workflow: &workflow
   - '.github/filters.yaml'
-  - '.github/workflows/unit-tests.yaml'
-  - '.github/workflows/pre-commit.yaml'
+  - '.github/project-filters.yaml'
+  - '.github/workflows/**'
 
 # libraries
 amplfi/architectures/:
