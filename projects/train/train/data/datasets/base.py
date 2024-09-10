@@ -1,7 +1,6 @@
 import logging
 import os
 import sys
-from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 import h5py
@@ -68,7 +67,7 @@ class AmplfiDataset(pl.LightningDataModule):
 
     def __init__(
         self,
-        data_dir: Path,
+        data_dir: str,
         inference_params: list[str],
         highpass: float,
         sample_rate: float,
