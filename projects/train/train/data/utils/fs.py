@@ -3,7 +3,9 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+from pathlib import Path
 from tempfile import gettempdir
+from typing import Optional, Tuple, Union
 
 import s3fs
 from botocore.exceptions import ClientError, ResponseStreamingError
@@ -14,12 +16,13 @@ from fsspec.exceptions import FSTimeoutError
 retry_config = {"retries": {"total_max_attempts": 10, "mode": "adaptive"}}
 
 
-def split_data_dir(data_dir: str):
+def split_data_dir(data_dir: Union[str, Path]) -> Tuple[Optional[str], str]:
     """
     Check if a data directory specifies a remote s3
     source by including  `"s3://"` at the start of
     the directory name.
     """
+    data_dir = str(data_dir)
     if data_dir.startswith("s3://"):
         bucket = data_dir.replace("s3://", "")
 
@@ -32,7 +35,7 @@ def split_data_dir(data_dir: str):
         return None, data_dir
 
 
-def get_data_dir(data_dir: str):
+def get_data_dir(data_dir: str) -> Path:
     # generate our local node data directory
     # if our specified data source is remote
     bucket, data_dir = split_data_dir(data_dir)
@@ -48,7 +51,7 @@ def get_data_dir(data_dir: str):
 
     logging.info(f"Downloading data to {data_dir}")
     os.makedirs(data_dir, exist_ok=True)
-    return data_dir
+    return Path(data_dir)
 
 
 def _download(
@@ -93,6 +96,7 @@ def download_training_data(bucket: str, data_dir: str):
     """
     Download s3 data if it doesn't exist.
     """
+    data_dir = str(data_dir)
     logging.info(
         "Downloading data from S3 bucket {} to "
         "local directory {}".format(bucket, data_dir)

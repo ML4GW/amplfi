@@ -68,7 +68,7 @@ class AmplfiDataset(pl.LightningDataModule):
 
     def __init__(
         self,
-        data_dir: str,
+        data_dir: Path,
         inference_params: list[str],
         highpass: float,
         sample_rate: float,
@@ -271,7 +271,6 @@ class AmplfiDataset(pl.LightningDataModule):
     def setup(self, stage: str) -> None:
         world_size, rank = self.get_world_size_and_rank()
         self._logger = self.get_logger(world_size, rank)
-        self.data_dir = Path(self.data_dir)
         self.train_fnames, self.val_fnames = self.train_val_split()
 
         self._logger.info(f"Setting up data for stage {stage}")
