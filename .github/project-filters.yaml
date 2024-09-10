@@ -1,6 +1,9 @@
+# filter for changes
+# to workflow
 workflow: &workflow
-  - '.github/lib-filters.yaml'
-  - '.github/workflows/lib-tests.yaml'
+  - '.github/filters.yaml'
+  - '.github/project-filters.yaml'
+  - '.github/workflows/**'
 
 data:
   - *workflow
