@@ -44,7 +44,7 @@ class SaveAugmentedBatch(pl.Callback):
                 background, cross, plus, parameters
             )
             with h5py.File(os.path.join(save_dir, "val-batch.h5"), "w") as f:
-                f["strain"] = X.cpu().numpy()
+                f["strain"] = strain.cpu().numpy()
                 f["parameters"] = parameters.cpu().numpy()
 
 
