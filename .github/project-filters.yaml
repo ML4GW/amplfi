@@ -1,0 +1,14 @@
+workflow: &workflow
+  - '.github/lib-filters.yaml'
+  - '.github/workflows/lib-tests.yaml'
+
+data:
+  - *workflow
+  - 'projects/data/**'
+  - 'mldatafind/**'
+
+train:
+  - *workflow
+  - 'projects/train/**'
+  - 'amplfi/architectures/**'
+  - 'ml4gw/**'

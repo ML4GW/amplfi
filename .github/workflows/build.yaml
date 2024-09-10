@@ -1,0 +1,119 @@
+# workflow that builds docker container images
+# from the singularity apptainer definition files
+# we use for local development, and runs any tests. 
+# Uses tar archives to convert between the formats 
+# in order to handle the large memory footprints of 
+# our containers without toppling over the 
+# GitHub runner nodes this executes on.
+name: project build and tests
+
+on:
+  push:
+    branches:
+      - main
+
+# TODO: currently combining path for nvidia variables 
+# necessary to launch triton in export container
+# with path required by train / data projects. 
+# Should add conditionals in this workflow to set these dynamically
+env:
+  REGISTRY: ghcr.io
+  PATH: /opt/env/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/cuda-11.8/bin
+
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.filter.outputs.changes }}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Filter project changes
+      id: filter 
+      uses: dorny/paths-filter@v2
+      with:
+        filters: .github/project-filters.yaml
+      if: github.event.pull_request.draft == false
+
+  build-test:
+    runs-on: ubuntu-latest
+    needs: changes
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.changes.outputs.projects) }}
+        exclude:
+          - project: 'workflow' # Fixed the exclusion key
+    steps:
+    -
+      name: delete huge unnecessary tools folder
+      run: rm -rf /opt/hostedtoolcache 
+    -
+      name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    - 
+      name: log in to the Container registry
+      uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # build the singularity image as a sandbox directory
+    # inside a docker container that has singularity
+    # installed (take a big breath). Then tar that directory
+    # so that we can import it into docker. Doing everything
+    # in one fell swoop because of permissions discrepancies
+    # inside and outside the container.
+    -
+      name: build singularity image
+      run: |
+        docker run \
+          --rm \
+          -v ${{ github.workspace }}:/opt/amplfi \
+          --workdir /opt/amplfi/projects/${{ matrix.project }} \
+          --privileged \
+          --entrypoint /bin/bash \
+          quay.io/singularity/singularity:v3.8.1 \
+          -c 'singularity build --sandbox /opt/amplfi/sandbox apptainer.def'
+
+    # run tests inside the sandbox;
+    # if this is a push event, tar the sandbox
+    # so that we can import it into docker
+    # container and push it to the registry;
+    # otherwise (e.g. for a PR) just run the tests
+    - name: run tests and tar sandbox
+      run: |
+        docker run \
+          --rm \
+          -v ${{ github.workspace }}:/opt/amplfi \
+          --workdir /opt/amplfi/projects/${{ matrix.project }} \
+          --privileged \
+          --entrypoint /bin/bash \
+          quay.io/singularity/singularity:v3.8.1 \
+          -c 'singularity exec --env PATH=${{ env.PATH }} tar -czf /opt/amplfi/app.tar.gz -C /opt/amplfi/sandbox .'
+
+    # now copy the fs contents into an empty
+    # container and push it to the registry,
+    # using a lowercase version of the tag since
+    # the github environment variables are case-sensitive
+    - 
+      name: build and push docker image
+      # only run on pushes so that we aren't
+      # building containers for PRs
+      if: ${{ github.event_name == 'push' }}
+      env:
+        tag: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.project }}:${{ github.ref_name }}
+      run: |
+        export TAG_LC=${tag,,}
+        cat app.tar.gz | docker import --change "ENV PATH=${{ env.PATH }}" - $TAG_LC
+        docker push $TAG_LC
+
+
+    
