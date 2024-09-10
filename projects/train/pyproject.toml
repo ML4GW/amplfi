@@ -18,6 +18,8 @@ pyro-ppl = "^1.9.0"
 jsonargparse = {version = "^4.17", extras = ["signatures"]}
 wandb = "^0.16.3"
 
+urllib3 = ">=1.25.4,<1.27"
+
 "amplfi.architectures" = {path = "../../amplfi/architectures", develop = true}
 omegaconf = "^2.3.0"
 lightray = "^0.1.5"
