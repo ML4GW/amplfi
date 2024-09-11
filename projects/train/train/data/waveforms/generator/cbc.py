@@ -68,14 +68,17 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
     @property
     def right_pad_size(self):
         """
-        User defined value that controls where the coalescence time
-        lies relative to the right edge
+        Size of additional right padding in samples
         """
         return math.ceil(self.padding * self.sample_rate)
 
     @property
     def left_pad_size(self):
-        """ """
+        """
+        Size of left padding required to ensure
+        the waveform is sufficiently long to slice
+        according to the user requested `duration`
+        """
         # calculate the size of the time domain
         # waveform after ffting
         freq_dim = self.freq_mask.sum()
