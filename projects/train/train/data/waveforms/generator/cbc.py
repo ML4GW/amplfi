@@ -9,11 +9,36 @@ from train.data.waveforms.generator.generator import WaveformGenerator
 
 class FrequencyDomainCBCGenerator(WaveformGenerator):
     """
-    A torch module for generating CBC waveforms on the fly using
-    ml4gw waveform models.
+    A torch module for generating waveforms on the fly.
 
     Args:
+        waveform:
+            A callable that returns cross and plus polarizations
+            given a set of parameters.
+        duration:
+            The duration of the waveform in seconds
+        sample_rate:
+            Sample rate of the waveform in Hz
+        f_min:
+            The minimum frequency of the waveform in Hz
+        f_max:
+            The maximum frequency of the waveform in Hz
+        padding:
+            The amount of zero padding
+            to add to the right of the waveform in seconds.
+            The coalescence time of the waveform is automatically
+            placed 0.5 seconds from the right edge to account for
+            the ringdown. This parameter will add additional
+            padding on top of that.
+        waveform_arguments:
+            A dictionary of fixed arguments to pass to the waveform model,
+            e.g. `f_ref` for CBC waveforms
     """
+
+    # duration of ringdown - will ensure
+    # coalescence time is at least this
+    # far from the right edge
+    RINGDOWN_DURATION = 0.5
 
     def __init__(
         self,
@@ -25,28 +50,7 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         waveform_arguments: Dict[str, Any] = None,
         **kwargs
     ):
-        """
-        A torch module for generating waveforms on the fly.
 
-        Args:
-            waveform:
-                A callable that returns cross and plus polarizations
-                given a set of parameters.
-            duration:
-                The duration of the waveform in seconds
-            sample_rate:
-                Sample rate of the waveform in Hz
-            f_min:
-                The minimum frequency of the waveform in Hz
-            f_max:
-                The maximum frequency of the waveform in Hz
-            padding:
-                The amount of padding to add to the right
-                of the waveform in seconds
-            waveform_arguments:
-                A dictionary of fixed arguments to pass to the waveform model,
-                e.g. `f_ref` for CBC waveforms
-        """
         super().__init__(*args, **kwargs)
         waveform_arguments = waveform_arguments or {}
 
@@ -62,8 +66,23 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         self.register_buffer("frequencies", frequencies)
 
     @property
-    def pad_size(self):
-        return int(self.padding * self.sample_rate)
+    def right_pad_size(self):
+        """
+        User defined value that controls where the coalescence time
+        lies relative to the right edge
+        """
+        return math.ceil(self.padding * self.sample_rate)
+
+    @property
+    def left_pad_size(self):
+        """ """
+        # calculate the size of the time domain
+        # waveform after ffting
+        freq_dim = self.freq_mask.sum()
+        time_dim = 2 * (freq_dim - 1)
+        # calculate the left padding required
+        left_padding = self.num_samples - self.right_pad_size - time_dim
+        return left_padding if left_padding > 0 else 0
 
     @property
     def nyquist(self):
@@ -98,9 +117,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         Args:
             parameters:
                 A dictionary of parameters to pass to the waveform model
-            padding:
-                The amount of padding to add to
-                the right of the waveform in seconds
         """
 
         # TODO: support time domain waveforms
@@ -111,10 +127,20 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         hc *= self.sample_rate
         hp *= self.sample_rate
 
-        # TODO: any windowing? support left padding?
+        # roll the waveforms to join
+        # the coalescence and ringdown
+        ringdown_size = int(self.RINGDOWN_DURATION * self.sample_rate)
+        hc = torch.roll(hc, -ringdown_size)
+        hp = torch.roll(hp, -ringdown_size)
 
-        hc = torch.nn.functional.pad(hc, (0, self.pad_size, 0, 0))
-        hp = torch.nn.functional.pad(hp, (0, self.pad_size, 0, 0))
+        # pad the waveform on the right based on user specified padding;
+        # pad the left side to ensure the waveform is long enough to slice
+        hc = torch.nn.functional.pad(
+            hc, (self.left_pad_size, self.right_pad_size, 0, 0)
+        )
+        hp = torch.nn.functional.pad(
+            hp, (self.left_pad_size, self.right_pad_size, 0, 0)
+        )
 
         return hc, hp
 
