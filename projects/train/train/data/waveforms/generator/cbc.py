@@ -23,22 +23,20 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
             The minimum frequency of the waveform in Hz
         f_max:
             The maximum frequency of the waveform in Hz
+        ringdown_duration:
+            The duration of time in seconds to roll the fft'd
+            waveform to the left to join the coalescence and ringdown.
+            This will place the coalescence time `ringdown_duration` seconds
+            from the right edge of the waveform. Defaults to 0.5.
         padding:
-            The amount of zero padding
-            to add to the right of the waveform in seconds.
-            The coalescence time of the waveform is automatically
-            placed 0.5 seconds from the right edge to account for
-            the ringdown. This parameter will add additional
-            padding on top of that.
+            Additional zero padding in seconds on top of `ringdown_duration`
+            to add to the right of the waveform. So, the coalescence time
+            of the waveform will be placed `ringdown_duration + padding`
+            seconds from the right edge of the kernel. Defaults to 0.0.
         waveform_arguments:
             A dictionary of fixed arguments to pass to the waveform model,
             e.g. `f_ref` for CBC waveforms
     """
-
-    # duration of ringdown - will ensure
-    # coalescence time is at least this
-    # far from the right edge
-    RINGDOWN_DURATION = 0.5
 
     def __init__(
         self,
@@ -46,6 +44,7 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         approximant: Callable,
         f_min: float = 0.0,
         f_max: float = 0.0,
+        ringdown_duration: float = 0.5,
         padding: float = 0.0,
         waveform_arguments: Dict[str, Any] = None,
         **kwargs
@@ -61,6 +60,7 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         self.f_min = f_min
         self.f_max = f_max
         self.padding = padding
+        self.ringdown_duration = ringdown_duration
 
         frequencies = torch.linspace(0, self.nyquist, self.num_freqs)
         self.register_buffer("frequencies", frequencies)
@@ -132,7 +132,7 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
 
         # roll the waveforms to join
         # the coalescence and ringdown
-        ringdown_size = int(self.RINGDOWN_DURATION * self.sample_rate)
+        ringdown_size = int(self.ringdown_duration * self.sample_rate)
         hc = torch.roll(hc, -ringdown_size)
         hp = torch.roll(hp, -ringdown_size)
 
