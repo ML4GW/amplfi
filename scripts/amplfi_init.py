@@ -3,15 +3,15 @@
 import shutil
 from pathlib import Path
 from textwrap import dedent
-from typing import Optional
+from typing import Literal, Optional
 
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
 data_config = (root / "amplfi" / "law" / "datagen.cfg",)
 TUNE_CONFIGS = [
-    root / "projects" / "train" / "tune" / "tune.yaml",
-    root / "projects" / "train" / "tune" / "search_space.py",
+    root / "projects" / "train" / "train" / "tune" / "tune.yaml",
+    root / "projects" / "train" / "train" / "tune" / "search_space.py",
 ]
 
 
@@ -56,7 +56,12 @@ def write_content(content: str, path: Path):
     return content
 
 
-def create_runfile(path: Path, mode: str, s3_bucket: Optional[Path] = None):
+def create_runfile(
+    path: Path,
+    mode: Literal["flow", "similarity"],
+    pipeline: Literal["tune", "train"],
+    s3_bucket: Optional[Path] = None,
+):
     # if s3 bucket is provided
     # store training data and training info there
     base = path if s3_bucket is None else s3_bucket
@@ -69,10 +74,17 @@ def create_runfile(path: Path, mode: str, s3_bucket: Optional[Path] = None):
 
     train_root = root / "projects" / "train"
     train_cmd = f"poetry run --directory {train_root} python "
-    cli = "similarity" if mode == "similarity" else "flow"
-    train_cmd += (
-        f"{train_root / 'train'  / 'cli' / f'{cli}.py'} fit --config {config}"
-    )
+
+    if pipeline == "tune":
+        train_cmd += (
+            f"{train_root / 'train' / 'tune' / 'tune.py'} --config tune.yaml"
+        )
+    else:
+        cli = "similarity" if mode == "similarity" else "flow"
+        train_cmd += (
+            f"{train_root / 'train'  / 'cli' / f'{cli}.py'} "
+            "fit --config cbc.yaml"
+        )
 
     content = f"""
     #!/bin/bash
@@ -81,10 +93,12 @@ def create_runfile(path: Path, mode: str, s3_bucket: Optional[Path] = None):
     export AMPLFI_OUTDIR={base}/training/
     export AMPLFI_CONDORDIR={path}/condor
 
-    # launch pipeline; modify the gpus, workers etc. to suit your needs
+    # launch the data generation pipeline;
     # note that if you've made local code changes not in the containers
     # you'll need to add the --dev flag!
     {data_cmd}
+
+    # launch training or tuning pipeline
     {train_cmd}
     """
 
@@ -118,7 +132,7 @@ def main():
 
     # construct the config files to copy
     # for the given mode and pipeline
-    if args.mode == "tune":
+    if args.pipeline == "tune":
         configs = TUNE_CONFIGS
         configs.extend(data_config)
         configs.extend(TRAIN_CONFIGS[args.mode])
@@ -127,7 +141,7 @@ def main():
         configs.extend(data_config)
 
     copy_configs(directory, configs)
-    create_runfile(directory, args.mode, args.s3_bucket)
+    create_runfile(directory, args.mode, args.pipeline, args.s3_bucket)
 
 
 if __name__ == "__main__":
