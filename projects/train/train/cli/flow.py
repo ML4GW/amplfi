@@ -3,7 +3,7 @@ from train.data.datasets.base import AmplfiDataset
 from train.models.base import AmplfiModel
 
 
-class AmplfiFlowCli(AmplfiBaseCLI):
+class AmplfiFlowCLI(AmplfiBaseCLI):
     def add_arguments_to_parser(self, parser):
         super().add_arguments_to_parser(parser)
         parser.link_arguments(
@@ -30,7 +30,7 @@ class AmplfiFlowCli(AmplfiBaseCLI):
 
 
 def main(args=None):
-    cli = AmplfiFlowCli(
+    cli = AmplfiFlowCLI(
         AmplfiModel,
         AmplfiDataset,
         subclass_mode_model=True,
@@ -38,7 +38,6 @@ def main(args=None):
         save_config_kwargs={"overwrite": True},
         seed_everything_default=101588,
         args=args,
-        parser_kwargs={"parser_mode": "omegaconf"},
     )
     return cli
 

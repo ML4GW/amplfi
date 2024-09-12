@@ -1,0 +1,19 @@
+cli_cls: train.cli.flow.AmplfiFlowCLI
+train_config: /home/ethan.marx/projects/amplfi/projects/train/configs/flow/cbc.yaml
+name: amplfi-test
+objective: min
+search_space: /home/ethan.marx/projects/amplfi/projects/train/train/tune/search_space.py
+metric_name: "val_loss"
+scheduler: 
+  class_path: ray.tune.schedulers.ASHAScheduler 
+  init_args:
+    max_t: 10
+    grace_period: 2
+    reduction_factor: 2
+storage_dir: /home/ethan.marx/amplfi/first-tune/
+num_samples: 10
+workers_per_trial: 1
+gpus_per_worker: 1
+cpus_per_gpu: 8
+callbacks: null
+address: null
