@@ -79,7 +79,7 @@ def create_runfile(
     # make the below one string
     data_cmd = f"LAW_CONFIG_FILE={config} poetry run "
     data_cmd += f"--directory {root / 'amplfi' / 'law'} "
-    data_cmd += "law run amplfi.DataGeneration --workers 5\n"
+    data_cmd += "law run amplfi.law.DataGeneration --workers 5\n"
 
     train_root = root / "projects" / "train"
     train_cmd = f"poetry run --directory {train_root} python "
