@@ -5,6 +5,7 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Literal, Optional
 
+import yaml
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
@@ -43,7 +44,15 @@ def copy_configs(
     path.mkdir(parents=True, exist_ok=True)
     for config in configs:
         dest = path / config.name
-        shutil.copy(config, dest)
+        if config.name == "tune.yaml":
+            with open(config, "r") as f:
+                dict = yaml.safe_load(f)
+                dict["train_config"] = str(path / "cbc.yaml")
+
+            with open(dest, "w") as f:
+                yaml.dump(dict, f)
+        else:
+            shutil.copy(config, dest)
 
 
 def write_content(content: str, path: Path):

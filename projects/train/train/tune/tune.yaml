@@ -10,7 +10,7 @@ scheduler:
     max_t: 10
     grace_period: 2
     reduction_factor: 2
-storage_dir: /path/to/first-tune/
+storage_dir: ${oc.env:AMPLFI_OUTDIR}
 num_samples: 10
 workers_per_trial: 1
 gpus_per_worker: 1
