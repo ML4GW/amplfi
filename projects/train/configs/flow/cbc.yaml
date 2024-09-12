@@ -82,6 +82,7 @@ data:
         approximant: ml4gw.waveforms.IMRPhenomD
         f_min: 20
         f_max: 1024
-        padding: 1
+        ringdown_duration: 0.5
+        padding: 0.0
         waveform_arguments:
           f_ref: 40
