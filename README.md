@@ -17,7 +17,7 @@ Once setup, create a [fork](https://docs.github.com/en/pull-requests/collaborati
 > **_Note: Ensure that you have added a [github ssh key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) to your account_**
 
 ```bash
-git clone git@github.com:albert-einstein/pe.git
+git clone git@github.com:albert-einstein/amplfi.git
 ```
 
 `AMPLFI` utilizes `git` [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). Make sure to initialize and update those
@@ -28,24 +28,32 @@ git submodule update --init
 
 When pulling changes from this repository, it's recommended to use the `--recurse-submodules` flag to pull any updates from the submodules as well.
 
-Next, install the `amplfi.law` submodule, which is used for launching `amplfi` workflows with [`law`](https://github.com/riga/law)
+Next, install the `amplfi.law` submodule, which is used for launching `amplfi` data generation workflows with [`law`](https://github.com/riga/law)
 
 ```console
 cd amplfi/law
 poetry install
 ```
 
-Finally, build the `train` and `data` project apptainer images. Set the `$AMPLFI_CONTAINER_ROOT` environment variable
-to a location where you want the images to be stored, e.g. `~/amplfi/images`. 
+## Building Containers
+Some `AMPLFI` workflows can be run via `apptainer` images.
+To build the containers, first set the `$AMPLFI_CONTAINER_ROOT` environment variable
+to a location where you want the images to be stored, e.g. `~/amplfi/images`. It is recommended to also add this 
+environment variable to your `~/.bash_profile` (or your shells equivalent).
 
-Make sure you are in the respective projects home directory when building the container. For example, from the 
-`amplfi` repositories home directory
+To build the `train` and `data` containers, make sure you are in the respective projects home directory. For example, starting from the 
+`amplfi` repositories home directory the `data` image can be built by running the following"
 
 ```console
 cd projects/data
 apptainer build $AMPLFI_CONTAINER_ROOT/data.sif apptainer.def
 ```
-will build the `data` image. Make sure you do the same for the `train` image!
+
+Make sure you do the same for the `train` image!
+
+
+## Initializing a Pipeline
+`AMPLFI` comes with a handy command, `amplfi-init`, for initializing a run directory 
 
 ## Generating Data
 Training and testing background strain data can be generated with the `amplfi.law.DataGeneration` workflow.

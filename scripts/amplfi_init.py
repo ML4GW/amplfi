@@ -107,21 +107,32 @@ def create_runfile(
 
 
 def main():
-    # offline subcommand (sandbox or tune)
-    parser = ArgumentParser()
+    parser = ArgumentParser(
+        description="Initialize a directory with configuration files "
+        "for running end-to-end amplfi training or tuning pipelines"
+    )
     parser.add_argument(
         "--mode",
         choices=["flow", "similarity"],
         default="flow",
-        help="Whether to setup a flow or similarity training",
+        help="Either 'flow' or 'similarity',"
+        "Whether to setup a flow or similarity training",
     )
     parser.add_argument(
         "--pipeline",
         choices=["tune", "train"],
         default="train",
-        help="Whether to setup a tune or train pipeline",
+        help="Either 'train' or 'tune'."
+        "Whether to setup a tune or train pipeline",
     )
-    parser.add_argument("-d", "--directory", type=Path, required=True)
+    parser.add_argument(
+        "-d",
+        "--directory",
+        type=Path,
+        required=True,
+        help="The run directory where the"
+        "configuration files will be copied to",
+    )
     parser.add_argument("--s3-bucket")
 
     args = parser.parse_args()
