@@ -8,7 +8,7 @@ from typing import Optional
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
-data_config = (root / "amplfi" / "law" / "config.cfg",)
+data_config = (root / "amplfi" / "law" / "datagen.cfg",)
 TUNE_CONFIGS = [
     root / "projects" / "train" / "tune" / "tune.yaml",
     root / "projects" / "train" / "tune" / "search_space.py",
@@ -56,14 +56,12 @@ def write_content(content: str, path: Path):
     return content
 
 
-def create_offline_runfile(
-    path: Path, pipeline: str, s3_bucket: Optional[Path] = None
-):
+def create_runfile(path: Path, mode: str, s3_bucket: Optional[Path] = None):
     # if s3 bucket is provided
     # store training data and training info there
     base = path if s3_bucket is None else s3_bucket
 
-    config = path / f"{pipeline}.cfg"
+    config = path / "datagen.cfg"
     # make the below one string
     data_cmd = f"LAW_CONFIG_FILE={config} poetry run "
     data_cmd += f"--directory {root / 'amplfi' / 'law'} "
@@ -71,8 +69,9 @@ def create_offline_runfile(
 
     train_root = root / "projects" / "train"
     train_cmd = f"poetry run --directory {train_root} python "
+    cli = "similarity" if mode == "similarity" else "flow"
     train_cmd += (
-        f"{train_root / 'train'  / 'cli' / 'flow.py'} fit --config {config}"
+        f"{train_root / 'train'  / 'cli' / f'{cli}.py'} fit --config {config}"
     )
 
     content = f"""
@@ -128,7 +127,7 @@ def main():
         configs.extend(data_config)
 
     copy_configs(directory, configs)
-    create_offline_runfile(directory, args.mode, args.s3_bucket)
+    create_runfile(directory, args.mode, args.s3_bucket)
 
 
 if __name__ == "__main__":
