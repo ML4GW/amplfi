@@ -51,7 +51,7 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
     ):
 
         super().__init__(*args, **kwargs)
-        waveform_arguments = waveform_arguments or {}
+        self.waveform_arguments = waveform_arguments or {}
 
         # set approximant (possibly torch.nn.Module) as an attribute
         # so that it will get moved to the proper device when `.to` is called
@@ -122,8 +122,13 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
                 A dictionary of parameters to pass to the waveform model
         """
 
-        # TODO: support time domain waveforms
-        hc, hp = self.waveform(self.frequencies[self.freq_mask], **parameters)
+        device = parameters["chirp_mass"].device
+        freqs = torch.clone(self.frequencies).to(device)
+        self.approximant.to(device)
+
+        parameters.update(self.waveform_arguments)
+
+        hc, hp = self.approximant(freqs[self.freq_mask], **parameters)
 
         # fourier transform
         hc, hp = torch.fft.irfft(hc), torch.fft.irfft(hp)
@@ -148,7 +153,10 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         return hc, hp
 
     def frequency_domain_strain(self, **parameters):
-        return self.waveform(self.frequencies[self.freq_mask], **parameters)
+        device = parameters["chirp_mass"].device
+        freqs = torch.clone(self.frequencies).to(device)
+        self.approximant.to(device)
+        return self.waveform(freqs[self.freq_mask], **parameters)
 
     def slice_waveforms(self, waveforms: torch.Tensor):
         # for cbc waveforms, the padding (see above)

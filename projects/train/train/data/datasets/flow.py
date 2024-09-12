@@ -9,6 +9,9 @@ class FlowDataset(AmplfiDataset):
     """
 
     def inject(self, X, cross, plus, parameters):
+        self.projector.to(self.device)
+        self.whitener.to(self.device)
+
         X, psds = self.psd_estimator(X)
         dec, psi, phi = self.waveform_sampler.sample_extrinsic(X)
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
