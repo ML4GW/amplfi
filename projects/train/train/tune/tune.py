@@ -43,8 +43,6 @@ def main():
     train_config = args.pop("train_config")
     args.pop("config")
     train_args = ["--config", train_config]
-    # config = parse_args(args.cli_cls, train_args)
-    # print(config)
     run(**vars(args), args=train_args)
 
 
