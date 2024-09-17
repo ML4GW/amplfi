@@ -103,8 +103,6 @@ def create_runfile(
     export AMPLFI_CONDORDIR={path}/condor
 
     # launch the data generation pipeline;
-    # note that if you've made local code changes not in the containers
-    # you'll need to add the --dev flag!
     {data_cmd}
 
     # launch training or tuning pipeline
