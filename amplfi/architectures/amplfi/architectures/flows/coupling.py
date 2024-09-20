@@ -1,6 +1,5 @@
 import pyro.distributions as dist
 import torch
-from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.distributions.transforms import ConditionalAffineCoupling
 from pyro.nn import ConditionalDenseNN
 
@@ -52,9 +51,3 @@ class CouplingFlow(FlowArchitecture):
             self.mean,
             self.std,
         )
-
-    def build_transforms(self):
-        transforms = []
-        for _ in range(self.num_transforms):
-            transforms.extend([self.transform_block()])
-        return ConditionalComposeTransformModule(transforms)
