@@ -3,6 +3,22 @@ import shutil
 
 import h5py
 import lightning.pytorch as pl
+from lightning.pytorch.loggers import WandbLogger
+
+
+class SaveConfigCallback(pl.cli.SaveConfigCallback):
+    """
+    Override of `lightning.pytorch.cli.SaveConfigCallback` for use with WandB
+    to ensure all the hyperparameters are logged to the WandB dashboard.
+    """
+
+    def save_config(self, trainer, _, stage):
+        if stage == "fit":
+            if isinstance(trainer.logger, WandbLogger):
+                # pop off unecessary trainer args
+                config = self.config.as_dict()
+                config.pop("trainer")
+                trainer.logger.experiment.config.update(self.config.as_dict())
 
 
 class SaveAugmentedBatch(pl.Callback):

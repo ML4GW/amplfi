@@ -1,11 +1,14 @@
 from lightning.pytorch.cli import LightningCLI
 
+from train.callbacks import SaveConfigCallback
+
 
 class AmplfiBaseCLI(LightningCLI):
     def __init__(self, *args, **kwargs):
         # hack into init to hardcode
         # parser_mode to omegaconf for all subclasses
         kwargs["parser_kwargs"] = {"parser_mode": "omegaconf"}
+        kwargs["save_config_callback"] = SaveConfigCallback
         super().__init__(*args, **kwargs)
 
     def add_arguments_to_parser(self, parser):
