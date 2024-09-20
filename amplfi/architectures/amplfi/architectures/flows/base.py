@@ -42,9 +42,11 @@ class FlowArchitecture(PyroModule):
 
     def build_transforms(self) -> ConditionalComposeTransformModule:
         transforms = []
-        for _ in range(self.num_transforms):
+        for i in range(self.num_transforms):
             transforms.extend([self.transform_block()])
-            if self.use_batch_norm:
+            # add batch norm after each transform
+            # except the last one
+            if i != self.num_transforms - 1 and self.use_batch_norm:
                 transforms.extend([BatchNorm(self.num_params)])
         return ConditionalComposeTransformModule(transforms)
 
