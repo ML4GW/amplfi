@@ -64,7 +64,8 @@ data:
       class_path: train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
         num_fit_params: 100000
-        parameter_sampler: train.priors.cbc_prior
+        parameter_sampler: 
+          class_path: train.priors.cbc_prior
         dec: 
           class_path: ml4gw.distributions.Cosine
         psi: 

@@ -1,0 +1,19 @@
+cli_cls: train.cli.flow.AmplfiFlowCLI
+train_config: ../..//configs/flow/cbc.yaml
+name: amplfi-tune
+objective: min
+search_space: ./search_space.py
+metric_name: "valid_loss"
+scheduler: 
+  class_path: ray.tune.schedulers.ASHAScheduler 
+  init_args:
+    max_t: 10
+    grace_period: 2
+    reduction_factor: 2
+storage_dir: ${oc.env:AMPLFI_OUTDIR}
+num_samples: 10
+workers_per_trial: 1
+gpus_per_worker: 1
+cpus_per_gpu: 8
+callbacks: null
+address: null

@@ -3,7 +3,7 @@ from train.data.datasets.base import AmplfiDataset
 from train.models.base import AmplfiModel
 
 
-class AmplfiSimilarityCli(AmplfiBaseCLI):
+class AmplfiSimilarityCLI(AmplfiBaseCLI):
     def add_arguments_to_parser(self, parser):
         super().add_arguments_to_parser(parser)
 
@@ -17,7 +17,7 @@ class AmplfiSimilarityCli(AmplfiBaseCLI):
 
 
 def main(args=None):
-    cli = AmplfiSimilarityCli(
+    cli = AmplfiSimilarityCLI(
         AmplfiModel,
         AmplfiDataset,
         subclass_mode_model=True,
@@ -25,7 +25,6 @@ def main(args=None):
         save_config_kwargs={"overwrite": True},
         seed_everything_default=101588,
         args=args,
-        parser_kwargs={"parser_mode": "omegaconf"},
     )
     return cli
 
