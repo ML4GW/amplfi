@@ -14,6 +14,13 @@ jsonargparse = "^4.27.1"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
 
+
+[tool.poetry.group.docs.dependencies]
+Sphinx = ">5.0"
+sphinx-rtd-theme = "^2.0.0"
+myst-parser = "^2.0.0"
+sphinx-autodoc-typehints = "^2.0.0"
+
 [tool.poetry.scripts]
 amplfi-init = "scripts.amplfi_init:main"
 
