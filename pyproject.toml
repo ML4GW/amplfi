@@ -10,6 +10,7 @@ authors = [
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
 jsonargparse = "^4.27.1"
+"amplfi.law" = {path = "./amplfi/law", develop = true}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
