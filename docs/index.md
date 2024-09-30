@@ -16,5 +16,5 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
    :caption: Advanced
    :maxdepth: 1
 
-   tuning <tuning>
+   tuning
 ```
