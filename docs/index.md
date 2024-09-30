@@ -10,7 +10,7 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
    :maxdepth: 1
 
    environment setup <environment>
-   first pipeline <pipeline>
+   first training <training>
 
 .. toctree::
    :caption: Advanced
