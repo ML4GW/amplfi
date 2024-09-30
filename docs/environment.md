@@ -1,12 +1,6 @@
 Environment Setup
 =================
 
-```{eval-rst}
-.. note::
-    Running AMPLFI out-of-the-box requires access to an enterprise-grade GPU(s) (e.g. P100, V100, T4, A[30,40,100], etc.). There are several nodes on the LIGO Data Grid which meet these requirements_**.
-```
-
-
 Please see the [ml4gw quickstart](https://github.com/ml4gw/quickstart/) for help on setting up your environment 
 on the [LIGO Data Grid](https://computing.docs.ligo.org/guide/computing-centres/ldg/) (LDG). This quickstart includes a comprehensive Makefile and instructions for setting up all of the necessary software, environment variables, and credentials required to access gravitational wave strain data and run `AMPLFI`.
 
@@ -29,21 +23,10 @@ When pulling changes from this repository, it's recommended to use the `--recurs
 
 Next, install the base `amplfi` package, which is used for initializing `amplfi` runs. 
 
-```{eval-rst}
-.. tabs::
-
-   .. tab:: Poetry
-
-      .. code-block:: console
-
-          $ poetry install
-
-   .. tab:: Pip
-
-      .. code-block:: console
-
-          $ pip install . -e
+```console
+poetry install
 ```
+
 
 
 ## Building Containers
