@@ -7,7 +7,7 @@ packages = [{include = "amplfi"}]
 
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<3.13"
 law = {git = "https://github.com/riga/law.git", branch = "master"}
 mldatafind = {path = "../../mldatafind/", develop = true} 
 luigi = "^3.5.1"
