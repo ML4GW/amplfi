@@ -6,7 +6,7 @@ authors = ["Deep Chatterjee, Ethan Marx"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12" #^3.8,<3.12"
+python = ">=3.9,<3.13"
 numpy = "<2.0.0"
 lightning = "<=2.2.1"
 ml4gw = "^0.5"
