@@ -28,7 +28,6 @@ poetry install
 ```
 
 
-
 ## Building Containers
 `AMPLFI` workflows can be run via `apptainer` images for ease of reproducibility.
 
