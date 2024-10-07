@@ -1,4 +1,5 @@
 import bilby
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
@@ -125,11 +126,10 @@ class FlowModel(AmplfiModel):
             search_parameter_keys=self.inference_params,
             priors=priors,
         )
-        r.get_sky_projection(nside=32)
         return r
 
     def on_test_epoch_start(self):
-        self.test_results = []
+        self.test_results: list[Result] = []
         self.idx = 0
 
     def test_step(self, batch, _):
@@ -147,6 +147,7 @@ class FlowModel(AmplfiModel):
         )
         self.test_results.append(result)
 
+        # plot corner and skymap for a subset of the test results
         if self.idx < self.num_corner:
             skymap_filename = self.outdir / f"{self.idx}_mollview.png"
             corner_filename = self.outdir / f"{self.idx}_corner.png"
@@ -161,9 +162,26 @@ class FlowModel(AmplfiModel):
         self.idx += 1
 
     def on_test_epoch_end(self):
+        # pp plot
         bilby.result.make_pp_plot(
             self.test_results,
             save=True,
             filename=self.outdir / "pp-plot.png",
             keys=self.inference_params,
         )
+
+        # searched area cum hist
+        searched_areas = []
+        for result in self.test_results:
+            searched_area = result.calculate_searched_area()
+            searched_areas.append(searched_area)
+        searched_areas = np.sort(searched_areas)
+        counts = np.arange(1, len(searched_areas) + 1) / len(searched_areas)
+
+        plt.figure(figsize=(10, 6))
+        plt.step(searched_areas, counts, where="post")
+        plt.xscale("log")
+        plt.xlabel("Searched Area (deg^2)")
+        plt.ylabel("Cumulative Probability")
+        plt.title("Searched Area Cumulative Distribution Function")
+        plt.savefig(self.outdir / "searched_area.png")
