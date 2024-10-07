@@ -1,0 +1,33 @@
+Bootstrap: docker
+From: python:3.10.12-slim-bullseye
+Stage: build
+
+%files
+. /opt/amplfi/
+
+%post
+# installing the local package editably via pip
+# works, but none of the dependencies (e.g. ml4gw)
+# are installed editably, so we'll opt for using
+# the full poetry machinery without using a
+# virtual environment. Note that this can potentially
+# cause issues if the poetry install makes changes to
+# the virtualenv package in the base environment, so
+# we'll hard pin it to the value we need.
+# TODO: there's got to be a better solution here
+python -m pip install poetry
+cd /opt/amplfi/
+poetry export --with dev -o requirements.txt --without-hashes \
+    && sed -i 's|\(.*\) @ file://|-e |' requirements.txt
+
+Bootstrap: docker
+From: python:3.10.12-slim-bullseye
+Stage: final
+
+%files from build
+/opt/amplfi /opt/amplfi
+
+%post
+cd /opt/amplfi
+pip install -r requirements.txt --no-deps --no-cache-dir
+pip install -e . --no-deps --no-cache-dir
