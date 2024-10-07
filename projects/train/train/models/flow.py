@@ -180,6 +180,7 @@ class FlowModel(AmplfiModel):
 
         plt.figure(figsize=(10, 6))
         plt.step(searched_areas, counts, where="post")
+        plt.xscale("log")
         plt.xlabel("Searched Area (deg^2)")
         plt.ylabel("Cumulative Probability")
         plt.title("Searched Area Cumulative Distribution Function")

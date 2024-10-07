@@ -59,13 +59,18 @@ class Result(bilby.result.Result):
         )
         return searched_area
 
-    def plot_mollview(self, outpath: Path = None):
+    def plot_mollview(
+        self,
+        outpath: Path = None,
+        nside: int = 32,
+    ):
+        healpix = self.get_sky_projection(nside)
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
         theta_inj = np.pi / 2 - dec_inj
         plt.close()
         # plot molleweide
-        fig = hp.mollview(self.healpix_array)
+        fig = hp.mollview(healpix)
         hp.visufunc.projscatter(
             theta_inj, ra_inj, marker="x", color="red", s=150
         )
