@@ -38,22 +38,26 @@ class Result(bilby.result.Result):
         m = np.zeros(NPIX)
         m[np.in1d(range(NPIX), uniq)] = counts
 
-        # searched area calculation
+        return m
+
+    def calculate_searched_area(self, nside: int = 32):
+        healpix = self.get_sky_projection(nside=nside)
+
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
         theta_inj = np.pi / 2 - dec_inj
         true_ipix = hp.ang2pix(nside, theta_inj, ra_inj)
 
-        sorted_idxs = np.argsort(m)[::-1]  # sort pixels in descending order
+        sorted_idxs = np.argsort(healpix)[
+            ::-1
+        ]  # sort pixels in descending order
         # count number of pixels before hitting the pixel with injection
         # in the sorted array
         num_pix_before_injection = 1 + np.argmax(sorted_idxs == true_ipix)
         searched_area = num_pix_before_injection * hp.nside2pixarea(
             nside, degrees=True
         )
-        # store as attributes
-        self.searched_area = searched_area
-        self.healpix_array = m
+        return searched_area
 
     def plot_mollview(self, outpath: Path = None):
         ra_inj = self.injection_parameters["phi"]
