@@ -11,26 +11,26 @@ and directly from source with either pip or poetry
 
 ```{eval-rst}
 .. tabs::
+  
+  .. tab:: Pip
+    
+    .. code-block:: console
 
-   .. tab:: Pip
+      $ git clone git@git.ligo.org:ml4gw/amplfi.git
+      $ cd amplfi
+      $ pip install .
 
-      .. code-block:: console
-
-          $ git clone git@git.ligo.org:ml4gw/amplfi.git
-          $ cd amplfi
-          $ pip install .
-
-      Supported python versions: 3.9-3.12.
+    Supported python versions: 3.9-3.12.
 
   .. tab:: Poetry
 
-      .. code-block:: console
+    .. code-block:: console
 
-          $ git clone git@git.ligo.org:ml4gw/amplfi.git
-          $ cd amplfi
-          $ poetry install
+      $ git clone git@git.ligo.org:ml4gw/amplfi.git
+      $ cd amplfi
+      $ poetry install
 
-      Supported python versions: 3.9-3.12.
+    Supported python versions: 3.9-3.12.
 ```
 
 ## Data Generation
