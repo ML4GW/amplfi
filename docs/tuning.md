@@ -50,7 +50,7 @@ amplfi-tune --help
     controlled by the :code:`min_epochs` parameter.
 ```
 
-# Launching a Run
+## Launching a Run
 The entrypoint to the tuning pipeline is the `run.sh` file generated in the experiment directory.
 
 ```bash
