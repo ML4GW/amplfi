@@ -59,7 +59,7 @@ and will save any condor log files to `AMPLFI_CONDORDIR`.
 
 ```{eval-rst}
 .. note::
-   If you already have a data directory consistent with the settings in `datagen.cfg`, you can point `AMPLFI_DATADIR` to it and the data generation
+   If you already have a data directory consistent with the settings in :code:`datagen.cfg`, you can point :code:`AMPLFI_DATADIR` to it and the data generation
    step will automatically be skipped.
 ```
 
