@@ -3,7 +3,7 @@ First Pipeline
 
 ```{eval-rst}
 .. note::
-    Running AMPLFI out-of-the-box requires access to an enterprise-grade GPU(s) (e.g. P100, V100, T4, A[30,40,100], etc.). There are several nodes on the LIGO Data Grid which meet these requirements_**.
+    Running AMPLFI out-of-the-box requires access to an enterprise-grade GPU(s) (e.g. P100, V100, T4, A[30,40,100], etc.). There are several nodes on the LIGO Data Grid which meet these requirements.
 ```
 
 After [installing](./installation.md) `AMPLFI`, you will have access to the `amplfi-init` command for initializing experiment directories:
