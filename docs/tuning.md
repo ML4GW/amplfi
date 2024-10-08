@@ -100,7 +100,7 @@ export AMPLFI_OUTDIR=s3://my-bucket/my-first-tune/runs
 ### Kubernetes Ray Cluster
 ```{eval-rst}
     .. note::
-        Please see the [ml4gw quickstart](https://github.com/ml4gw/quickstart/) for help installing the necessary tools (`helm`, `kubernetes`, `s3cmd`)
+        Please see the `ml4gw quickstart <https://github.com/ml4gw/quickstart/>`_ for help installing the necessary tools (`helm`, `kubernetes`, `s3cmd`)
         and configuration (weights and biases, s3 credentials) to run remote tuning. This quickstart includes a comprehensive Makefile to install this 
         tooling in a fresh conda environment, and instructions on settting up necessary credentials.
 ```

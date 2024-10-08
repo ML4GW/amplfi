@@ -14,10 +14,6 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
    Contributing <contributing>
 
 .. toctree::
-   :caption: Code Overview
-   :maxdepth: 1
-
-.. toctree::
    :caption: Advanced
    :maxdepth: 1
 
