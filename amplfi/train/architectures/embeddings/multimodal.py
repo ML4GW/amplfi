@@ -52,7 +52,7 @@ class MultiModal(Embedding):
 
     def forward(self, X):
         time_domain_embedded = self.time_domain_resnet(X)
-        X_fft = torch.fft.fft(X)
+        X_fft = torch.fft.rfft(X)
         X_fft = torch.cat((X_fft.real, X_fft.imag), dim=1)
         frequency_domain_embedded = self.frequency_domain_resnet(X_fft)
 
