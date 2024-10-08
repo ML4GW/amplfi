@@ -47,7 +47,7 @@ amplfi-tune --help
 ```{eval-rst}
 .. note::
     Currently, the `lightray` library automatically uses the `Asynchronous Hyper Band algorithm <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.AsyncHyperBandScheduler.html#ray.tune.schedulers.AsyncHyperBandScheduler>`_, which will kill under performing trials after a certain amount of epochs this is
-    controlled by the `min_epochs` parameter.
+    controlled by the :code:`min_epochs` parameter.
 ```
 
 # Launching a Run
