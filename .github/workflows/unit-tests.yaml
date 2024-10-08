@@ -17,7 +17,8 @@ jobs:
     permissions:
       packages: read
     container:
-      image: cicirello/pyaction:4.8
+      # container with python and git
+      image: cicirello/pyaction:4.32
       volumes:
         - ${{ github.workspace }}:/github/workspace
     steps:
@@ -28,6 +29,7 @@ jobs:
       - name: run tests
         run: |
             python -m pip install --upgrade pip
+            python -m pip install poetry
             poetry install 
             poetry run pytest -v
         shell: bash
