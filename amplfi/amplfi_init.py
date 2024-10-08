@@ -77,32 +77,25 @@ def create_runfile(
 
     config = path / "datagen.cfg"
     # make the below one string
-    data_cmd = f"LAW_CONFIG_FILE={config} poetry run "
-    data_cmd += f"--directory {root / 'amplfi' / 'law'} "
+    data_cmd = f"LAW_CONFIG_FILE={config} "
     data_cmd += "law run amplfi.law.DataGeneration --workers 5\n"
 
-    train_root = root / "projects" / "train"
-    train_cmd = f"poetry run --directory {train_root} python "
-
     if pipeline == "tune":
-        train_cmd += (
-            f"{train_root / 'train' / 'tune' / 'tune.py'} --config tune.yaml"
-        )
+        train_cmd = "amplfi-tune --config tune.yaml"
     else:
-        cli = "similarity" if mode == "similarity" else "flow"
-        train_cmd += (
-            f"{train_root / 'train'  / 'cli' / f'{cli}.py'} "
-            "fit --config cbc.yaml"
-        )
+        train_cmd = f"amplfi-{mode}-cli fit --config cbc.yaml"
 
     content = f"""
     #!/bin/bash
-    # Export environment variables
-    export AMPLFI_DATADIR={base}
-    export AMPLFI_OUTDIR={base}/training/
-    export AMPLFI_CONDORDIR={path}/condor
+    # set environment variables for this job
+    AMPLFI_DATADIR={base}
+    AMPLFI_OUTDIR={base}/training/
+    AMPLFI_CONDORDIR={path}/condor
 
-    # launch the data generation pipeline;
+    # set the GPUs exposed to job
+    CUDA_VISIBLE_DEVICES=0
+
+    # launch the data generation pipeline
     {data_cmd}
 
     # launch training or tuning pipeline
