@@ -2,7 +2,7 @@ AMPLFI
 ======
 **Accelerated Multi-messenger Parameter estimation with Likelihood Free Inference**
 
-Framework for performing rapid (~ 1s) parameter estimation of gravitational wave events using likelihood free inference
+Framework for performing rapid (~ 1s) parameter estimation of gravitational wave events using likelihood free inference.
 
 ```{eval-rst}
 .. toctree::
@@ -11,6 +11,7 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
 
    Environment setup <environment>
    First pipeline <first_pipeline>
+   Contributing <contributing.md>
 
 .. toctree::
    :caption: Advanced
@@ -18,3 +19,5 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
 
    Tuning <tuning>
 ```
+
+Please cite https://arxiv.org/abs/2407.19048 if you have benefited from `AMPLFI` in your work

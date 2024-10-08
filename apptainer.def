@@ -6,8 +6,14 @@ Stage: build
 . /opt/amplfi/
 
 %post
+# install git for pip installation from github
+apt-get update
+apt-get install -y --no-install-recommends git
+apt-get clean
+
+
 # installing the local package editably via pip
-# works, but none of the dependencies (e.g. ml4gw)
+# works, but none of the dependencies 
 # are installed editably, so we'll opt for using
 # the full poetry machinery without using a
 # virtual environment. Note that this can potentially
@@ -20,14 +26,5 @@ cd /opt/amplfi/
 poetry export --with dev -o requirements.txt --without-hashes \
     && sed -i 's|\(.*\) @ file://|-e |' requirements.txt
 
-Bootstrap: docker
-From: python:3.10.12-slim-bullseye
-Stage: final
-
-%files from build
-/opt/amplfi /opt/amplfi
-
-%post
-cd /opt/amplfi
-pip install -r requirements.txt --no-deps --no-cache-dir
-pip install -e . --no-deps --no-cache-dir
+python -m pip install -r requirements.txt --no-deps --no-cache-dir
+python -m pip install -e . --no-deps --no-cache-dir

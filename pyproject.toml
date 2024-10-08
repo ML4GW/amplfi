@@ -6,6 +6,9 @@ authors = [
     "Ethan Marx",
     "Deep Chatterjee"
 ]
+packages = [ 
+    { include = "amplfi" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
@@ -23,7 +26,7 @@ urllib3 = ">=1.25.4,<1.27"
 omegaconf = "^2.3.0"
 lightray = "^0.1.5"
 law = {git = "https://github.com/riga/law.git", branch = "master"}
-mldatafind = {path = "./mldatafind/", develop = true}
+mldatafind = {git = "https://github.com/ML4GW/mldatafind.git", branch = "law-overhaul"}
 luigi = "^3.5.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -43,6 +46,9 @@ linkify-it-py = "^2.0.3"
 [tool.poetry.scripts]
 amplfi-init = "amplfi.amplfi_init:main"
 amplfi-tune = "amplfi.train.tune.tune:main"
+# TODO: can probably combine these into one CLI
+amplfi-flow-cli = "amplfi.train.cli.flow:main"
+amplfi-similarity-cli = "amplfi.train.cli.similarity:main"
 
 [tool.black]
 line-length = 79
@@ -58,7 +64,6 @@ exclude = '''
 '''
 
 [tool.isort]
-known_first_party = ["amplfi", "train", "data", "mldatafind"]
-known_third_party = ["ml4gw"]
+known_first_party = ["amplfi"]
 multi_line_output = 3
 include_trailing_comma = true
