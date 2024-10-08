@@ -88,7 +88,7 @@ def create_runfile(
     content = f"""
     #!/bin/bash
     # set environment variables for this job
-    export AMPLFI_DATADIR={base}
+    export AMPLFI_DATADIR={base}/data/
     export AMPLFI_OUTDIR={base}/training/
     export AMPLFI_CONDORDIR={path}/condor
 
