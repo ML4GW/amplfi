@@ -1,30 +1,38 @@
 Bootstrap: docker
-From: python:3.10.12-slim-bullseye
+From: mambaorg/micromamba:1.5
 Stage: build
 
 %files
 . /opt/amplfi/
 
 %post
+mkdir -p /cvmfs /hdfs /gpfs /ceph /hadoop
+
 # install git for pip installation from github
 apt-get update
 apt-get install -y --no-install-recommends git
 apt-get clean
 
+# activate micromamba and create environment from lockfile
+/bin/bash /root/.bashrc
+micromamba create -p /opt/env -f /opt/amplfi/conda-lock.yml
 
-# installing the local package editably via pip
-# works, but none of the dependencies 
-# are installed editably, so we'll opt for using
-# the full poetry machinery without using a
-# virtual environment. Note that this can potentially
-# cause issues if the poetry install makes changes to
-# the virtualenv package in the base environment, so
-# we'll hard pin it to the value we need.
-# TODO: there's got to be a better solution here
-python -m pip install poetry
-cd /opt/amplfi/
-poetry export --with dev -o requirements.txt --without-hashes \
-    && sed -i 's|\(.*\) @ file://|-e |' requirements.txt
+cd /opt/amplfi
+micromamba run -p /opt/env python -m pip install .
 
-python -m pip install -r requirements.txt --no-deps --no-cache-dir
-python -m pip install -e . --no-deps --no-cache-dir
+# initialize our shell so that we can execute
+# commands in our environment at run time
+micromamba shell init --shell=bash --root-prefix=~/micromamba
+
+
+# set path, and add it to /etc/profile
+# so that it will be set if login shell
+# is invoked
+export PATH=/opt/env/bin:$PATH
+echo export PATH=$PATH >> /etc/profile
+
+%runscript
+#!/bin/bash
+eval "$(micromamba shell hook --shell bash)"
+micromamba activate /opt/env
+exec "$@"

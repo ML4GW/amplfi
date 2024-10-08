@@ -82,5 +82,77 @@ The tuning will then use local resources. The amount of resources to be alloated
 exposed to the job.
 
 ## Remote Tuning
-Tuning can also be performed via a remote Ray cluster. Launching a remote tuning job is as simple as passing the
-ip address of your Ray clusters head node to the `address` variable.
+Tuning can also be performed via a remote Ray cluster. Assuming you have properly set up your cluster with access
+to a remote data directory on s3, and weights and biases (see below), launching a remote tuning job is as simple as passing the
+ip address of your Ray clusters head node to the `address` variable. 
+
+Running tuning remotely will require that your data directory live on an s3 storage system. To generate data
+that is autmoatically moved to an s3 bucket, simply set the `AMPLFI_DATADIR` environment variable to an s3 path
+in the `run.sh`! You'll also need to set the `AMPLFI_OUTDIR` to an s3 location.
+
+```
+# run.sh
+export AMPLFI_DATADIR=s3://my-bucket/my-first-tune/data
+export AMPLFI_OUTDIR=s3://my-bucket/my-first-tune/runs
+...
+```
+
+### Kubernetes Ray Cluster
+```{eval-rst}
+    .. note::
+        Please see the [ml4gw quickstart](https://github.com/ml4gw/quickstart/) for help installing the necessary tools (helm, kubernetes, s3cmd)
+        and configuration (weights and biases, s3 credentials) to run remote tuning. This quickstart includes a comprehensive Makefile to install this 
+        tooling in a fresh conda environment, and instructions on settting up necessary credentials.
+```
+
+`lightray` ships a `helm` chart that can be used to launch a ray head and worker nodes on a remote kubernetes cluster.
+
+First, add the helm repository
+
+```console
+helm repo add lightray https://ethanmarx.github.io/lightray/
+```
+
+The helm chart comes with some configuration you'll need to set. To pull the "values" configuratoin template, run
+
+```console
+helm show values lightray/ray-cluster >> values.yaml
+```
+
+Specifically, you'll want to add your `WANDB_API_KEY`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY`
+so that the remote cluster can access your data on s3, and upload to weights and biases.
+
+
+Then, you can install the cluster
+
+```console
+helm install my-ray-cluster lightray/ray-cluster -f values.yaml
+```
+
+To monitor the status of your pods, run 
+
+```console
+kubectl get pods
+```
+
+You should see something like 
+
+```console
+NAME                                   READY   STATUS              RESTARTS   AGE
+my-ray-cluster-head-7b9597fdd8-brrlm    0/1     ContainerCreating   0          2s
+my-ray-cluster-worker-bd6698d67-49p6x   0/1     ContainerCreating   0          2s
+```
+
+Once the head and at least one worker pod are in the `RUNNING` state, you can query the 
+kubernetes Service corresponding to the head node for it's ip address:
+
+```console
+$ kubectl get service my-ray-cluster-head-loadbalancer -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+```
+
+Now, pass this ip address to the `address` parameter in `tune.yaml` and launch the run!
+
+```console
+amplfi-tune --tune.yaml
+```

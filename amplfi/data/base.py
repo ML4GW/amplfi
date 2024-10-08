@@ -7,7 +7,7 @@ from mldatafind.law.base import DataSandbox
 from amplfi.data.paths import paths
 
 root = Path(__file__).resolve().parent.parent.parent.parent.parent
-SANDBOX = f"amplfi::{paths().container_root / 'amplfi.sif'}"
+DATA_SANDBOX = f"amplfi::{paths().container_root / 'amplfi.sif'}"
 
 
 class AmplfiDataSandbox(DataSandbox):
@@ -36,7 +36,19 @@ class AmplfiDataSandbox(DataSandbox):
         for envvar, value in os.environ.items():
             if envvar.startswith("AMPLFI_"):
                 env[envvar] = value
+
+        # forward law config file to the container
+        # so tasks can read parameters from it
+        env["LAW_CONFIG_FILE"] = os.getenv("LAW_CONFIG_FILE", "")
         return env
+
+    @classmethod
+    def config(cls):
+        config = super().config()
+        config[f"singularity_sandbox_{cls.sandbox_type}"][
+            "forward_law"
+        ] = False
+        return config
 
 
 law.config.update(AmplfiDataSandbox.config())

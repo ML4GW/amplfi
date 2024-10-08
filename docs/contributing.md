@@ -5,19 +5,13 @@ Contributing
 
 First, create a personal [fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo) of this repository, and clone it.
 
-`AMPLFI` currently utilizes `git` [submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules), which will need to be initialized.
-
-```bash
-git submodule update --init
-```
-
 Then, add the main (`ML4GW`) repository as a remote reference. A common practice is to rename this remote `upstream`.
 
 ```console
 git remote add upstream git@github.com:ML4GW/amplfi.git
 ```
 
-Then, install `AMPLFI` editably. It is recommended to do so in a virtual environment.
+Now, install `AMPLFI` editably. It is recommended to do so in a virtual environment.
 
 ```{eval-rst}
 .. tabs::
