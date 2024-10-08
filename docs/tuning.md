@@ -118,8 +118,14 @@ The helm chart comes with some configuration you'll need to set. To pull the "va
 helm show values lightray/ray-cluster >> values.yaml
 ```
 
-Specifically, you'll want to add your `WANDB_API_KEY`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY`
-so that the remote cluster can access your data on s3, and upload to weights and biases.
+Specifically, you'll need to set the container to the remote `amplfi` image
+
+```yaml
+image: ghcr.io/ml4gw/amplfi/amplfi:main
+```
+
+And you'll also need to set your `WANDB_API_KEY`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY`
+to the corresponding variable so that the remote cluster can access your data on s3, and upload to weights and biases.
 
 
 Then, you can install the cluster
