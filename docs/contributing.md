@@ -58,7 +58,7 @@ Now any attempts to commit new code will require these tests to past first (and 
 pre-commit run --all
 ```
 
-### Non-automatable style guidelines
+### Docstring guidelines
 - Annotate function arguments and returns as specifically as possible
 - Adopt [Google docstring](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) formatting (this will eventually be used by Sphinx autodoc, so consistency is important)
 
