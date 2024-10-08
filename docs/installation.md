@@ -1,5 +1,5 @@
 Installation
-=================
+============
 
 `AMPLFI` can be installed with `pip`
 

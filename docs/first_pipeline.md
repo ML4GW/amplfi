@@ -1,5 +1,5 @@
 First Pipeline
-========
+==============
 
 ```{eval-rst}
 .. note::
@@ -50,7 +50,7 @@ amplfi-train-flow fit --config cbc.yaml
 ```
 
 This bash script consists of two steps:
-1. Querying gravitational wave strain data using a [`law`](github.com/riga/law) workflow
+1. Querying gravitational wave strain data using a [law](github.com/riga/law) workflow
 2. Training a normalizing flow using Pytorch Lightning
 
 The data querying step is controlled by the `datagen.cfg` file configuration. This will query segments of science-mode strain data,
