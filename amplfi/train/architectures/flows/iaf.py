@@ -4,7 +4,7 @@ from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.distributions.transforms import ConditionalAffineAutoregressive
 from pyro.nn import ConditionalAutoRegressiveNN
 
-from amplfi.architectures.flows import FlowArchitecture
+from amplfi.train.architectures.flows import FlowArchitecture
 
 
 class InverseAutoregressiveFlow(FlowArchitecture):

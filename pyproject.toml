@@ -46,7 +46,6 @@ linkify-it-py = "^2.0.3"
 [tool.poetry.scripts]
 amplfi-init = "amplfi.amplfi_init:main"
 amplfi-tune = "amplfi.train.tune.tune:main"
-# TODO: can probably combine these into one CLI
 amplfi-flow-cli = "amplfi.train.cli.flow:main"
 amplfi-similarity-cli = "amplfi.train.cli.similarity:main"
 
