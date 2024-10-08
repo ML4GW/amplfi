@@ -1,6 +1,6 @@
 Running in Containers
 =====================
-`AMPLFI` also provides a container build available at ghcr.io/ml4gw/amplfi.
+`AMPLFI` also provides a container builds available via the github container repository
 
 You can pull the container locally with either docker or apptainer
 
