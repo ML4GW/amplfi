@@ -9,7 +9,7 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
    :caption: Getting started
    :maxdepth: 1
 
-   Environment setup <environment>
+   Installation <installation>
    First pipeline <first_pipeline>
    Contributing <contributing.md>
 
