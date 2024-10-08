@@ -9,18 +9,18 @@ import yaml
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
-data_config = (root / "amplfi" / "law" / "datagen.cfg",)
+data_config = (root / "amplfi" / "data" / "datagen.cfg",)
 TUNE_CONFIGS = [
-    root / "projects" / "train" / "train" / "tune" / "tune.yaml",
-    root / "projects" / "train" / "train" / "tune" / "search_space.py",
+    root / "amplfi" / "tune" / "tune.yaml",
+    root / "amplfi" / "tune" / "search_space.py",
 ]
 
 
 TRAIN_CONFIGS = {
     "similarity": [
-        root / "projects" / "train" / "configs" / "similarity" / "cbc.yaml"
+        root / "amplfi" / "train" / "configs" / "similarity" / "cbc.yaml"
     ],
-    "flow": [root / "projects" / "train" / "configs" / "flow" / "cbc.yaml"],
+    "flow": [root / "amplfi" / "train" / "configs" / "flow" / "cbc.yaml"],
 }
 
 
@@ -78,7 +78,7 @@ def create_runfile(
     config = path / "datagen.cfg"
     # make the below one string
     data_cmd = f"LAW_CONFIG_FILE={config} "
-    data_cmd += "law run amplfi.law.DataGeneration --workers 5\n"
+    data_cmd += "law run amplfi.data.DataGeneration --workers 5\n"
 
     if pipeline == "tune":
         train_cmd = "amplfi-tune --config tune.yaml"
@@ -88,9 +88,9 @@ def create_runfile(
     content = f"""
     #!/bin/bash
     # set environment variables for this job
-    AMPLFI_DATADIR={base}
-    AMPLFI_OUTDIR={base}/training/
-    AMPLFI_CONDORDIR={path}/condor
+    export AMPLFI_DATADIR={base}
+    export AMPLFI_OUTDIR={base}/training/
+    export AMPLFI_CONDORDIR={path}/condor
 
     # set the GPUs exposed to job
     CUDA_VISIBLE_DEVICES=0

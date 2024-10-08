@@ -2,12 +2,12 @@ import os
 from pathlib import Path
 
 import law
-
-from amplfi.data.paths import paths
 from mldatafind.law.base import DataSandbox
 
+from amplfi.data.paths import paths
+
 root = Path(__file__).resolve().parent.parent.parent.parent.parent
-DATA_SANDBOX = f"amplfi::{paths().container_root / 'data.sif'}"
+SANDBOX = f"amplfi::{paths().container_root / 'amplfi.sif'}"
 
 
 class AmplfiDataSandbox(DataSandbox):
