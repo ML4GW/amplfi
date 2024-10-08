@@ -3454,7 +3454,7 @@ luigi = "^3.5.1"
 type = "git"
 url = "https://github.com/ML4GW/mldatafind.git"
 reference = "law-overhaul"
-resolved_reference = "954eec6bda154071215c910c0f38f17fd49c97c4"
+resolved_reference = "8048e26dac49d343d7a9766ed9a10389a2c2c51d"
 
 [[package]]
 name = "more-itertools"
