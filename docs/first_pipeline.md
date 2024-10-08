@@ -51,7 +51,7 @@ amplfi-train-flow fit --config cbc.yaml
 
 This bash script consists of two steps:
 1. Querying gravitational wave strain data using a [law](github.com/riga/law) workflow
-2. Training a normalizing flow using Pytorch Lightning
+2. Training a normalizing flow using [Pytorch Lightning](https://lightning.ai/docs/pytorch/stable/)
 
 The data querying step is controlled by the `datagen.cfg` file configuration. This will query segments of science-mode strain data,
 and save them in the directory specified by the `AMPLFI_DATADIR` environment variable. This step uses htcondor for parallelization,
