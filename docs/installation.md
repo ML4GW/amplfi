@@ -22,7 +22,7 @@ and directly from source with either pip or poetry
 
       Supported python versions: 3.9-3.12.
 
-    .. tab:: Poetry
+  .. tab:: Poetry
 
       .. code-block:: console
 
