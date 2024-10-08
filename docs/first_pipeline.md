@@ -45,7 +45,7 @@ export AMPLFI_CONDORDIR=/home/albert.einstein/amplfi/my-first-run/data/condor
 # launch the data generation pipeline
 LAW_CONFIG_FILE=/home/albert.einstein/amplfi/my-first-run/datagen.cfg law run amplfi.data.DataGeneration --workers 5
 
-# launch training or tuning pipeline
+# launch training pipeline
 amplfi-train-flow fit --config cbc.yaml
 ```
 
