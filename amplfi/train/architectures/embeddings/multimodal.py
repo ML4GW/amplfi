@@ -1,7 +1,6 @@
-import torch
-
 from typing import Literal, Optional
 
+import torch
 from ml4gw.nn.norm import NormLayer
 from ml4gw.nn.resnet.resnet_1d import ResNet1D
 
