@@ -46,14 +46,14 @@ amplfi-tune --help
 
 ```{eval-rst}
 .. note::
-    Currently, the `lightray` library automatically uses the `Asynchronous Hyper Band algorithm`(https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.AsyncHyperBandScheduler.html#ray.tune.schedulers.AsyncHyperBandScheduler), which will kill under performing trials after a certain amount of epochs this is
+    Currently, the `lightray` library automatically uses the [Asynchronous Hyper Band algorithm](https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.AsyncHyperBandScheduler.html#ray.tune.schedulers.AsyncHyperBandScheduler), which will kill under performing trials after a certain amount of epochs this is
     controlled by the `min_epochs` parameter.
 ```
 
 # Launching a Run
-The entrypoint to the tuning pipeline is the `run.sh` file:
+The entrypoint to the tuning pipeline is the `run.sh` file generated in the experiment directory.
 
-```
+```bash
 # run.sh
 
 #!/bin/bash
@@ -76,21 +76,21 @@ data is stored and where the tuning runs will be stored. There's a command to la
 
 
 ## Local Tuning
-If the `address` parameter in the `tune.yaml` is set to `null` (it is by default), then a local Ray cluster will be initialized.
+If the `address` parameter in the `tune.yaml` is set to `null` (the default), then a local Ray cluster will be initialized.
 The tuning will then use local resources. The amount of resources to be alloated per trial can be controlled by the 
 `gpus_per_worker`, and `cpus_per_gpu` arguments. The `CUDA_VISIBLE_DEVICES` environment variable will control the available GPU resources
 exposed to the job.
 
 ## Remote Tuning
-Tuning can also be performed via a remote Ray cluster. Assuming you have properly set up your cluster with access
-to a remote data directory on s3, and weights and biases (see below), launching a remote tuning job is as simple as passing the
+Tuning can also be performed via a remote Ray cluster. Assuming you have properly set up your cluster worker nodes with access
+to a remote data directory on `s3`, and weights and biases (more on this below), then launching a remote tuning job is as simple as passing the
 ip address of your Ray clusters head node to the `address` variable. 
 
-Running tuning remotely will require that your data directory live on an s3 storage system. To generate data
-that is autmoatically moved to an s3 bucket, simply set the `AMPLFI_DATADIR` environment variable to an s3 path
-in the `run.sh`! You'll also need to set the `AMPLFI_OUTDIR` to an s3 location.
+Running tuning remotely will require that your data directory live on an `s3` storage system. To generate data
+that is autmoatically moved to an `s3` bucket, you can simply set the `AMPLFI_DATADIR` environment variable to an `s3` path
+in the `run.sh`! You'll also need to set the `AMPLFI_OUTDIR` to an `s3` location.
 
-```
+```bash
 # run.sh
 export AMPLFI_DATADIR=s3://my-bucket/my-first-tune/data
 export AMPLFI_OUTDIR=s3://my-bucket/my-first-tune/runs
@@ -100,7 +100,7 @@ export AMPLFI_OUTDIR=s3://my-bucket/my-first-tune/runs
 ### Kubernetes Ray Cluster
 ```{eval-rst}
     .. note::
-        Please see the [ml4gw quickstart](https://github.com/ml4gw/quickstart/) for help installing the necessary tools (helm, kubernetes, s3cmd)
+        Please see the [ml4gw quickstart](https://github.com/ml4gw/quickstart/) for help installing the necessary tools (`helm`, `kubernetes`, `s3cmd`)
         and configuration (weights and biases, s3 credentials) to run remote tuning. This quickstart includes a comprehensive Makefile to install this 
         tooling in a fresh conda environment, and instructions on settting up necessary credentials.
 ```
@@ -113,7 +113,7 @@ First, add the helm repository
 helm repo add lightray https://ethanmarx.github.io/lightray/
 ```
 
-The helm chart comes with some configuration you'll need to set. To pull the "values" configuratoin template, run
+The helm chart comes with some configuration you'll need to set. To pull the "values" configuration template, run
 
 ```console
 helm show values lightray/ray-cluster >> values.yaml

@@ -31,7 +31,8 @@ author = "Ethan Marx, Deep Chatterjee"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
-    "sphinx_tabs.tabs" "sphinx_autodoc_typehints",
+    "sphinx_tabs.tabs",
+    "sphinx_autodoc_typehints",
     "sphinx.ext.githubpages",
     "myst_parser",
 ]
