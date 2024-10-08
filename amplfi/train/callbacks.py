@@ -3,10 +3,11 @@ import shutil
 
 import h5py
 import lightning.pytorch as pl
+from lightning.pytorch.cli import SaveConfigCallback
 from lightning.pytorch.loggers import WandbLogger
 
 
-class SaveConfigCallback(pl.cli.SaveConfigCallback):
+class SaveConfigCallback(SaveConfigCallback):
     """
     Override of `lightning.pytorch.cli.SaveConfigCallback` for use with WandB
     to ensure all the hyperparameters are logged to the WandB dashboard.

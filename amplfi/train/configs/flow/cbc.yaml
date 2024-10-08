@@ -17,13 +17,13 @@ trainer:
   log_every_n_steps: 20
   benchmark: false
 model:
-  class_path: train.models.flow.FlowModel
+  class_path: amplfi.train.models.flow.FlowModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
     # add path below when running `trainer.test` to load in a checkpoint
     checkpoint: null
     arch:
-      class_path: amplfi.architectures.flows.InverseAutoregressiveFlow
+      class_path: amplfi.train.architectures.flows.InverseAutoregressiveFlow
       init_args:
         hidden_features: 150
         num_transforms: 80
@@ -34,7 +34,7 @@ model:
         # embedding_weights: "path/to/embedding/weights"
         # freeze_embedding: false
         embedding_net: 
-          class_path: amplfi.architectures.embeddings.ResNet
+          class_path: amplfi.train.architectures.embeddings.ResNet
           init_args:
             layers: [5, 3, 3]
             norm_layer:
@@ -46,7 +46,7 @@ model:
     learning_rate: 3.7e-4
     weight_decay: 0.0
 data:
-  class_path: train.data.datasets.FlowDataset
+  class_path: amplfi.train.data.datasets.FlowDataset
   init_args:
     data_dir: ${oc.env:AMPLFI_DATADIR}
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
@@ -61,11 +61,11 @@ data:
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
     waveform_sampler: 
-      class_path: train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
+      class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
         num_fit_params: 100000
         parameter_sampler: 
-          class_path: train.priors.cbc_prior
+          class_path: amplfi.train.priors.cbc_prior
         dec: 
           class_path: ml4gw.distributions.Cosine
         psi: 

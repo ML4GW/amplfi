@@ -17,12 +17,12 @@ trainer:
   log_every_n_steps: 20
   benchmark: false
 model:
-  class_path: train.models.SimilarityModel
+  class_path: amplfi.train.models.SimilarityModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
     checkpoint: null
     arch:
-      class_path: amplfi.architectures.embeddings.ResNet
+      class_path: amplfi.train.architectures.embeddings.ResNet
       init_args:
         context_dim: 8
         layers: [5, 3, 3]
@@ -35,7 +35,7 @@ model:
     learning_rate: 3.77e-4
     weight_decay: 0.0
 data:
-  class_path: train.data.datasets.SimilarityDataset
+  class_path: amplfi.train.data.datasets.SimilarityDataset
   init_args:
     data_dir: ${oc.env:AMPLFI_DATADIR}
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
@@ -50,12 +50,12 @@ data:
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
     augmentor: 
-      class_path: train.data.augmentors.TimeTranslator
+      class_path: amplfi.train.data.augmentors.TimeTranslator
       init_args:
         jitter: 0.5
         sample_rate: 2048
     waveform_sampler: 
-      class_path: train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
+      class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
         num_fit_params: 100000
         parameter_sampler: train.priors.cbc_prior
