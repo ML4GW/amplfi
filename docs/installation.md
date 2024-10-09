@@ -33,6 +33,8 @@ and directly from source with either pip or poetry
     Supported python versions: 3.9-3.12.
 ```
 
+It is highly recommended that you install `AMPLFI` in a virtual environment like `conda` or `venv`.
+
 ## Data Generation
 Currently, running the data generation workflow that queries strain data requires utilizing the `AMPLFI` container.
 First, set the `$AMPLFI_CONTAINER_ROOT` where you would like the image stored.
