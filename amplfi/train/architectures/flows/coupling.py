@@ -35,7 +35,7 @@ class CouplingFlow(FlowArchitecture):
         """Returns single affine coupling transform"""
         arn = ConditionalDenseNN(
             self.split_dim,
-            self.context_dim,
+            self.embedding_net.context_dim,
             [self.hidden_features],
             param_dims=[
                 self.num_params - self.split_dim,

@@ -18,8 +18,8 @@ class ResNet(ResNet1D, Embedding):
         width_per_group: int = 64,
         stride_type: Optional[list[Literal["stride", "dilation"]]] = None,
         norm_layer: Optional[NormLayer] = None,
-        **kwargs
     ):
+
         super().__init__(
             num_ifos,
             layers=layers,
@@ -31,3 +31,7 @@ class ResNet(ResNet1D, Embedding):
             stride_type=stride_type,
             norm_layer=norm_layer,
         )
+
+        # set the context dimension so
+        # the flow can access it
+        self.context_dim = context_dim

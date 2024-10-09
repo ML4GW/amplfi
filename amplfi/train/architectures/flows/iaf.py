@@ -36,7 +36,7 @@ class InverseAutoregressiveFlow(FlowArchitecture):
         """Returns single autoregressive transform"""
         arn = ConditionalAutoRegressiveNN(
             self.num_params,
-            self.context_dim,
+            self.embedding_net.context_dim,
             self.num_blocks * [self.hidden_features],
             nonlinearity=self.activation,
         )
