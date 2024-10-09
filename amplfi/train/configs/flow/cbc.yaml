@@ -1,0 +1,89 @@
+# lightning.pytorch==2.1.3
+seed_everything: 101588
+trainer:
+  accelerator: auto
+  strategy: auto
+  devices: auto
+  profiler: "simple"
+  logger:
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        save_dir: ${oc.env:AMPLFI_OUTDIR}/train_logs
+        project: amplfi
+        # uncomment and set to name your run
+        # name:
+  max_epochs: 200
+  check_val_every_n_epoch: 1
+  log_every_n_steps: 20
+  benchmark: false
+model:
+  class_path: amplfi.train.models.flow.FlowModel
+  init_args:
+    outdir: ${oc.env:AMPLFI_OUTDIR}
+    # add path below when running `trainer.test` to load in a checkpoint
+    checkpoint: null
+    arch:
+      class_path: amplfi.train.architectures.flows.InverseAutoregressiveFlow
+      init_args:
+        hidden_features: 150
+        num_transforms: 80
+        num_blocks: 6
+        context_dim: 7
+        # uncomment below to load 
+        # in pre-trained embedding weights
+        # embedding_weights: "path/to/embedding/weights"
+        # freeze_embedding: false
+        embedding_net: 
+          class_path: amplfi.train.architectures.embeddings.ResNet
+          init_args:
+            layers: [5, 3, 3]
+            norm_layer:
+              class_path: ml4gw.nn.norm.GroupNorm1DGetter
+              init_args:
+                groups: 8
+    patience: null
+    save_top_k_models: 10
+    learning_rate: 3.7e-4
+    weight_decay: 0.0
+data:
+  class_path: amplfi.train.data.datasets.FlowDataset
+  init_args:
+    data_dir: ${oc.env:AMPLFI_DATADIR}
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
+    highpass: 25
+    sample_rate: 2048
+    kernel_length: 3
+    fduration: 1
+    psd_length: 10
+    fftlength: 2
+    batches_per_epoch: 200
+    batch_size: 512
+    ifos: ["H1", "L1"]
+    min_valid_duration: 10000.0
+    waveform_sampler: 
+      class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
+      init_args:
+        num_fit_params: 100000
+        parameter_sampler: 
+          class_path: amplfi.train.priors.cbc_prior
+        dec: 
+          class_path: ml4gw.distributions.Cosine
+        psi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: 0
+            high: 3.14 
+        phi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: -3.14
+            high: 3.14
+        num_val_waveforms: 10000
+        num_test_waveforms: 100
+        approximant: ml4gw.waveforms.IMRPhenomD
+        f_min: 20
+        f_max: 1024
+        ringdown_duration: 0.5
+        padding: 0.0
+        waveform_arguments:
+          f_ref: 40

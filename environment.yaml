@@ -1,0 +1,15 @@
+name: amplfi
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - libgcc
+  # general GW/auth deps
+  - krb5
+  - ciecplib
+  - requests-gssapi
+  # frame file I/O dependencies
+  - python-ldas-tools-framecpp<3.0.0
+  - python-nds2-client
+  - python-ligo-lw

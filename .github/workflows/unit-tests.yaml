@@ -12,32 +12,13 @@ on:
       - main
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      libraries: ${{ steps.filter.outputs.changes }}
-    steps:
-    - uses: actions/checkout@v2
-    - uses: dorny/paths-filter@v2
-      id: filter 
-      with:
-        filters: .github/filters.yaml
-    if: github.event.pull_request.draft == false  
   tests:
     runs-on: ubuntu-latest
-    needs: changes
-    if: ${{ needs.changes.outputs.libraries != '[]' }}  # runs only when there are changes
-    strategy:
-      fail-fast: true # is this desired behavior here?
-      matrix:
-        library: ${{ fromJSON(needs.changes.outputs.libraries) }}
-        exclude:
-          # don't run non-existent .github/workflow tests
-          - library: 'workflow'
     permissions:
       packages: read
     container:
-      image: cicirello/pyaction:4.8
+      # container with python and git
+      image: cicirello/pyaction:4.32
       volumes:
         - ${{ github.workspace }}:/github/workspace
     steps:
@@ -45,13 +26,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: build and run tests
-        env:
-          test_dir: /github/workspace/${{ matrix.library }}
+      - name: run tests
         run: |
+            apt-get update
+            apt-get install -y build-essential
+            apt-get clean
             python -m pip install --upgrade pip
             python -m pip install poetry
-            cd $test_dir
-            poetry install --all-extras
+            poetry install 
             poetry run pytest -v
         shell: bash

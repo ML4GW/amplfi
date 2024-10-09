@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "amplfi"
-version = "0.0.1"
-description = "End-to-end amplfi pipeline components"
+version = "0.1.0"
+description = "Accelerated Multi-messenger PE with Likelihood Free Inference"
 authors = [
     "Ethan Marx",
     "Deep Chatterjee"
@@ -9,12 +9,30 @@ authors = [
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
-jsonargparse = "^4.27.1"
-"amplfi.law" = {path = "./amplfi/law", develop = true}
-"train" = {path = "./projects/train", develop = true}
+numpy = "<2.0.0"
+lightning = "<=2.2.1"
+ml4gw = "^0.5"
+h5py = "^3.10.0"
+ray = "^2.9.3"
+bilby = "^2.2.3"
+healpy = "^1.16.6"
+pyro-ppl = "^1.9.0"
+jsonargparse = {version = "^4.27.1", extras = ["signatures"]}
+wandb = "^0.16.3"
+urllib3 = ">=1.25.4,<1.27"
+omegaconf = "^2.3.0"
+lightray = "^0.1.5"
+law = {git = "https://github.com/riga/law.git", branch = "master"}
+mldatafind = {git = "https://github.com/ML4GW/mldatafind.git", branch = "law-overhaul"}
+luigi = "^3.5.1"
+gwpy="3.0.8"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
+jupyter = "^1.0.0"
+pytest = "^8.0.2"
+conda-lock = "^2.5.7"
+
 
 
 [tool.poetry.group.docs.dependencies]
@@ -23,10 +41,13 @@ sphinx-rtd-theme = "^2.0.0"
 myst-parser = "^2.0.0"
 sphinx-autodoc-typehints = "^2.0.0"
 linkify-it-py = "^2.0.3"
+sphinx-tabs = "^3.4.7"
 
 [tool.poetry.scripts]
-amplfi-init = "scripts.amplfi_init:main"
-
+amplfi-init = "amplfi.amplfi_init:main"
+amplfi-tune = "amplfi.train.tune.tune:main"
+amplfi-flow-cli = "amplfi.train.cli.flow:main"
+amplfi-similarity-cli = "amplfi.train.cli.similarity:main"
 
 [tool.black]
 line-length = 79
@@ -42,7 +63,10 @@ exclude = '''
 '''
 
 [tool.isort]
-known_first_party = ["amplfi", "train", "data", "mldatafind"]
-known_third_party = ["ml4gw"]
+known_first_party = ["amplfi"]
 multi_line_output = 3
 include_trailing_comma = true
+
+[build-system]
+requires = ["poetry"]
+build-backend = "poetry.masonry.api"

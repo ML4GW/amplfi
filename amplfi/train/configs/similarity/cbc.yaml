@@ -1,0 +1,81 @@
+# lightning.pytorch==2.1.3
+seed_everything: 101588
+trainer:
+  accelerator: auto
+  strategy: auto
+  devices: auto
+  profiler: "simple"
+  logger:
+    - class_path: lightning.pytorch.loggers.WandbLogger
+      init_args:
+        save_dir: ${oc.env:AMPLFI_OUTDIR}/train
+        project: amplfi
+        # uncomment and set to name your run
+        # name: 
+  max_epochs: 50
+  check_val_every_n_epoch: 1
+  log_every_n_steps: 20
+  benchmark: false
+model:
+  class_path: amplfi.train.models.SimilarityModel
+  init_args:
+    outdir: ${oc.env:AMPLFI_OUTDIR}
+    checkpoint: null
+    arch:
+      class_path: amplfi.train.architectures.embeddings.ResNet
+      init_args:
+        context_dim: 8
+        layers: [5, 3, 3]
+        norm_layer:
+          class_path: ml4gw.nn.norm.GroupNorm1DGetter
+          init_args:
+            groups: 16
+    patience: null
+    save_top_k_models: 10
+    learning_rate: 3.77e-4
+    weight_decay: 0.0
+data:
+  class_path: amplfi.train.data.datasets.SimilarityDataset
+  init_args:
+    data_dir: ${oc.env:AMPLFI_DATADIR}
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
+    highpass: 25
+    sample_rate: 2048
+    kernel_length: 5
+    fduration: 1
+    psd_length: 12
+    fftlength: 2
+    batches_per_epoch: 100
+    batch_size: 256
+    ifos: ["H1", "L1"]
+    min_valid_duration: 10000.0
+    augmentor: 
+      class_path: amplfi.train.data.augmentors.TimeTranslator
+      init_args:
+        jitter: 0.5
+        sample_rate: 2048
+    waveform_sampler: 
+      class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
+      init_args:
+        num_fit_params: 100000
+        parameter_sampler: train.priors.cbc_prior
+        dec: 
+          class_path: ml4gw.distributions.Cosine
+        psi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: 0
+            high: 3.14 
+        phi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: -3.14
+            high: 3.14
+        num_val_waveforms: 10000
+        num_test_waveforms: 100
+        approximant: ml4gw.waveforms.IMRPhenomD
+        f_min: 20
+        f_max: 1024
+        padding: 1.0
+        waveform_arguments:
+          f_ref: 40
