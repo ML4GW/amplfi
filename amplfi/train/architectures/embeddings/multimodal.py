@@ -21,6 +21,11 @@ class MultiModal(Embedding):
         norm_layer: Optional[NormLayer] = None,
         **kwargs
     ):
+        """
+        MultiModal embedding network that embeds
+        both the time and frequency domain data by
+        passing the data through their own ResNets.
+        """
         super().__init__()
         time_dims = (
             context_dim // 2 if context_dim % 2 == 0 else context_dim // 2 + 1
