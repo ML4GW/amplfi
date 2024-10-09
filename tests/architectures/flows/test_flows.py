@@ -44,7 +44,6 @@ def test_coupling_flow(
 
     coupling_flow = CouplingFlow(
         param_dim,
-        context_dim,
         embedding,
         num_transforms=num_transforms,
     )
@@ -63,7 +62,6 @@ def test_autoregressive_flow(
 
     iaf = InverseAutoregressiveFlow(
         param_dim,
-        context_dim,
         embedding,
         num_transforms=num_transforms,
     )
@@ -72,7 +70,6 @@ def test_autoregressive_flow(
 
     maf = MaskedAutoregressiveFlow(
         param_dim,
-        context_dim,
         embedding,
         num_transforms=num_transforms,
     )
