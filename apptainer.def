@@ -3,7 +3,10 @@ From: mambaorg/micromamba:1.5
 Stage: build
 
 %files
-. /opt/amplfi/
+./amplfi /opt/amplfi/amplfi
+pyproject.toml /opt/amplfi/pyproject.toml
+poetry.lock /opt/amplfi/poetry.lock
+conda-lock.yml /opt/amplfi/conda-lock.yml
 
 %post
 mkdir -p /cvmfs /hdfs /gpfs /ceph /hadoop
