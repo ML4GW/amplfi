@@ -10,27 +10,33 @@ After [installing](./installation.md) `AMPLFI`, you will have access to the `amp
 
 ```console
 > amplfi-init --help
+usage: amplfi-init [-h] [--mode {flow,similarity}] [--pipeline {tune,train}] [-d DIRECTORY]
+                   [-n NAME] [--s3-bucket S3_BUCKET]
 
-usage: amplfi-init [-h] [--mode {flow,similarity}] [--pipeline {tune,train}] [-d DIRECTORY] [--s3-bucket S3_BUCKET]
+Initialize a directory with configuration files for running end-to-end amplfi training or
+tuning pipelines
 
-Initialize a directory with configuration files for running end-to-end amplfi training or tuning pipelines
-
-optional arguments:
+options:
   -h, --help            Show this help message and exit.
   --mode {flow,similarity}
-                        Either 'flow' or 'similarity',Whether to setup a flow or similarity training (default: flow)
+                        Either 'flow' or 'similarity', Whether to setup a flow or similarity
+                        training (default: flow)
   --pipeline {tune,train}
-                        Either 'train' or 'tune'.Whether to setup a tune or train pipeline (default: train)
+                        Either 'train' or 'tune'. Whether to setup a tune or train pipeline
+                        (default: train)
   -d DIRECTORY, --directory DIRECTORY
-                        The run directory where theconfiguration files will be copied to (required, type: <class 'Path'>)
+                        The parent directory where the data and subdirectories for runs will
+                        be stored (required, type: <class 'Path'>)
+  -n NAME, --name NAME  The name of the run. This will be used to create a the run
+                        subdirectory. (required, type: str)
   --s3-bucket S3_BUCKET
                         (default: null)
 ```
 
-For example, let's initialize a run directory at `~/amplfi/my-first-run` for training a normalizing flow
+For example, let's initialize a run directory at `~/amplfi/my-runs` for training a normalizing flow, and name it `first-flow-run`:
 
 ```console
-amplfi-init --mode flow --pipeline train --directory ~/amplfi/flow-run
+amplfi-init --mode flow --pipeline train --directory ~/amplfi/my-runs --name first-flow-run
 ```
 
 A `run.sh` will be created in the run directory that will look like:
@@ -38,15 +44,15 @@ A `run.sh` will be created in the run directory that will look like:
 ```bash
 #!/bin/bash
 # Export environment variables
-export AMPLFI_DATADIR=/home/albert.einstein/amplfi/data/
-export AMPLFI_OUTDIR=/home/albert.einstein/amplfi/my-first-run/training/
-export AMPLFI_CONDORDIR=/home/albert.einstein/amplfi/my-first-run/data/condor
+export AMPLFI_DATADIR=/home/albert.einstein/amplfi/my-runs/data/
+export AMPLFI_OUTDIR=/home/albert.einstein/amplfi/my-runs/first-flow-run/
+export AMPLFI_CONDORDIR=/home/albert.einstein/amplfi/my-runs/data/condor
 
 # launch the data generation pipeline
 LAW_CONFIG_FILE=/home/albert.einstein/amplfi/my-first-run/datagen.cfg law run amplfi.data.DataGeneration --workers 5
 
 # launch training pipeline
-amplfi-train-flow fit --config cbc.yaml
+amplfi-flow-cli fit --config cbc.yaml
 ```
 
 This bash script consists of two steps:
