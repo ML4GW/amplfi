@@ -11,9 +11,12 @@ class MultiModal(Embedding):
     def __init__(
         self,
         num_ifos: int,
-        context_dim: int,
-        layers: list[int],
-        kernel_size: int = 3,
+        time_context_dim: int,
+        freq_context_dim: int,
+        time_layers: list[int],
+        freq_layers: list[int],
+        time_kernel_size: int = 3,
+        freq_kernel_size: int = 3,
         zero_init_residual: bool = False,
         groups: int = 1,
         width_per_group: int = 64,
@@ -22,20 +25,18 @@ class MultiModal(Embedding):
         **kwargs
     ):
         """
-        MultiModal embedding network that embeds
-        both the time and frequency domain data by
-        passing the data through their own ResNets.
+        MultiModal embedding network that embeds both time and frequency data.
+
+        We pass the data through their own ResNets defined by their layers
+        and context dims, then concatenate the output embeddings.
         """
         super().__init__()
-        time_dims = (
-            context_dim // 2 if context_dim % 2 == 0 else context_dim // 2 + 1
-        )
-        frequency_dims = context_dim // 2
+        self.context_dim = time_context_dim + freq_context_dim
         self.time_domain_resnet = ResNet1D(
             in_channels=num_ifos,
-            layers=layers,
-            classes=time_dims,
-            kernel_size=kernel_size,
+            layers=time_layers,
+            classes=time_context_dim,
+            kernel_size=time_kernel_size,
             zero_init_residual=zero_init_residual,
             groups=groups,
             width_per_group=width_per_group,
@@ -44,9 +45,9 @@ class MultiModal(Embedding):
         )
         self.frequency_domain_resnet = ResNet1D(
             in_channels=int(num_ifos * 2),
-            layers=layers,
-            classes=frequency_dims,
-            kernel_size=kernel_size,
+            layers=freq_layers,
+            classes=freq_context_dim,
+            kernel_size=freq_kernel_size,
             zero_init_residual=zero_init_residual,
             groups=groups,
             width_per_group=width_per_group,
