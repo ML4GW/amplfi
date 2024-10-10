@@ -115,14 +115,14 @@ def main():
         "--mode",
         choices=["flow", "similarity"],
         default="flow",
-        help="Either 'flow' or 'similarity',"
+        help="Either 'flow' or 'similarity'. "
         "Whether to setup a flow or similarity training",
     )
     parser.add_argument(
         "--pipeline",
         choices=["tune", "train"],
         default="train",
-        help="Either 'train' or 'tune'."
+        help="Either 'train' or 'tune'. "
         "Whether to setup a tune or train pipeline",
     )
     parser.add_argument(
@@ -130,7 +130,7 @@ def main():
         "--directory",
         type=Path,
         required=True,
-        help="The run directory where the"
+        help="The run directory where the "
         "configuration files will be copied to",
     )
     parser.add_argument("--s3-bucket")
