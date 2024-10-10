@@ -1,8 +1,8 @@
 import torch
 
-from amplfi.train.callbacks import SaveAugmentedSimilarityBatch
-from amplfi.train.losses import VICRegLoss
-from amplfi.train.models.base import AmplfiModel
+from ..callbacks import SaveAugmentedSimilarityBatch
+from ..losses import VICRegLoss
+from .base import AmplfiModel
 
 
 class SimilarityModel(AmplfiModel):

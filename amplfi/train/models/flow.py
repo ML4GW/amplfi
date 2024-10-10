@@ -4,10 +4,10 @@ import numpy as np
 import pandas as pd
 import torch
 
-from amplfi.train.architectures.flows import FlowArchitecture
-from amplfi.train.callbacks import SaveAugmentedBatch
-from amplfi.train.models.base import AmplfiModel
-from amplfi.train.testing import Result
+from ..architectures.flows import FlowArchitecture
+from ..callbacks import SaveAugmentedBatch
+from ..testing import Result
+from .base import AmplfiModel
 
 Tensor = torch.Tensor
 

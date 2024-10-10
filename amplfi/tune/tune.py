@@ -5,7 +5,7 @@ from typing import Type
 from jsonargparse import ActionConfigFile, ArgumentParser
 from lightray.tune import run
 
-from amplfi.train.cli.base import AmplfiBaseCLI
+from ..train.cli.base import AmplfiBaseCLI
 
 
 def init_logging(verbose: bool):

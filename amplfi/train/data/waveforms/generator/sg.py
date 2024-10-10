@@ -1,7 +1,7 @@
 import torch
 from ml4gw.waveforms import SineGaussian
 
-from amplfi.train.data.waveforms.generator.generator import WaveformGenerator
+from .generator import WaveformGenerator
 
 
 class SGGenerator(WaveformGenerator):
