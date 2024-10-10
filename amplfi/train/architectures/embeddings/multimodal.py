@@ -4,7 +4,7 @@ import torch
 from ml4gw.nn.norm import NormLayer
 from ml4gw.nn.resnet.resnet_1d import ResNet1D
 
-from amplfi.architectures.embeddings.base import Embedding
+from .base import Embedding
 
 
 class MultiModal(Embedding):
