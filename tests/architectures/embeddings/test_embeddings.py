@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from ....amplfi.train.architectures.embeddings import ResNet
-from ....amplfi.train.architectures.embeddings.dense import DenseEmbedding
+from amplfi.train.architectures.embeddings import ResNet
+from amplfi.train.architectures.embeddings.dense import DenseEmbedding
 
 
 @pytest.fixture(params=[1, 2, 3])
