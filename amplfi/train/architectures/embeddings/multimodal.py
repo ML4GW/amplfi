@@ -31,7 +31,6 @@ class MultiModal(Embedding):
         and context dims, then concatenate the output embeddings.
         """
         super().__init__()
-        self.context_dim = time_context_dim + freq_context_dim
         self.time_domain_resnet = ResNet1D(
             in_channels=num_ifos,
             layers=time_layers,
@@ -54,6 +53,10 @@ class MultiModal(Embedding):
             stride_type=stride_type,
             norm_layer=norm_layer,
         )
+
+        # set the context dimension so
+        # the flow can access it
+        self.context_dim = time_context_dim + freq_context_dim
 
     def forward(self, X):
         time_domain_embedded = self.time_domain_resnet(X)
