@@ -98,7 +98,7 @@ def create_runfile(
 
     # launch the data generation pipeline
     {data_cmd}
-    
+
     # launch {pipeline}ing pipeline
     {train_cmd}
     """
