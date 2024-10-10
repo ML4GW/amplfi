@@ -7,7 +7,7 @@ from pyro.distributions import ConditionalTransformedDistribution, transforms
 from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.nn import PyroModule
 
-from amplfi.train.architectures.embeddings.base import Embedding
+from ..embeddings.base import Embedding
 
 
 class FlowArchitecture(PyroModule):

@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict
 
 import torch
 
-from amplfi.train.data.waveforms.generator.generator import WaveformGenerator
+from .generator import WaveformGenerator
 
 
 class FrequencyDomainCBCGenerator(WaveformGenerator):

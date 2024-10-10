@@ -2,7 +2,7 @@ from typing import Optional
 
 import torch
 
-from amplfi.train.data.utils.utils import ParameterTransformer
+from ..utils.utils import ParameterTransformer
 
 Distribution = torch.distributions.Distribution
 

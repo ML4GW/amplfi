@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING, Optional
 
 import torch
 
-from amplfi.train.data.utils.utils import ParameterSampler
-from amplfi.train.data.waveforms.sampler import WaveformSampler
+from ...utils.utils import ParameterSampler
+from ..sampler import WaveformSampler
 
 if TYPE_CHECKING:
     from ml4gw.transforms import ChannelWiseScaler

@@ -1,6 +1,6 @@
 import torch
 
-from amplfi.train.data.datasets.base import AmplfiDataset
+from .base import AmplfiDataset
 
 
 class FlowDataset(AmplfiDataset):

@@ -3,7 +3,7 @@ from pathlib import Path
 import h5py
 import torch
 
-from amplfi.train.train.data.waveforms.sampler import WaveformSampler
+from .sampler import WaveformSampler
 
 
 def x_per_y(x, y):

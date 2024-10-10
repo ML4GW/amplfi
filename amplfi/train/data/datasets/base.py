@@ -9,10 +9,10 @@ import torch
 from ml4gw.dataloading import Hdf5TimeSeriesDataset, InMemoryDataset
 from ml4gw.transforms import ChannelWiseScaler, Whiten
 
-from amplfi.train.augmentations import PsdEstimator, WaveformProjector
-from amplfi.train.data.utils import fs as fs_utils
-from amplfi.train.data.utils.utils import ZippedDataset
-from amplfi.train.data.waveforms.sampler import WaveformSampler
+from ...augmentations import PsdEstimator, WaveformProjector
+from ..utils import fs as fs_utils
+from ..utils.utils import ZippedDataset
+from ..waveforms.sampler import WaveformSampler
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
