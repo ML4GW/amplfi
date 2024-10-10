@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from amplfi.train.architectures.embeddings import ResNet
-from amplfi.train.architectures.flows import (
+from ....amplfi.train.architectures.embeddings import ResNet
+from ....amplfi.train.architectures.flows import (
     CouplingFlow,
     InverseAutoregressiveFlow,
     MaskedAutoregressiveFlow,

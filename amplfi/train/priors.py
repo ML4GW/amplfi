@@ -4,10 +4,7 @@ import torch
 from ml4gw import distributions
 from torch.distributions import Uniform
 
-from amplfi.train.data.utils.utils import (
-    ParameterSampler,
-    ParameterTransformer,
-)
+from .data.utils.utils import ParameterSampler, ParameterTransformer
 
 sg_transformer = ParameterTransformer(hrss=torch.log)
 

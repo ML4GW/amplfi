@@ -1,6 +1,6 @@
-from amplfi.train.cli.base import AmplfiBaseCLI
-from amplfi.train.data.datasets.base import AmplfiDataset
-from amplfi.train.models.base import AmplfiModel
+from ..data.datasets.base import AmplfiDataset
+from ..models.base import AmplfiModel
+from .base import AmplfiBaseCLI
 
 
 class AmplfiSimilarityCLI(AmplfiBaseCLI):

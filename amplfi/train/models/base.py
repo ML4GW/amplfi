@@ -8,7 +8,7 @@ import torch
 from lightning.pytorch.callbacks import LearningRateMonitor
 from ml4gw.transforms import ChannelWiseScaler
 
-from amplfi.train.callbacks import ModelCheckpoint
+from ..callbacks import ModelCheckpoint
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution

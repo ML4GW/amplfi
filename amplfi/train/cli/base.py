@@ -1,6 +1,6 @@
 from lightning.pytorch.cli import LightningCLI
 
-from amplfi.train.callbacks import SaveConfigCallback
+from ..callbacks import SaveConfigCallback
 
 
 class AmplfiBaseCLI(LightningCLI):

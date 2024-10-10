@@ -3,8 +3,8 @@ import luigi
 from mldatafind.law.tasks import Fetch
 from mldatafind.law.tasks import Query as _Query
 
-from amplfi.data.base import DATA_SANDBOX, AmplfiDataTaskMixin
-from amplfi.data.paths import paths
+from .base import DATA_SANDBOX, AmplfiDataTaskMixin
+from .paths import paths
 
 
 # add mixin for appending amplfi specific
