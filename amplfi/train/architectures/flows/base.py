@@ -7,20 +7,20 @@ from pyro.distributions import ConditionalTransformedDistribution, transforms
 from pyro.distributions.conditional import ConditionalComposeTransformModule
 from pyro.nn import PyroModule
 
+from amplfi.train.architectures.embeddings.base import Embedding
+
 
 class FlowArchitecture(PyroModule):
     def __init__(
         self,
         num_params: int,
-        context_dim: int,
-        embedding_net: torch.nn.Module,
+        embedding_net: Embedding,
         embedding_weights: Optional[Path] = None,
         freeze_embedding: bool = False,
     ):
 
         super().__init__()
         self.num_params = num_params
-        self.context_dim = context_dim
         self.embedding_net = embedding_net
 
         if freeze_embedding:

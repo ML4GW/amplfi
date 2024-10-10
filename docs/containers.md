@@ -11,7 +11,7 @@ You can pull the container locally with either docker or apptainer
 
     .. code-block:: console
 
-        $ apptainer pull docker://ghcr.io/ml4gw/amplfi/data:main $AMPLFI_CONTAINER_ROOT/amplfi.sif
+        $ apptainer pull $AFRAME_CONTAINER_ROOT/amplfi.sif docker://ghcr.io/ml4gw/amplfi/amplfi:main
 
     Supported python versions: 3.9-3.12.
 
@@ -19,7 +19,7 @@ You can pull the container locally with either docker or apptainer
 
     .. code-block:: console
 
-      $ docker pull ghcr.io/ml4gw/amplfi:main $AMPLFI_CONTAINER_ROOT/amplfi.sif
+      $ docker pull ghcr.io/ml4gw/amplfi/amplfi:main
 
     Supported python versions: 3.9-3.12.
 ```

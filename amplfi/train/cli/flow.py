@@ -14,12 +14,6 @@ class AmplfiFlowCLI(AmplfiBaseCLI):
         )
 
         parser.link_arguments(
-            "model.init_args.arch.init_args.context_dim",
-            "model.init_args.arch.init_args.embedding_net.init_args.context_dim",  # noqa
-            apply_on="parse",
-        )
-
-        parser.link_arguments(
             "data.init_args.ifos",
             "model.init_args.arch.init_args.embedding_net.init_args.num_ifos",
             compute_fn=lambda x: len(x),

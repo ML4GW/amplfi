@@ -28,7 +28,6 @@ model:
         hidden_features: 150
         num_transforms: 80
         num_blocks: 6
-        context_dim: 7
         # uncomment below to load 
         # in pre-trained embedding weights
         # embedding_weights: "path/to/embedding/weights"
@@ -36,6 +35,7 @@ model:
         embedding_net: 
           class_path: amplfi.train.architectures.embeddings.ResNet
           init_args:
+            context_dim: 7
             layers: [5, 3, 3]
             norm_layer:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
