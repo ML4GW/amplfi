@@ -1,6 +1,6 @@
 Running in Containers
 =====================
-`AMPLFI` also provides a container builds available via the github container repository
+`AMPLFI` also provides container builds available via the github container repository
 
 You can pull the container locally with either docker or apptainer
 
