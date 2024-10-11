@@ -152,7 +152,7 @@ def main():
     directory = (
         args.directory.resolve()
         if args.directory
-        else os.environ.get("AMPLFI_RUNDIR")
+        else Path(os.environ.get("AMPLFI_RUNDIR")).resolve()
     )
 
     if args.s3_bucket is not None and not args.s3_bucket.startswith("s3://"):
