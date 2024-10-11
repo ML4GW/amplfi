@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import shutil
 from pathlib import Path
 from textwrap import dedent
@@ -127,14 +128,6 @@ def main():
         "Whether to setup a tune or train pipeline",
     )
     parser.add_argument(
-        "-d",
-        "--directory",
-        type=Path,
-        required=True,
-        help="The parent directory where the "
-        "data and subdirectories for runs will be stored",
-    )
-    parser.add_argument(
         "-n",
         "--name",
         type=str,
@@ -142,10 +135,25 @@ def main():
         help="The name of the run. "
         "This will be used to create the run subdirectory.",
     )
+    parser.add_argument(
+        "-d",
+        "--directory",
+        type=Path,
+        default=None,
+        help="The parent directory where the "
+        "data and subdirectories for runs will "
+        "be stored. If not provided, the environment "
+        "variable AMPLFI_RUNDIR will be used.",
+    )
+
     parser.add_argument("--s3-bucket")
 
     args = parser.parse_args()
-    directory = args.directory.resolve()
+    directory = (
+        args.directory.resolve()
+        if args.directory
+        else os.environ.get("AMPLFI_RUNDIR")
+    )
 
     if args.s3_bucket is not None and not args.s3_bucket.startswith("s3://"):
         raise ValueError("S3 bucket must be in the format s3://{bucket-name}/")
