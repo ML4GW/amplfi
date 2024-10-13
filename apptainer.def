@@ -34,6 +34,9 @@ micromamba shell init --shell=bash --root-prefix=~/micromamba
 export PATH=/opt/env/bin:$PATH
 echo export PATH=$PATH >> /etc/profile
 
+%environment
+    export PATH=/opt/env/bin:$PATH
+    
 %runscript
 #!/bin/bash
 eval "$(micromamba shell hook --shell bash)"
