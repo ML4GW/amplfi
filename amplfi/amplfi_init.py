@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import shutil
 from pathlib import Path
 from textwrap import dedent
@@ -67,6 +68,7 @@ def write_content(content: str, path: Path):
 
 def create_runfile(
     path: Path,
+    name: str,
     mode: Literal["flow", "similarity"],
     pipeline: Literal["tune", "train"],
     s3_bucket: Optional[Path] = None,
@@ -78,7 +80,7 @@ def create_runfile(
     config = path / "datagen.cfg"
     # make the below one string
     data_cmd = f"LAW_CONFIG_FILE={config} "
-    data_cmd += "law run amplfi.data.DataGeneration --workers 5\n"
+    data_cmd += "law run amplfi.data.DataGeneration --workers 5"
 
     if pipeline == "tune":
         train_cmd = "amplfi-tune --config tune.yaml"
@@ -89,8 +91,8 @@ def create_runfile(
     #!/bin/bash
     # set environment variables for this job
     export AMPLFI_DATADIR={base}/data/
-    export AMPLFI_OUTDIR={base}/training/
-    export AMPLFI_CONDORDIR={path}/condor
+    export AMPLFI_OUTDIR={base}/{name}/
+    export AMPLFI_CONDORDIR={path}/data/condor
 
     # set the GPUs exposed to job
     CUDA_VISIBLE_DEVICES=0
@@ -102,7 +104,7 @@ def create_runfile(
     {train_cmd}
     """
 
-    runfile = path / "run.sh"
+    runfile = path / name / "run.sh"
     write_content(content, runfile)
 
 
@@ -115,28 +117,43 @@ def main():
         "--mode",
         choices=["flow", "similarity"],
         default="flow",
-        help="Either 'flow' or 'similarity',"
+        help="Either 'flow' or 'similarity'. "
         "Whether to setup a flow or similarity training",
     )
     parser.add_argument(
         "--pipeline",
         choices=["tune", "train"],
         default="train",
-        help="Either 'train' or 'tune'."
+        help="Either 'train' or 'tune'. "
         "Whether to setup a tune or train pipeline",
+    )
+    parser.add_argument(
+        "-n",
+        "--name",
+        type=str,
+        required=True,
+        help="The name of the run. "
+        "This will be used to create the run subdirectory.",
     )
     parser.add_argument(
         "-d",
         "--directory",
         type=Path,
-        required=True,
-        help="The run directory where the"
-        "configuration files will be copied to",
+        default=None,
+        help="The parent directory where the "
+        "data and subdirectories for runs will "
+        "be stored. If not provided, the environment "
+        "variable AMPLFI_RUNDIR will be used.",
     )
+
     parser.add_argument("--s3-bucket")
 
     args = parser.parse_args()
-    directory = args.directory.resolve()
+    directory = (
+        args.directory.resolve()
+        if args.directory
+        else Path(os.environ.get("AMPLFI_RUNDIR")).resolve()
+    )
 
     if args.s3_bucket is not None and not args.s3_bucket.startswith("s3://"):
         raise ValueError("S3 bucket must be in the format s3://{bucket-name}/")
@@ -151,8 +168,10 @@ def main():
         configs = TRAIN_CONFIGS[args.mode]
         configs.extend(data_config)
 
-    copy_configs(directory, configs)
-    create_runfile(directory, args.mode, args.pipeline, args.s3_bucket)
+    copy_configs(directory / args.name, configs)
+    create_runfile(
+        directory, args.name, args.mode, args.pipeline, args.s3_bucket
+    )
 
 
 if __name__ == "__main__":
