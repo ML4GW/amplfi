@@ -56,6 +56,6 @@ APPTAINERENV_AMPLFI_OUTDIR=/path/to/outdir APPTAINERENV_AMPLFI_OUTDIR=/path/to/d
 
 ```{eval-rst}
 .. note::
-   If you make modifications the the enviroment like adding python dependencies you will
+   If you make modifications the the environment like adding python dependencies you will
    have to rebuild the containers!
 ```
