@@ -40,7 +40,7 @@ Currently, running the data generation workflow that queries strain data require
 First, set the `$AMPLFI_CONTAINER_ROOT` where you would like the image stored.
 
 ```console
-export $AMPLFI_CONTAINER_ROOT=~/amplfi/images
+export AMPLFI_CONTAINER_ROOT=~/amplfi/images
 ```
 
 Then you can either pull the container from the remote github repository
@@ -52,7 +52,7 @@ Then you can either pull the container from the remote github repository
 
     .. code-block:: console
 
-        $ apptainer pull docker://ghcr.io/ml4gw/amplfi/data:main $AMPLFI_CONTAINER_ROOT/amplfi.sif 
+        $ apptainer pull $AMPLFI_CONTAINER_ROOT/amplfi.sif docker://ghcr.io/ml4gw/amplfi/amplfi:main
 
     Supported python versions: 3.9-3.12.
 
@@ -60,7 +60,7 @@ Then you can either pull the container from the remote github repository
 
     .. code-block:: console
 
-      $ docker pull ghcr.io/ml4gw/amplfi:main $AMPLFI_CONTAINER_ROOT/amplfi.sif 
+      $ docker pull ghcr.io/ml4gw/amplfi/amplfi:main
 
     Supported python versions: 3.9-3.12.
 ```
