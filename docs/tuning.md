@@ -128,7 +128,7 @@ And you'll also need to set your `WANDB_API_KEY`, `AWS_ACCESS_KEY_ID`, and `AWS_
 to the corresponding variable so that the remote cluster can access your data on s3, and upload to weights and biases.
 
 
-Then, you can install the cluster
+Then, you can install the cluster. You can name the installation anything. Here we name it `my-ray-cluster`
 
 ```console
 helm install my-ray-cluster lightray/ray-cluster -f values.yaml
@@ -159,6 +159,12 @@ Now, pass this ip address to the `address` parameter in `tune.yaml` and launch t
 
 ```console
 amplfi-tune --tune.yaml
+```
+
+```{eval-rst}
+.. note::
+   Remember to clean up your kubernetes jobs! You can uninstall all resources
+   created by the helm chart with :code:`helm uninstall {chart-name}`
 ```
 
 #### Syncing Remote Code 
