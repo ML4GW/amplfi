@@ -18,10 +18,10 @@ apt-get clean
 
 # activate micromamba and create environment from lockfile
 /bin/bash /root/.bashrc
-micromamba create -p /opt/env -f /opt/amplfi/conda-lock.yml
+micromamba create -p /env -f /opt/amplfi/conda-lock.yml
 
 cd /opt/amplfi
-micromamba run -p /opt/env python -m pip install -e .
+micromamba run -p /env python -m pip install -e .
 
 # initialize our shell so that we can execute
 # commands in our environment at run time
@@ -31,14 +31,14 @@ micromamba shell init --shell=bash --root-prefix=~/micromamba
 # set path, and add it to /etc/profile
 # so that it will be set if login shell
 # is invoked
-export PATH=/opt/env/bin:$PATH
+export PATH=/env/bin:$PATH
 echo export PATH=$PATH >> /etc/profile
 
 %environment
-    export PATH=/opt/env/bin:$PATH
+    export PATH=/env/bin:$PATH
     
 %runscript
 #!/bin/bash
 eval "$(micromamba shell hook --shell bash)"
-micromamba activate /opt/env
+micromamba activate /env
 exec "$@"
