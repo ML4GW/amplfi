@@ -1,8 +1,10 @@
+import io
 import os
 import shutil
 
 import h5py
 import lightning.pytorch as pl
+import s3fs
 from lightning.pytorch.cli import SaveConfigCallback
 from lightning.pytorch.loggers import WandbLogger
 
@@ -27,18 +29,16 @@ class SaveAugmentedBatch(pl.Callback):
         if trainer.global_rank == 0:
             datamodule = trainer.datamodule
             device = pl_module.device
+
             # build and save an example training batch
             # and parameters to disk
             [X] = next(iter(trainer.train_dataloader))
             X = X.to(device)
 
             cross, plus, parameters = datamodule.waveform_sampler.sample(X)
-            strain, parameters = datamodule.inject(X, cross, plus, parameters)
-
-            save_dir = trainer.logger.log_dir or trainer.logger.save_dir
-            with h5py.File(os.path.join(save_dir, "train-batch.h5"), "w") as f:
-                f["strain"] = strain.cpu().numpy()
-                f["parameters"] = parameters.cpu().numpy()
+            strain, asds, parameters = datamodule.inject(
+                X, cross, plus, parameters
+            )
 
             # save an example validation batch
             # and parameters to disk
@@ -57,12 +57,43 @@ class SaveAugmentedBatch(pl.Callback):
                 if k not in ["dec", "psi", "phi"]
             ]
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
-            strain, parameters = datamodule.inject(
+            val_strain, val_asds, val_parameters = datamodule.inject(
                 background, cross, plus, parameters
             )
-            with h5py.File(os.path.join(save_dir, "val-batch.h5"), "w") as f:
-                f["strain"] = strain.cpu().numpy()
-                f["parameters"] = parameters.cpu().numpy()
+
+            save_dir = trainer.logger.log_dir or trainer.logger.save_dir
+
+            if save_dir.startswith("s3://"):
+                s3 = s3fs.S3FileSystem()
+                with s3.open(f"{save_dir}/batch.h5", "wb") as s3_file:
+                    with io.BytesIO() as f:
+                        with h5py.File(f, "w") as h5file:
+                            h5file["strain"] = strain.cpu().numpy()
+                            h5file["parameters"] = parameters.cpu().numpy()
+                            h5file["asds"] = asds.cpu().numpy()
+                        s3_file.write(f.getvalue())
+
+                with s3.open(f"{save_dir}/val-batch.h5", "wb") as s3_file:
+                    with io.BytesIO() as f:
+                        with h5py.File(f, "w") as h5file:
+                            h5file["strain"] = val_strain.cpu().numpy()
+                            h5file["parameters"] = val_parameters.cpu().numpy()
+                            h5file["asds"] = val_asds.cpu().numpy()
+                        s3_file.write(f.getvalue())
+            else:
+                with h5py.File(
+                    os.path.join(save_dir, "train-batch.h5"), "w"
+                ) as f:
+                    f["strain"] = strain.cpu().numpy()
+                    f["parameters"] = parameters.cpu().numpy()
+                    f["asds"] = asds.cpu().numpy()
+
+                with h5py.File(
+                    os.path.join(save_dir, "val-batch.h5"), "w"
+                ) as f:
+                    f["strain"] = val_strain.cpu().numpy()
+                    f["parameters"] = val_parameters.cpu().numpy()
+                    f["asds"] = val_asds.cpu().numpy()
 
 
 class SaveAugmentedSimilarityBatch(pl.Callback):
@@ -81,6 +112,7 @@ class SaveAugmentedSimilarityBatch(pl.Callback):
             )
 
             save_dir = trainer.logger.log_dir or trainer.logger.save_dir
+
             with h5py.File(os.path.join(save_dir, "train-batch.h5"), "w") as f:
                 f["ref"] = ref.cpu().numpy()
                 f["aug"] = aug.cpu().numpy()
