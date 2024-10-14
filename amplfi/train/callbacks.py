@@ -42,13 +42,13 @@ class SaveAugmentedBatch(pl.Callback):
 
             # save an example validation batch
             # and parameters to disk
-            [cross, plus, parameters], [background] = next(
+            [val_cross, val_plus, val_parameters], [background] = next(
                 iter(datamodule.val_dataloader())
             )
-            cross, plus, parameters = (
-                cross.to(device),
-                plus.to(device),
-                parameters.to(device),
+            val_cross, val_plus, val_parameters = (
+                val_cross.to(device),
+                val_plus.to(device),
+                val_parameters.to(device),
             )
             background = background.to(device)
             keys = [
@@ -56,9 +56,11 @@ class SaveAugmentedBatch(pl.Callback):
                 for k in datamodule.hparams.inference_params
                 if k not in ["dec", "psi", "phi"]
             ]
-            parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
+            val_parameters = {
+                k: val_parameters[:, i] for i, k in enumerate(keys)
+            }
             val_strain, val_asds, val_parameters = datamodule.inject(
-                background, cross, plus, parameters
+                background, val_cross, val_plus, val_parameters
             )
 
             save_dir = trainer.logger.log_dir or trainer.logger.save_dir
