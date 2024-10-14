@@ -38,7 +38,7 @@ so they can be accessed inside the container.
 
 ## Mounting Local Code
 During development, often times you will make code changes and want to test them inside the container.
-To do so, you *could* rebuild the entire container locally so that your changes are built into the container,
+To do so, you *could* rebuild the entire container locally so that your changes are reflected in the container,
 
 ```
 apptainer build $AMPLFI_CONTAINER_ROOT/amplfi.sif apptainer.def
