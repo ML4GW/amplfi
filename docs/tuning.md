@@ -153,11 +153,34 @@ kubernetes Service corresponding to the head node for it's ip address:
 
 ```console
 $ kubectl get service my-ray-cluster-head-loadbalancer -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-
 ```
 
 Now, pass this ip address to the `address` parameter in `tune.yaml` and launch the run!
 
 ```console
 amplfi-tune --tune.yaml
+```
+
+#### Syncing Remote Code 
+In some cases, it is necessary to launch a tuning job with code changes that haven't been integrated into the `AMPLFI` `main` branch,
+and thus have not been pushed to the remote container.
+
+To allow this, the `lightray/ray-cluster` chart supports an optional [git-sync](https://github.com/kubernetes/git-sync) `initContainer`
+that will clone and mount remote code inside the kubernetes pods.
+
+To use this with `AMPLFI`, you will need to configure the following in the charts `values.yaml` file
+
+```yaml
+# set dev to true
+dev: true
+
+gitRepo:
+    # name must be set to amplfi
+    name: amplfi
+    # set to repo you want to mount
+    url: git@github.com:albert.einstein/amplfi.git
+    # set ref to branch name or commit hash
+    ref: my-branch
+    # mountPath must be set to /opt
+    mountPath: /opt
 ```
