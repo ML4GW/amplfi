@@ -1,5 +1,5 @@
-cli_cls: train.cli.flow.AmplfiFlowCLI
-train_config: ../..//configs/flow/cbc.yaml
+cli_cls: amplfi.train.cli.flow.AmplfiFlowCLI
+train_config: ../../configs/flow/cbc.yaml
 name: amplfi-tune
 objective: min
 search_space: ./search_space.py

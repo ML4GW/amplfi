@@ -45,7 +45,7 @@ sphinx-tabs = "^3.4.7"
 
 [tool.poetry.scripts]
 amplfi-init = "amplfi.amplfi_init:main"
-amplfi-tune = "amplfi.train.tune.tune:main"
+amplfi-tune = "amplfi.tune.tune:main"
 amplfi-flow-cli = "amplfi.train.cli.flow:main"
 amplfi-similarity-cli = "amplfi.train.cli.similarity:main"
 
