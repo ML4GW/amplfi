@@ -48,6 +48,9 @@ class AmplfiDataSandbox(DataSandbox):
         config[f"singularity_sandbox_{cls.sandbox_type}"][
             "forward_law"
         ] = False
+        config[f"singularity_sandbox_{cls.sandbox_type}"][
+            "law_executable"
+        ] = "/env/bin/law"
         return config
 
 
