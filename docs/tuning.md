@@ -153,10 +153,16 @@ kubernetes Service corresponding to the head node for it's ip address:
 
 ```console
 $ kubectl get service my-ray-cluster-head-loadbalancer -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-
 ```
 
-Now, pass this ip address to the `address` parameter in `tune.yaml` and launch the run!
+pass this ip address, to the `address` parameter in `tune.yaml` with the format `ray://{ip}:10001`. For example,
+if the ip address was `11.22.10.27` you would set
+
+```yaml
+address = ray://11.22.10.27:10001
+``` 
+
+Now, launch the run!
 
 ```console
 amplfi-tune --tune.yaml
