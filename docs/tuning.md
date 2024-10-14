@@ -128,7 +128,7 @@ And you'll also need to set your `WANDB_API_KEY`, `AWS_ACCESS_KEY_ID`, and `AWS_
 to the corresponding variable so that the remote cluster can access your data on s3, and upload to weights and biases.
 
 
-Then, you can install the cluster
+Then, you can install the cluster. You can name the installation anything. Here we name it `my-ray-cluster`
 
 ```console
 helm install my-ray-cluster lightray/ray-cluster -f values.yaml
@@ -153,11 +153,40 @@ kubernetes Service corresponding to the head node for it's ip address:
 
 ```console
 $ kubectl get service my-ray-cluster-head-loadbalancer -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-
 ```
 
 Now, pass this ip address to the `address` parameter in `tune.yaml` and launch the run!
 
 ```console
 amplfi-tune --tune.yaml
+```
+
+```{eval-rst}
+.. note::
+   Remember to clean up your kubernetes jobs! You can uninstall all resources
+   created by the helm chart with :code:`helm uninstall {chart-name}`
+```
+
+#### Syncing Remote Code 
+In some cases, it is necessary to launch a tuning job with code changes that haven't been integrated into the `AMPLFI` `main` branch,
+and thus have not been pushed to the remote container.
+
+To allow this, the `lightray/ray-cluster` chart supports an optional [git-sync](https://github.com/kubernetes/git-sync) `initContainer`
+that will clone and mount remote code inside the kubernetes pods.
+
+To use this with `AMPLFI`, you will need to configure the following in the charts `values.yaml` file
+
+```yaml
+# set dev to true
+dev: true
+
+gitRepo:
+    # name must be set to amplfi
+    name: amplfi
+    # set to repo you want to mount
+    url: git@github.com:albert.einstein/amplfi.git
+    # set ref to branch name or commit hash
+    ref: my-branch
+    # mountPath must be set to /opt
+    mountPath: /opt
 ```

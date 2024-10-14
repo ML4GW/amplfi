@@ -29,7 +29,8 @@ to train a flow inside the container, you can run
 
 ```console
 APPTAINERENV_AMPLFI_OUTDIR=/path/to/outdir APPTAINERENV_AMPLFI_OUTDIR=/path/to/datadir/ \
-    apptainer run $AMPLFI_CONTAINER_ROOT/amplfi.sif --nv amplfi-flow-cli fit --config /path/to/config.yaml
+    apptainer run $AMPLFI_CONTAINER_ROOT/amplfi.sif --nv \ 
+    amplfi-flow-cli fit --config /path/to/config.yaml
 ```
 
 Note that we must map in the `APPTAINERENV_AMPLFI_OUTDIR` and `APPTAINERENV_AMPLFI_DATADIR` environment variables
@@ -51,7 +52,9 @@ it is possible to map local changes into the container at runtime by bind mounti
 
 ```console 
 APPTAINERENV_AMPLFI_OUTDIR=/path/to/outdir APPTAINERENV_AMPLFI_OUTDIR=/path/to/datadir/ \
-    apptainer run -B /path/to/local/amplfi:/opt/amplfi --nv $AMPLFI_CONTAINER_ROOT/amplfi.sif amplfi-flow-cli fit --config /path/to/config.yaml
+    apptainer run -B /path/to/local/amplfi:/opt/amplfi --nv \
+    $AMPLFI_CONTAINER_ROOT/amplfi.sif amplfi-flow-cli fit \
+    --config /path/to/config.yaml
 ```
 
 ```{eval-rst}
