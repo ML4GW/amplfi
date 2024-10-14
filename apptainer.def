@@ -21,7 +21,7 @@ apt-get clean
 micromamba create -p /opt/env -f /opt/amplfi/conda-lock.yml
 
 cd /opt/amplfi
-micromamba run -p /opt/env python -m pip install .
+micromamba run -p /opt/env python -m pip install -e .
 
 # initialize our shell so that we can execute
 # commands in our environment at run time

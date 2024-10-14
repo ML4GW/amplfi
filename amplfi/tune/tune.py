@@ -18,7 +18,7 @@ def init_logging(verbose: bool):
 
 
 def main():
-    parser = ArgumentParser()
+    parser = ArgumentParser(parser_mode="omegaconf")
     parser.add_argument(
         "--config",
         action=ActionConfigFile,
