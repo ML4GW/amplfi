@@ -14,7 +14,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  PATH: /opt/env/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/cuda-11.8/bin
+  PATH: /env/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/cuda-11.8/bin
 
 
 jobs:
