@@ -47,11 +47,11 @@ apptainer build $AMPLFI_CONTAINER_ROOT/amplfi.sif apptainer.def
 but it can be quite cumbersome to do this each time you make a minor tweak to the code base.
 
 Fortunately, `AMPLFI` is installed editably inside the container at the path `/opt/amplfi`. So,
-it is possible to map local changes into the container at runtime by bind mounting your local repository. As an example, the above training command can be modified to do so using the `-B` flag.
+it is possible to map local changes into the container at runtime by bind mounting your local repository. As an example, the above training command can be modified to do so using the `-B` flag (replace `/path/to/local/amplfi` with the location where your local amplfi lives).
 
 ```console 
 APPTAINERENV_AMPLFI_OUTDIR=/path/to/outdir APPTAINERENV_AMPLFI_OUTDIR=/path/to/datadir/ \
-    apptainer run -B /path/to/amplfi:/opt/amplfi --nv $AMPLFI_CONTAINER_ROOT/amplfi.sif amplfi-flow-cli fit --config /path/to/config.yaml
+    apptainer run -B /path/to/local/amplfi:/opt/amplfi --nv $AMPLFI_CONTAINER_ROOT/amplfi.sif amplfi-flow-cli fit --config /path/to/config.yaml
 ```
 
 ```{eval-rst}
