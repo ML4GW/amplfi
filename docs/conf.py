@@ -10,23 +10,21 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
-from pathlib import Path
 import sys
-
 from importlib.metadata import distribution
+from pathlib import Path
 
 parent_path = str(Path(__file__).parents[1])
 sys.path.insert(0, parent_path)
 
 
 # -- Project information -----------------------------------------------------
-dist = distribution('amplfi')
+dist = distribution("amplfi")
 
-project = dist.metadata['Name']
-author = dist.metadata['Author']
+project = dist.metadata["Name"]
+author = dist.metadata["Author"]
 copyright = f"2024, {author}"
-release = dist.metadata['Version']
+release = dist.metadata["Version"]
 
 # -- General configuration ---------------------------------------------------
 
@@ -91,12 +89,12 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 autodoc_default_options = {
-    'members': None,
-    'undoc-members': None,
-    'show-inheritance': None
+    "members": None,
+    "undoc-members": None,
+    "show-inheritance": None,
 }
 autodoc_inherit_docstrings = False
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 autosummary_generate = True
 
-modindex_common_prefix = ['amplfi.']
+modindex_common_prefix = ["amplfi."]
