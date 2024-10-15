@@ -12,6 +12,7 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
    Installation <installation>
    First pipeline <first_pipeline>
    Contributing <contributing>
+   amplfi
 
 .. toctree::
    :caption: Advanced

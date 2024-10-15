@@ -11,17 +11,22 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+from pathlib import Path
 import sys
 
-sys.path.insert(0, os.path.abspath("../"))
+from importlib.metadata import distribution
+
+parent_path = str(Path(__file__).parents[1])
+sys.path.insert(0, parent_path)
 
 
 # -- Project information -----------------------------------------------------
+dist = distribution('amplfi')
 
-project = "amplfi"
-copyright = "2024, Ethan Marx, Deep Chatterjee"
-author = "Ethan Marx, Deep Chatterjee"
-
+project = dist.metadata['Name']
+author = dist.metadata['Author']
+copyright = f"2024, {author}"
+release = dist.metadata['Version']
 
 # -- General configuration ---------------------------------------------------
 
@@ -31,6 +36,7 @@ author = "Ethan Marx, Deep Chatterjee"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
     "sphinx_tabs.tabs",
     "sphinx_autodoc_typehints",
     "sphinx.ext.githubpages",
@@ -83,3 +89,14 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+autodoc_default_options = {
+    'members': None,
+    'undoc-members': None,
+    'show-inheritance': None
+}
+autodoc_inherit_docstrings = False
+autodoc_member_order = 'bysource'
+autosummary_generate = True
+
+modindex_common_prefix = ['amplfi.']
