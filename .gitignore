@@ -4,3 +4,4 @@
 **/*.env
 **/*.sif
 **/*.hdf5
+_build
