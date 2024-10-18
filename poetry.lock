@@ -2964,14 +2964,19 @@ name = "law"
 version = "0.1.19"
 description = "Build large-scale task workflows using luigi, remote job submission, remote targets, and environment"
 optional = false
-python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,<4,>=2.7"
-files = [
-    {file = "law-0.1.19.tar.gz", hash = "sha256:de539fd4daa9ddb3bbf82490e6c187bf297be9fc289cff2e5da98ede76bb7e43"},
-]
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, <4"
+files = []
+develop = false
 
 [package.dependencies]
 luigi = {version = ">=2.8.2", markers = "python_version >= \"3.0\""}
 six = ">=1.13"
+
+[package.source]
+type = "git"
+url = "https://github.com/riga/law.git"
+reference = "master"
+resolved_reference = "7b27f589f47ce642b5c4145fb855d88075ef5704"
 
 [[package]]
 name = "lightning"
@@ -7214,4 +7219,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "85db808b2885541fd615a5c12319aed801eda780195b34e621368032141c432d"
+content-hash = "e423c0a406948965e80f5efab343cbad5d650d24446205d9d45a16a25cc41e72"
