@@ -22,7 +22,7 @@ wandb = "^0.16.3"
 urllib3 = ">=1.25.4,<1.27"
 omegaconf = "^2.3.0"
 lightray = "^0.1.5"
-law = {git = "https://github.com/riga/law.git", branch = "master"}
+law = ">=0.1.19"
 mldatafind = {git = "https://github.com/ML4GW/mldatafind.git", branch = "law-overhaul"}
 luigi = "^3.5.1"
 gwpy="3.0.8"
