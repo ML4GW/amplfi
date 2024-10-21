@@ -41,7 +41,7 @@ class AmplfiModel(pl.LightningModule):
         verbose: bool = False,
     ):
         super().__init__()
-        self.patience = patience
+        # self.patience = patience
         self._logger = self.init_logging(verbose)
         self.outdir = outdir
         outdir.mkdir(exist_ok=True, parents=True)
