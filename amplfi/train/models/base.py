@@ -107,8 +107,9 @@ class AmplfiModel(pl.LightningModule):
             weight_decay=self.hparams.weight_decay,
         )
 
+        # TODO: remove hardcoding
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, patience=self.patience, factor=0.7
+            optimizer, patience=20, factor=0.7
         )
         return {
             "optimizer": optimizer,
