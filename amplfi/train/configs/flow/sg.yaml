@@ -52,7 +52,6 @@ model:
                 groups: 16
     patience: 10
     factor: 0.1
-    save_top_k_models: 10
     learning_rate: 3.77e-4
     weight_decay: 0.0
 data:
