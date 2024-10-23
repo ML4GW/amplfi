@@ -5,10 +5,7 @@ from typing import Optional
 
 import lightning.pytorch as pl
 import torch
-from lightning.pytorch.callbacks import LearningRateMonitor
 from ml4gw.transforms import ChannelWiseScaler
-
-from ..callbacks import ModelCheckpoint
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
@@ -35,7 +32,6 @@ class AmplfiModel(pl.LightningModule):
         outdir: Path,
         learning_rate: float,
         weight_decay: float = 0.0,
-        save_top_k_models: int = 10,
         patience: int = 10,
         factor: float = 0.1,
         checkpoint: Optional[Path] = None,
@@ -118,14 +114,3 @@ class AmplfiModel(pl.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"},
         }
-
-    def configure_callbacks(self):
-        checkpoint = ModelCheckpoint(
-            monitor="valid_loss",
-            save_top_k=self.hparams.save_top_k_models,
-            save_last=True,
-            auto_insert_metric_name=False,
-            mode="min",
-        )
-        lr_monitor = LearningRateMonitor(logging_interval="epoch")
-        return [checkpoint, lr_monitor]
