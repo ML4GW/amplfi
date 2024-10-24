@@ -158,18 +158,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         self.approximant.to(device)
         return self.waveform(freqs[self.freq_mask], **parameters)
 
-    def time_and_frequency_domain_strain(self, **parameters):
-        freq_hc, freq_hp = self.waveform(
-            self.frequencies[self.freq_mask], **parameters
-        )
-
-        time_hc, time_hp = torch.fft.irfft(freq_hc), torch.fft.irfft(freq_hp)
-        time_hc *= self.sample_rate
-        time_hp *= self.sample_rate
-        time_hc = torch.nn.functional.pad(time_hc, (0, self.pad_size, 0, 0))
-        time_hp = torch.nn.functional.pad(time_hp, (0, self.pad_size, 0, 0))
-        return time_hc, time_hp, freq_hc, freq_hp
-
     def slice_waveforms(self, waveforms: torch.Tensor):
         # for cbc waveforms, the padding (see above)
         # determines where the coalescence time lies
