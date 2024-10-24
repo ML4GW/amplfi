@@ -48,13 +48,17 @@ class MDCDataset(FlowDataset):
                 strain.append(torch.tensor(f[ifo][:], dtype=torch.float32))
 
             for parameter in self.hparams.inference_params + ["ra", "gpstime"]:
-                # skip phi since the injeciton file contains ra and gpstime
+                # skip phi since these are proper injections
+                # where we'll need to convert ra to phi
+                # given the gpstime
                 if parameter == "phi":
                     continue
+
                 parameters[parameter] = torch.tensor(
                     f[parameter][:], dtype=torch.float32
                 )
 
+        # convert ra to phi
         parameters["phi"] = torch.tensor(
             phi_from_ra(
                 parameters["ra"].numpy(), parameters["gpstime"].numpy()
@@ -89,7 +93,8 @@ class MDCDataset(FlowDataset):
         ]
         parameters = torch.vstack(parameters).T
 
-        # build dataset
+        # build dataset and dataloader that will
+        # simply load one injection (and its parameters) at a time
         dataset = torch.utils.data.TensorDataset(strain, parameters)
 
         return torch.utils.data.DataLoader(
@@ -97,6 +102,14 @@ class MDCDataset(FlowDataset):
         )
 
     def on_after_batch_transfer(self, batch, _):
+        """
+        Override of the on_after_batch_transfer hook
+        defined in `BaseDataset`.
+
+        This is necessary since we're we don't want to
+        do any injections (they are already in the data)
+        """
+
         if not self.trainer.testing:
             raise ValueError("Use of the MDC dataset is for testing only")
 
