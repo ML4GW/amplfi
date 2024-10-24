@@ -473,6 +473,7 @@ class AmplfiDataset(pl.LightningDataModule):
             batch_size=1,
             shuffle=False,
             pin_memory=False,
+            num_workers=10,
         )
 
         background_dataset = InMemoryDataset(
@@ -485,7 +486,7 @@ class AmplfiDataset(pl.LightningDataModule):
         )
 
         background_dataloader = torch.utils.data.DataLoader(
-            background_dataset, pin_memory=False
+            background_dataset, pin_memory=False, num_workers=10
         )
         return ZippedDataset(
             waveform_dataloader,
