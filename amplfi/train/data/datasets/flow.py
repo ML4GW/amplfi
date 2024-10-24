@@ -39,4 +39,15 @@ class FlowDataset(AmplfiDataset):
         # scale parameters
         parameters = self.scale(parameters)
 
-        return X, parameters
+        # calculate asds and highpass
+        freqs = torch.fft.rfftfreq(X.shape[-1], d=1 / self.hparams.sample_rate)
+        num_freqs = len(freqs)
+        psds = torch.nn.functional.interpolate(
+            psds, size=(num_freqs,), mode="linear"
+        )
+
+        mask = freqs > self.hparams.highpass
+        psds = psds[:, :, mask]
+        asds = torch.sqrt(psds)
+
+        return X, asds, parameters
