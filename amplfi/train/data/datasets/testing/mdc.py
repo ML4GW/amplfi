@@ -108,7 +108,9 @@ class MDCDataset(FlowDataset):
         # scale parameters
         parameters = self.scale(parameters)
 
-        # calculate asds
+        # calculate asds, interpolating to size of
+        # frequency array so we can concatenate them
+        # into a single tensor for the embedding
         freqs = torch.fft.rfftfreq(X.shape[-1], d=1 / self.hparams.sample_rate)
         num_freqs = len(freqs)
         psds = torch.nn.functional.interpolate(
