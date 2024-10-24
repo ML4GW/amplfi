@@ -35,3 +35,7 @@ class ResNet(ResNet1D, Embedding):
         # set the context dimension so
         # the flow can access it
         self.context_dim = context_dim
+
+    def forward(self, x):
+        strain, _ = x
+        return super().forward(strain)
