@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from amplfi.train.architectures.embeddings import ResNet
+from amplfi.train.architectures.embeddings import MultiModal, ResNet
 from amplfi.train.architectures.embeddings.dense import DenseEmbedding
 
 
@@ -30,6 +30,16 @@ def out_features(request):
     return request.param
 
 
+@pytest.fixture(params=[32, 64, 128])
+def time_out_features(request):
+    return request.param
+
+
+@pytest.fixture(params=[32, 64, 128])
+def freq_out_features(request):
+    return request.param
+
+
 def test_dense_embedding(n_ifos, length):
     embedding = DenseEmbedding(length, 10)
     x = torch.randn(8, n_ifos, length)
@@ -43,3 +53,20 @@ def test_resnet(n_ifos, length, out_features, kernel_size):
     x = torch.randn(100, n_ifos, length)
     y = embedding(x)
     assert y.shape == (100, out_features)
+
+
+def test_multimodal(
+    n_ifos, length, time_out_features, freq_out_features, kernel_size
+):
+    embedding = MultiModal(
+        n_ifos,
+        time_out_features,
+        freq_out_features,
+        [3, 3],
+        [3, 3],
+        kernel_size,
+        kernel_size,
+    )
+    x = torch.randn(100, n_ifos, length)
+    y = embedding(x)
+    assert y.shape == (100, time_out_features + freq_out_features)

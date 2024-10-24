@@ -36,11 +36,14 @@ class AmplfiModel(pl.LightningModule):
         learning_rate: float,
         weight_decay: float = 0.0,
         save_top_k_models: int = 10,
-        patience: Optional[int] = None,
+        patience: int = 10,
+        factor: float = 0.1,
         checkpoint: Optional[Path] = None,
         verbose: bool = False,
     ):
         super().__init__()
+        self.scheduler_patience = patience
+        self.scheduler_factor = factor
         self._logger = self.init_logging(verbose)
         self.outdir = outdir
         outdir.mkdir(exist_ok=True, parents=True)
@@ -106,7 +109,11 @@ class AmplfiModel(pl.LightningModule):
             weight_decay=self.hparams.weight_decay,
         )
 
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            patience=self.scheduler_patience,
+            factor=self.scheduler_factor,
+        )
         return {
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"},
