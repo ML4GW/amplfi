@@ -70,7 +70,6 @@ class SaveAugmentedBatch(pl.Callback):
                         with h5py.File(f, "w") as h5file:
                             h5file["strain"] = strain.cpu().numpy()
                             h5file["parameters"] = parameters.cpu().numpy()
-                            # h5file["asds"] = asds.cpu().numpy()
                         s3_file.write(f.getvalue())
 
                 with s3.open(f"{save_dir}/val-batch.h5", "wb") as s3_file:
@@ -78,7 +77,6 @@ class SaveAugmentedBatch(pl.Callback):
                         with h5py.File(f, "w") as h5file:
                             h5file["strain"] = val_strain.cpu().numpy()
                             h5file["parameters"] = val_parameters.cpu().numpy()
-                            # h5file["asds"] = val_asds.cpu().numpy()
                         s3_file.write(f.getvalue())
             else:
                 with h5py.File(
@@ -86,14 +84,12 @@ class SaveAugmentedBatch(pl.Callback):
                 ) as f:
                     f["strain"] = strain.cpu().numpy()
                     f["parameters"] = parameters.cpu().numpy()
-                    # f["asds"] = asds.cpu().numpy()
 
                 with h5py.File(
                     os.path.join(save_dir, "val-batch.h5"), "w"
                 ) as f:
                     f["strain"] = val_strain.cpu().numpy()
                     f["parameters"] = val_parameters.cpu().numpy()
-                    # f["asds"] = val_asds.cpu().numpy()
 
 
 class SaveAugmentedSimilarityBatch(pl.Callback):
