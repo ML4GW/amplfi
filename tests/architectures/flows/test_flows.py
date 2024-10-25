@@ -38,7 +38,7 @@ def test_coupling_flow(
     param_dim, strain_dim, context_dim, n_ifos, num_transforms
 ):
     data = torch.randn((100, param_dim))
-    strain = torch.randn((100, n_ifos, strain_dim))
+    strain = (torch.randn((100, n_ifos, strain_dim)), None)
 
     embedding = ResNet(n_ifos, layers=[1, 1], context_dim=context_dim)
 
@@ -56,7 +56,7 @@ def test_autoregressive_flow(
     param_dim, strain_dim, context_dim, n_ifos, num_transforms
 ):
     data = torch.randn((100, param_dim))
-    strain = torch.randn((100, n_ifos, strain_dim))
+    strain = (torch.randn((100, n_ifos, strain_dim)), None)
 
     embedding = ResNet(n_ifos, layers=[1, 1], context_dim=context_dim)
 

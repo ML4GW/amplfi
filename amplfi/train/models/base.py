@@ -56,7 +56,8 @@ class AmplfiModel(pl.LightningModule):
             self._logger.info(
                 f"Loading model weights from checkpoint path: {checkpoint}"
             )
-            checkpoint = torch.load(checkpoint)
+            map_location = None if torch.cuda.is_available() else "cpu"
+            checkpoint = torch.load(checkpoint, map_location=map_location)
             self.load_state_dict(checkpoint["state_dict"])
 
     def init_logging(self, verbose):

@@ -51,7 +51,7 @@ def test_dense_embedding(n_ifos, length):
 def test_resnet(n_ifos, length, out_features, kernel_size):
     embedding = ResNet(n_ifos, out_features, [3, 3], kernel_size)
     x = torch.randn(100, n_ifos, length)
-    y = embedding(x)
+    y = embedding((x, None))
     assert y.shape == (100, out_features)
 
 
@@ -67,6 +67,6 @@ def test_multimodal(
         kernel_size,
         kernel_size,
     )
-    x = torch.randn(100, n_ifos, length)
+    x = (torch.randn(100, n_ifos, length), None)
     y = embedding(x)
     assert y.shape == (100, time_out_features + freq_out_features)
