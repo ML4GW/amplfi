@@ -67,6 +67,6 @@ def test_multimodal(
         kernel_size,
         kernel_size,
     )
-    x = torch.randn(100, n_ifos, length)
+    x = (torch.randn(100, n_ifos, length), None)
     y = embedding(x)
     assert y.shape == (100, time_out_features + freq_out_features)
