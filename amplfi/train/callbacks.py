@@ -36,7 +36,9 @@ class SaveAugmentedBatch(pl.Callback):
             X = X.to(device)
 
             cross, plus, parameters = datamodule.waveform_sampler.sample(X)
-            strain, parameters = datamodule.inject(X, cross, plus, parameters)
+            strain, asds, parameters = datamodule.inject(
+                X, cross, plus, parameters
+            )
 
             # save an example validation batch
             # and parameters to disk
@@ -57,7 +59,7 @@ class SaveAugmentedBatch(pl.Callback):
             val_parameters = {
                 k: val_parameters[:, i] for i, k in enumerate(keys)
             }
-            val_strain, val_parameters = datamodule.inject(
+            val_strain, val_asds, val_parameters = datamodule.inject(
                 background, val_cross, val_plus, val_parameters
             )
 

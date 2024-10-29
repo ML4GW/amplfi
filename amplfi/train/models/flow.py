@@ -5,7 +5,6 @@ import pandas as pd
 import torch
 
 from ..architectures.flows import FlowArchitecture
-from ..callbacks import SaveAugmentedBatch
 from ..testing import Result
 from .base import AmplfiModel
 
@@ -84,11 +83,6 @@ class FlowModel(AmplfiModel):
             logger=True,
         )
         return loss
-
-    def configure_callbacks(self):
-        callbacks = super().configure_callbacks()
-        callbacks.append(SaveAugmentedBatch())
-        return callbacks
 
     def cast_as_bilby_result(
         self,
