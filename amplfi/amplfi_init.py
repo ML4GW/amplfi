@@ -155,7 +155,7 @@ def main():
         if args.directory
         else Path(os.environ.get("AMPLFI_RUNDIR")).resolve()
     )
-    print(directory)
+
     if args.s3_bucket is not None and not args.s3_bucket.startswith("s3://"):
         raise ValueError("S3 bucket must be in the format s3://{bucket-name}/")
 
