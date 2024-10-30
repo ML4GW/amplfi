@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -146,7 +147,8 @@ def main():
     )
 
     parser.add_argument("--s3-bucket")
-
+    log_format = "%(levelname)s - %(message)s"
+    logging.basicConfig(level=logging.INFO, format=log_format)
     args = parser.parse_args()
     directory = (
         args.directory.resolve()
@@ -170,6 +172,10 @@ def main():
     copy_configs(directory / args.name, configs)
     create_runfile(
         directory, args.name, args.mode, args.pipeline, args.s3_bucket
+    )
+    logging.info(
+        f"Initialized a {args.mode} {args.pipeline} "
+        f"pipeline at {directory / args.name}"
     )
 
 
