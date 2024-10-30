@@ -3072,23 +3072,19 @@ name = "lightray"
 version = "0.2.0"
 description = "Distribute a LightningCLI hyperparameter search with Ray Tune"
 optional = false
-python-versions = "^3.9"
-files = []
-develop = false
+python-versions = "<4.0,>=3.9"
+files = [
+    {file = "lightray-0.2.0-py3-none-any.whl", hash = "sha256:183244e676668c2d92060091f1923deb72daea9a9459b43dc15fa4e44ca8ed5d"},
+    {file = "lightray-0.2.0.tar.gz", hash = "sha256:5af54354d5ee75e4b489ec62724e2c75ed8b0e665d2d872104ed0f3e3d765a2b"},
+]
 
 [package.dependencies]
-jsonargparse = {version = "^4.33.2", extras = ["signatures"]}
+jsonargparse = {version = ">=4.33.2,<5.0.0", extras = ["signatures"]}
 lightning = "<=2.4.0"
-pyarrow = "^17.0.0"
-ray = {version = "^2.8.0", extras = ["default", "tune"]}
-s3fs = "^2024.9.0"
-wandb = "^0.18.5"
-
-[package.source]
-type = "git"
-url = "https://github.com/EthanMarx/lightray.git"
-reference = "refactor"
-resolved_reference = "63a315eb6c616708e02dbba1fc093297b8d75d80"
+pyarrow = ">=17.0.0,<18.0.0"
+ray = {version = ">=2.8.0,<3.0.0", extras = ["default", "tune"]}
+s3fs = ">=2024.9.0,<2025.0.0"
+wandb = ">=0.18.5,<0.19.0"
 
 [[package]]
 name = "ligo-segments"
@@ -7215,4 +7211,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "bf2487dab82b94d0689bc5d6e0d3dfbf821d9c4788bb71d51081ef0facb3aa86"
+content-hash = "b6da85397809697788de034c2341e8515d8ddc78852fa0f8dd19d67e2a4989d9"
