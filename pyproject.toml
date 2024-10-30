@@ -13,14 +13,14 @@ numpy = "<2.0.0"
 lightning = "<=2.2.1"
 ml4gw = "^0.5"
 h5py = "^3.10.0"
-ray = {version = "^2.9.3", extras = ["default", "tune"]}
+ray = {version = "^2.38.0", extras = ["default", "tune"]}
 bilby = "^2.2.3"
 healpy = "^1.16.6"
 pyro-ppl = "^1.9.0"
 jsonargparse = {version = "^4.27.1", extras = ["signatures"]}
 urllib3 = ">=1.25.4,<1.27"
 omegaconf = "^2.3.0"
-lightray = {git = "https://github.com/EthanMarx/lightray.git", branch = "refactor"}
+lightray = ">=0.2.0"
 law = ">=0.1.19"
 mldatafind = ">=0.1.0"
 luigi = "^3.5.1"
