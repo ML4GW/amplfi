@@ -48,7 +48,7 @@ def copy_configs(
         if config.name == "tune.yaml":
             with open(config, "r") as f:
                 dict = yaml.safe_load(f)
-                dict["train_config"] = str(path / "cbc.yaml")
+                dict["lightning_config"] = str(path / "cbc.yaml")
 
             with open(dest, "w") as f:
                 yaml.dump(dict, f)
@@ -77,13 +77,13 @@ def create_runfile(
     # store training data and training info there
     base = path if s3_bucket is None else s3_bucket
 
-    config = path / "datagen.cfg"
+    config = path / name / "datagen.cfg"
     # make the below one string
     data_cmd = f"LAW_CONFIG_FILE={config} "
     data_cmd += "law run amplfi.data.DataGeneration --workers 5"
 
     if pipeline == "tune":
-        train_cmd = "amplfi-tune --config tune.yaml"
+        train_cmd = "lightray --config tune.yaml"
     else:
         train_cmd = f"amplfi-{mode}-cli fit --config cbc.yaml"
 
@@ -155,7 +155,7 @@ def main():
         if args.directory
         else Path(os.environ.get("AMPLFI_RUNDIR")).resolve()
     )
-
+    print(directory)
     if args.s3_bucket is not None and not args.s3_bucket.startswith("s3://"):
         raise ValueError("S3 bucket must be in the format s3://{bucket-name}/")
 

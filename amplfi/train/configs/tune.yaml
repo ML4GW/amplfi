@@ -55,5 +55,5 @@ cpus_per_trial: 2
 gpus_per_trial: 1
 
 # lightning cli
-lightning_cli_cls: example.lightning.Cli
-lightning_config: /home/ethan.marx/projects/lightray/example/cli.yaml
+lightning_cli_cls: amplfi.train.cli.AmplfiFlowCLI
+lightning_config: /path/to/lightning/config.yaml
