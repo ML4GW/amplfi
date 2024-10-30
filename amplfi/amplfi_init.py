@@ -12,8 +12,7 @@ from jsonargparse import ArgumentParser
 root = Path(__file__).resolve().parent.parent
 data_config = (root / "amplfi" / "data" / "datagen.cfg",)
 TUNE_CONFIGS = [
-    root / "amplfi" / "tune" / "tune.yaml",
-    root / "amplfi" / "tune" / "search_space.py",
+    root / "amplfi" / "train" / "configs" / "tune.yaml",
 ]
 
 
