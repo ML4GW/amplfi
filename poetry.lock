@@ -3069,18 +3069,19 @@ typing = ["mypy (>=1.0.0)", "types-setuptools"]
 
 [[package]]
 name = "lightray"
-version = "0.2.0"
+version = "0.2.3"
 description = "Distribute a LightningCLI hyperparameter search with Ray Tune"
 optional = false
 python-versions = "<4.0,>=3.9"
 files = [
-    {file = "lightray-0.2.0-py3-none-any.whl", hash = "sha256:183244e676668c2d92060091f1923deb72daea9a9459b43dc15fa4e44ca8ed5d"},
-    {file = "lightray-0.2.0.tar.gz", hash = "sha256:5af54354d5ee75e4b489ec62724e2c75ed8b0e665d2d872104ed0f3e3d765a2b"},
+    {file = "lightray-0.2.3-py3-none-any.whl", hash = "sha256:387d156d307737203c456ded1f6e37a90b1850b0c0e1ca3a3bde53bfa7cd8f9d"},
+    {file = "lightray-0.2.3.tar.gz", hash = "sha256:2f7332e434466a1b0a8bf8c526730411217a94a21f1183618fbdcced558f942e"},
 ]
 
 [package.dependencies]
 jsonargparse = {version = ">=4.33.2,<5.0.0", extras = ["signatures"]}
 lightning = "<=2.4.0"
+omegaconf = ">=2.3.0,<3.0.0"
 pyarrow = ">=17.0.0,<18.0.0"
 ray = {version = ">=2.8.0,<3.0.0", extras = ["default", "tune"]}
 s3fs = ">=2024.9.0,<2025.0.0"
@@ -7211,4 +7212,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "b6da85397809697788de034c2341e8515d8ddc78852fa0f8dd19d67e2a4989d9"
+content-hash = "e6cd9831c83eca742918ce20dded7c65262302a666538b9cc88fbc87cf70d81c"
