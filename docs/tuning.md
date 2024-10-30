@@ -58,7 +58,7 @@ CUDA_VISIBLE_DEVICES=0
 LAW_CONFIG_FILE=/home/albert.einstein/amplfi/my-first-tune/datagen.cfg law run amplfi.law.DataGeneration --workers 5
 
 # launch training or tuning pipeline
-lightray --config tune.yaml
+lightray --config tune.yaml -- --config cbc.yaml
 ```
 
 If you've run the [training pipeline](first_pipeline.md) this should look familiar: environment variables control the location where 
@@ -155,7 +155,7 @@ address = ray://11.22.10.27:10001
 Now, launch the run!
 
 ```console
-lightray --tune.yaml
+lightray --tune.yaml -- --config cbc.yaml
 ```
 
 ```{eval-rst}

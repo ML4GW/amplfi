@@ -18,7 +18,7 @@ tune_config:
 # ray.train.RunConfig
 run_config:
   name: "my-first-run"
-  storage_path: s3://path/to/bucket
+  storage_path: ${oc.env:AMPLFI_OUTDIR}
   failure_config:
     class_path: ray.train.FailureConfig
     init_args:
@@ -56,4 +56,3 @@ gpus_per_trial: 1
 
 # lightning cli
 lightning_cli_cls: amplfi.train.cli.AmplfiFlowCLI
-lightning_config: /path/to/lightning/config.yaml

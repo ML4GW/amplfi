@@ -7,7 +7,6 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Literal, Optional
 
-import yaml
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
@@ -45,15 +44,7 @@ def copy_configs(
     path.mkdir(parents=True, exist_ok=True)
     for config in configs:
         dest = path / config.name
-        if config.name == "tune.yaml":
-            with open(config, "r") as f:
-                dict = yaml.safe_load(f)
-                dict["lightning_config"] = str(path / "cbc.yaml")
-
-            with open(dest, "w") as f:
-                yaml.dump(dict, f)
-        else:
-            shutil.copy(config, dest)
+        shutil.copy(config, dest)
 
 
 def write_content(content: str, path: Path):
@@ -83,7 +74,7 @@ def create_runfile(
     data_cmd += "law run amplfi.data.DataGeneration --workers 5"
 
     if pipeline == "tune":
-        train_cmd = "lightray --config tune.yaml"
+        train_cmd = "lightray --config tune.yaml -- --config cbc.yaml"
     else:
         train_cmd = f"amplfi-{mode}-cli fit --config cbc.yaml"
 

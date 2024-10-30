@@ -20,7 +20,7 @@ pyro-ppl = "^1.9.0"
 jsonargparse = {version = "^4.27.1", extras = ["signatures"]}
 urllib3 = ">=1.25.4,<1.27"
 omegaconf = "^2.3.0"
-lightray = ">=0.2.0"
+lightray = ">=0.2.3"
 law = ">=0.1.19"
 mldatafind = ">=0.1.0"
 luigi = "^3.5.1"
