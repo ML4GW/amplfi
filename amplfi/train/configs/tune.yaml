@@ -56,4 +56,3 @@ gpus_per_trial: 1
 
 # lightning cli
 lightning_cli_cls: amplfi.train.cli.AmplfiFlowCLI
-lightning_config: /path/to/lightning/config.yaml
