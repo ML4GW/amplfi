@@ -11,7 +11,7 @@ trainer:
         save_dir: ${oc.env:AMPLFI_OUTDIR}/train_logs
         project: amplfi
         # uncomment and set to name your run
-        name: best-hparams-long-run 
+        # name: my-amplfi-run 
   max_epochs: 400
   check_val_every_n_epoch: 1
   log_every_n_steps: 50
