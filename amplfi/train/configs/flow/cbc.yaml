@@ -51,7 +51,7 @@ data:
   class_path: amplfi.train.data.datasets.FlowDataset
   init_args:
     data_dir: ${oc.env:AMPLFI_DATADIR}
-    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048
     kernel_length: 3
