@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import shutil
 from pathlib import Path
 from textwrap import dedent
 from typing import Literal, Optional
 
-import yaml
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
 data_config = (root / "amplfi" / "data" / "datagen.cfg",)
 TUNE_CONFIGS = [
-    root / "amplfi" / "tune" / "tune.yaml",
-    root / "amplfi" / "tune" / "search_space.py",
+    root / "amplfi" / "train" / "configs" / "tune.yaml",
 ]
 
 
@@ -45,15 +44,7 @@ def copy_configs(
     path.mkdir(parents=True, exist_ok=True)
     for config in configs:
         dest = path / config.name
-        if config.name == "tune.yaml":
-            with open(config, "r") as f:
-                dict = yaml.safe_load(f)
-                dict["train_config"] = str(path / "cbc.yaml")
-
-            with open(dest, "w") as f:
-                yaml.dump(dict, f)
-        else:
-            shutil.copy(config, dest)
+        shutil.copy(config, dest)
 
 
 def write_content(content: str, path: Path):
@@ -77,13 +68,13 @@ def create_runfile(
     # store training data and training info there
     base = path if s3_bucket is None else s3_bucket
 
-    config = path / "datagen.cfg"
+    config = path / name / "datagen.cfg"
     # make the below one string
     data_cmd = f"LAW_CONFIG_FILE={config} "
     data_cmd += "law run amplfi.data.DataGeneration --workers 5"
 
     if pipeline == "tune":
-        train_cmd = "amplfi-tune --config tune.yaml"
+        train_cmd = "lightray --config tune.yaml -- --config cbc.yaml"
     else:
         train_cmd = f"amplfi-{mode}-cli fit --config cbc.yaml"
 
@@ -147,7 +138,8 @@ def main():
     )
 
     parser.add_argument("--s3-bucket")
-
+    log_format = "%(levelname)s - %(message)s"
+    logging.basicConfig(level=logging.INFO, format=log_format)
     args = parser.parse_args()
     directory = (
         args.directory.resolve()
@@ -171,6 +163,10 @@ def main():
     copy_configs(directory / args.name, configs)
     create_runfile(
         directory, args.name, args.mode, args.pipeline, args.s3_bucket
+    )
+    logging.info(
+        f"Initialized a {args.mode} {args.pipeline} "
+        f"pipeline at {directory / args.name}"
     )
 
 

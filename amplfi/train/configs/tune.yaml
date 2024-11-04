@@ -1,0 +1,58 @@
+# configuration file to be used with `lightray`
+# for running hyper-paramter runing with ray
+# see https://github.com/EthanMarx/lightray/
+
+# ray.tune.TuneConfig
+tune_config:
+  mode: "min"
+  metric: "valid_loss_epoch"
+  scheduler: 
+    class_path: ray.tune.schedulers.ASHAScheduler
+    init_args:
+      max_t: 200
+      grace_period: 21
+      reduction_factor: 2
+  num_samples: 1
+  reuse_actors: true
+
+# ray.train.RunConfig
+run_config:
+  name: "my-first-run"
+  storage_path: ${oc.env:AMPLFI_OUTDIR}
+  failure_config:
+    class_path: ray.train.FailureConfig
+    init_args:
+      max_failures: 1
+  checkpoint_config:
+    class_path: ray.train.CheckpointConfig
+    init_args:
+      num_to_keep: 5
+      checkpoint_score_attribute: "valid_loss_epoch"
+      checkpoint_score_order: "min"
+  verbose: null
+
+# ray.train.SyncConfig
+sync_config:
+  sync_period: 1000
+
+# ray.init
+ray_init:
+  address: null
+  
+# tune.Tune.param_space
+param_space:
+  model.learning_rate: tune.loguniform(1e-3, 4)
+
+# ray.tune.TuneCallback
+tune_callback:
+  class_path: lightray.callbacks.LightRayReportCheckpointCallback
+  init_args:
+    'on': "validation_end"
+    checkpoint_every: 10
+
+# resources per trial
+cpus_per_trial: 2
+gpus_per_trial: 1
+
+# lightning cli
+lightning_cli_cls: amplfi.train.cli.AmplfiFlowCLI

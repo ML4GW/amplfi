@@ -9,6 +9,7 @@ class AmplfiBaseCLI(LightningCLI):
         # parser_mode to omegaconf for all subclasses
         kwargs["parser_kwargs"] = {"parser_mode": "omegaconf"}
         kwargs["save_config_callback"] = SaveConfigCallback
+        kwargs["save_config_kwargs"] = {"overwrite": True}
         super().__init__(*args, **kwargs)
 
     def add_arguments_to_parser(self, parser):

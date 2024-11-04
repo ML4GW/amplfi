@@ -15,39 +15,29 @@ amplfi-init --mode flow --pipeline tune --directory ~/amplfi/my-first-tune/
 This will create a directory at `~/amplfi/my-first-tune/`, and populate it with 
 configuration files for the run. The `train.yaml` contains the main configuration for the training.
 `datagen.cfg` controls the configuration for querying training and testing strain data. 
-`tune.yaml` configure parameters that control how the hyperparameter tuning is performed. Finally,
-`search_space.py` constructs the space of parameters that will searched over during tuning. 
+`tune.yaml` configures parameters that control how `Ray` will perform the hyperparameter tuning.
 
 
 ## Configuring an Experiment
-The search space of parameters to tune over can be set in the `search_space.py` file. 
-For example, the below parameter space will search over the models learning rate 
-and the kernel length of the data.
+A key ingredient in the tuning job is the parameter space that is searched over. This can be configured
+via the `param_space` parameter in the `tune.yaml` configuration file.
 
-```
-# search_space.py
-from ray import tune
-
-space = {
-    "model.learning_rate": tune.loguniform(1e-4, 1e-1),
-    "data.kernel_length": tune.choice([1, 2])
-}
+```yaml
+# tune.yaml
+param_space:
+  model.learning_rate: tune.loguniform(1e-3, 4)
+  data.kernel_length: tune.choice([1, 2])
 ```
 
-the parameter names should be python "dot path" to attributes in the `train.yaml`. Any
+the parameter names should be python "dot paths" to attributes in the `train.yaml`. Any
 parameters set in the search space will be sampled from the distribution
 when each trial is launched, and override the value set in `train.yaml`.
 
-The `tune.yaml` file configures parameters of the tuning. You can see a full list of configuration by running 
+Most of the parameters from the [`ray.tune.Tuner`](https://docs.ray.io/en/latest/tune/api/doc/ray.tune.Tuner.html) are also configurable, including the tuning scheduler and search algorithm. Please see the ray tune [documentation](https://docs.ray.io/en/latest/tune/index.html) for more information.
 
+You can see a full list of configuration by running 
 ```
-amplfi-tune --help
-```
-
-```{eval-rst}
-.. note::
-    Currently, the `lightray` library automatically uses the `Asynchronous Hyper Band algorithm <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.AsyncHyperBandScheduler.html#ray.tune.schedulers.AsyncHyperBandScheduler>`_, which will kill under performing trials after a certain amount of epochs this is
-    controlled by the :code:`min_epochs` parameter.
+lightray --help
 ```
 
 ## Launching a Run
@@ -68,7 +58,7 @@ CUDA_VISIBLE_DEVICES=0
 LAW_CONFIG_FILE=/home/albert.einstein/amplfi/my-first-tune/datagen.cfg law run amplfi.law.DataGeneration --workers 5
 
 # launch training or tuning pipeline
-amplfi-tune --config tune.yaml
+lightray --config tune.yaml -- --config cbc.yaml
 ```
 
 If you've run the [training pipeline](first_pipeline.md) this should look familiar: environment variables control the location where 
@@ -165,7 +155,7 @@ address = ray://11.22.10.27:10001
 Now, launch the run!
 
 ```console
-amplfi-tune --tune.yaml
+lightray --tune.yaml -- --config cbc.yaml
 ```
 
 ```{eval-rst}
