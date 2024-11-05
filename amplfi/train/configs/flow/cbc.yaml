@@ -11,23 +11,11 @@ trainer:
         save_dir: ${oc.env:AMPLFI_OUTDIR}/train_logs
         project: amplfi
         # uncomment and set to name your run
-        # name:
-  max_epochs: 200
+        # name: my-amplfi-run 
+  max_epochs: 400
   check_val_every_n_epoch: 1
-  log_every_n_steps: 20
+  log_every_n_steps: 50
   benchmark: false
-  callbacks:
-    - class_path: amplfi.train.callbacks.ModelCheckpoint
-      init_args:
-        monitor: "valid_loss"
-        save_top_k: 5
-        save_last: true
-        auto_insert_metric_name : false
-        mode: "min"
-    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
-      init_args:
-        logging_interval: epoch
-        
 model:
   class_path: amplfi.train.models.flow.FlowModel
   init_args:
@@ -35,9 +23,9 @@ model:
     # add path below when running `trainer.test` to load in a checkpoint
     checkpoint: null
     arch:
-      class_path: amplfi.train.architectures.flows.InverseAutoregressiveFlow
+      class_path: amplfi.train.architectures.flows.MaskedAutoregressiveFlow
       init_args:
-        hidden_features: 150
+        hidden_features: 128
         num_transforms: 80
         num_blocks: 6
         # uncomment below to load 
@@ -45,17 +33,19 @@ model:
         # embedding_weights: "path/to/embedding/weights"
         # freeze_embedding: false
         embedding_net: 
-          class_path: amplfi.train.architectures.embeddings.ResNet
+          class_path: amplfi.train.architectures.embeddings.MultiModalPsd
           init_args:
-            context_dim: 7
-            layers: [5, 3, 3]
+            time_context_dim: 8
+            freq_context_dim: 128
+            time_layers: [5, 3, 3]
+            freq_layers: [5, 3, 3]
             norm_layer:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
               init_args:
                 groups: 8
-    patience: 10
-    factor: 0.1
-    learning_rate: 3.7e-4
+    patience: null
+    save_top_k_models: 10
+    learning_rate: 0.00071444
     weight_decay: 0.0
 data:
   class_path: amplfi.train.data.datasets.FlowDataset
@@ -68,7 +58,7 @@ data:
     fduration: 1
     psd_length: 10
     fftlength: 2
-    batches_per_epoch: 200
+    batches_per_epoch: 800
     batch_size: 512
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
@@ -91,11 +81,11 @@ data:
             low: -3.14
             high: 3.14
         num_val_waveforms: 10000
-        num_test_waveforms: 100
+        num_test_waveforms: 200
         approximant: ml4gw.waveforms.IMRPhenomD
         f_min: 20
         f_max: 1024
-        ringdown_duration: 0.5
+        ringdown_duration: 1.0
         padding: 0.0
         waveform_arguments:
           f_ref: 40
