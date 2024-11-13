@@ -28,7 +28,6 @@ class TimeTranslator(torch.nn.Module):
         shifts = 2 * self.jitter * shifts - self.jitter
         shifts *= self.sample_rate
         shifts = shifts.long()
-
         indices = (
             torch.arange(waveforms.size(-1), device=waveforms.device)
             .unsqueeze(0)

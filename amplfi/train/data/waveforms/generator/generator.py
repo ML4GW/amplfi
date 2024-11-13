@@ -33,6 +33,12 @@ class WaveformGenerator(WaveformSampler):
             parameter_sampler:
                 A callable that takes an integer N and
                 returns a dictionary of parameter Tensors, each of length `N`
+            test_parameter_sampler:
+                A callable that takes an integer N and
+                returns a dictionary of parameter Tensors, each of length `N`.
+                Used for sampling test waveforms from a prior
+                different from training data.
+                If None, `parameter_sampler` is used.
             num_fit_params:
                 The number of parameters used to fit standard scaler
 
