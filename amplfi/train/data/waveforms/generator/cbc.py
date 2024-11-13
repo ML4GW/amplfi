@@ -164,7 +164,10 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         # relative to the right edge, so just subtract
         # the pre-whiten kernel size from the right edge and slice
         start = waveforms.shape[-1] - self.waveform_size
-        return waveforms[..., start:]
+        waveforms = waveforms[..., start:]
+        if self.time_translator is not None:
+            waveforms = self.time_translator(waveforms)
+        return waveforms
 
     def forward(self, **parameters):
         hc, hp = self.time_domain_strain(**parameters)

@@ -2,6 +2,7 @@ from typing import Optional
 
 import torch
 
+from ..augmentors import TimeTranslator
 from ..utils.utils import ParameterTransformer
 
 Distribution = torch.distributions.Distribution
@@ -26,6 +27,9 @@ class WaveformSampler(torch.nn.Module):
             The distribution of polarization angles to sample from
         phi:
             The distribution of "right ascensions" to sample from
+        jitter:
+            The amount of jitter in seconds to randomly shift
+            the waveform coalescence time. If `None`, no jitter is applied.
     """
 
     def __init__(
@@ -36,6 +40,7 @@ class WaveformSampler(torch.nn.Module):
         dec: Distribution,
         psi: Distribution,
         phi: Distribution,
+        jitter: Optional[float] = None,
         parameter_transformer: Optional[ParameterTransformer] = None,
     ) -> None:
 
@@ -45,6 +50,9 @@ class WaveformSampler(torch.nn.Module):
         self.duration = duration
         self.sample_rate = sample_rate
         self.dec, self.psi, self.phi = dec, psi, phi
+        self.time_translator = (
+            TimeTranslator(jitter, sample_rate) if jitter is not None else None
+        )
 
     def sample_extrinsic(self, X: torch.Tensor):
         """
