@@ -7,10 +7,12 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Literal, Optional
 
+import yaml
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
 data_config = (root / "amplfi" / "data" / "datagen.cfg",)
+kubernetes_config = root / "kubernetes" / "train.yaml"
 TUNE_CONFIGS = [
     root / "amplfi" / "train" / "configs" / "tune.yaml",
 ]
@@ -22,6 +24,26 @@ TRAIN_CONFIGS = {
     ],
     "flow": [root / "amplfi" / "train" / "configs" / "flow" / "cbc.yaml"],
 }
+
+
+def fill_kubernetes_template(output: Path):
+    """
+    Fill in the kubernetes template with the users environment variables
+    """
+    with open(kubernetes_config) as f:
+        docs = list(yaml.safe_load_all(f))
+        config, s3 = docs
+        s3["stringData"]["AWS_ACCESS_KEY_ID"] = os.getenv(
+            "AWS_ACCESS_KEY_ID", ""
+        )
+        s3["stringData"]["AWS_SECRET_ACCESS_KEY"] = os.getenv(
+            "AWS_SECRET_ACCESS_KEY", ""
+        )
+        config["spec"]["template"]["spec"]["containers"][0]["env"][1][
+            "value"
+        ] = os.getenv("WANDB_API_KEY", "")
+        with open(output, "w") as f:
+            yaml.safe_dump_all([config, s3], f)
 
 
 def copy_configs(
@@ -100,6 +122,7 @@ def create_runfile(
 
 
 def main():
+
     parser = ArgumentParser(
         description="Initialize a directory with configuration files "
         "for running end-to-end amplfi training or tuning pipelines"
@@ -137,7 +160,21 @@ def main():
         "variable AMPLFI_RUNDIR will be used.",
     )
 
-    parser.add_argument("--s3-bucket")
+    parser.add_argument(
+        "--remote-train",
+        type=bool,
+        default=None,
+        help="Whether to train remotely on nautilus. "
+        "If `True`, will copy a yaml file to the run directory "
+        "that contains kubernetes yaml for a remote training job.",
+    )
+
+    parser.add_argument(
+        "--s3-bucket",
+        type=str,
+        default=None,
+        help="The s3 bucket where training data is stored",
+    )
     log_format = "%(levelname)s - %(message)s"
     logging.basicConfig(level=logging.INFO, format=log_format)
     args = parser.parse_args()
@@ -164,6 +201,10 @@ def main():
     create_runfile(
         directory, args.name, args.mode, args.pipeline, args.s3_bucket
     )
+
+    if args.remote_train:
+        fill_kubernetes_template(directory / args.name / "kubernetes.yaml")
+
     logging.info(
         f"Initialized a {args.mode} {args.pipeline} "
         f"pipeline at {directory / args.name}"
