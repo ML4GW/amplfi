@@ -79,6 +79,26 @@ def write_content(content: str, path: Path):
     return content
 
 
+def create_remote_runfile(
+    path: Path,
+    name: str,
+    s3_bucket: Optional[Path] = None,
+):
+
+    content = f"""
+    #!/bin/bash
+    # move config file to remote s3 location
+    s3cmd put {path}/train.yaml s3://{s3_bucket}/train.yaml
+
+    # launch job
+    kubectl apply -f {path}/kubernetes.yaml
+
+    """
+
+    runfile = path / name / "run.sh"
+    write_content(content, runfile)
+
+
 def create_runfile(
     path: Path,
     name: str,
@@ -198,12 +218,14 @@ def main():
         configs.extend(data_config)
 
     copy_configs(directory / args.name, configs)
-    create_runfile(
-        directory, args.name, args.mode, args.pipeline, args.s3_bucket
-    )
 
     if args.remote_train:
         fill_kubernetes_template(directory / args.name / "kubernetes.yaml")
+        create_remote_runfile(directory, args.name, args.s3_bucket)
+    else:
+        create_runfile(
+            directory, args.name, args.mode, args.pipeline, args.s3_bucket
+        )
 
     logging.info(
         f"Initialized a {args.mode} {args.pipeline} "
