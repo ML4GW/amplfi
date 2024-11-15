@@ -1,3 +1,4 @@
+import logging
 from contextlib import nullcontext
 from pathlib import Path
 from typing import Callable, Optional
@@ -29,7 +30,17 @@ class FlowArchitecture(PyroModule):
             self.embedding_context = nullcontext
 
         if embedding_weights is not None:
-            self.embedding_net.load_state_dict(torch.load(embedding_weights))
+            # load in pre trained embedding weights,
+            # removing extra module weights (like, e.g. the standard scaler)
+            logging.info(f"Loading embedding weights from {embedding_weights}")
+            checkpoint = torch.load(embedding_weights, weights_only=True)
+            state_dict = checkpoint["state_dict"]
+            state_dict = {
+                k.strip("model.embedding"): v
+                for k, v in state_dict.items()
+                if k.startswith("model.embedding")
+            }
+            self.embedding_net.load_state_dict(state_dict)
 
     def transform_block(
         self, *args, **kwargs

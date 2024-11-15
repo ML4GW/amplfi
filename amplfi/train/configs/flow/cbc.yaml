@@ -64,6 +64,7 @@ data:
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
+        jitter: 0.1
         num_fit_params: 100000
         parameter_sampler: 
           class_path: amplfi.train.priors.cbc_prior
