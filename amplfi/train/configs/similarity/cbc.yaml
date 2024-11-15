@@ -32,11 +32,11 @@ model:
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
     similarity_loss: 
-      class_path: amplfi.train.losses.VICRegLoss
+      class_path: lightly.loss.vicreg_loss.VICRegLoss
       init_args:
-        wt_repr: 1.0
-        wt_cov: 1.0
-        wt_std: 1.0
+        lambda_param: 25
+        mu_param: 25.0
+        nu_param: 1.0
     # add path below when running `trainer.test` to load in a checkpoint
     checkpoint: null
     arch:
