@@ -41,8 +41,7 @@ class SimilarityModel(AmplfiModel):
         ref = self.model(ref)
         aug = self.model(aug)
         loss = self.similarity_loss(ref, aug)
-        # loss, *elements = self.similarity_loss(ref, aug)
-        return loss, (ref, aug)  # , elements
+        return loss, (ref, aug)
 
     def validation_step(self, batch, _):
         [ref, aug], asds, _ = batch
