@@ -33,7 +33,7 @@ class FlowArchitecture(PyroModule):
             # load in pre trained embedding weights,
             # removing extra module weights (like, e.g. the standard scaler)
             logging.info(f"Loading embedding weights from {embedding_weights}")
-            checkpoint = torch.load(embedding_weights, weights_only=True)
+            checkpoint = torch.load(embedding_weights)
             state_dict = checkpoint["state_dict"]
             state_dict = {
                 k.strip("model.embedding"): v
