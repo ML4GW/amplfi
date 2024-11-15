@@ -44,7 +44,6 @@ model:
               init_args:
                 groups: 8
     patience: null
-    save_top_k_models: 10
     learning_rate: 0.00071444
     weight_decay: 0.0
 data:

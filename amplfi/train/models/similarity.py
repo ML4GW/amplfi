@@ -19,35 +19,44 @@ class SimilarityModel(AmplfiModel):
         self,
         *args,
         arch: torch.nn.Module,
+        similarity_loss: VICRegLoss,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         # TODO: parmeterize cov, std, repr weights
         self.model = arch
-        self.loss = VICRegLoss()
+        self.similarity_loss = similarity_loss
 
         # if checkpoint is not None, load in model weights;
         # checkpoint should only be specified in this way
         # if running trainer.test
         self.maybe_load_checkpoint(self.checkpoint)
 
-    def forward(self, ref, aug):
+    def forward(
+        self,
+        ref,
+        aug,
+    ):
         ref = self.model(ref)
         aug = self.model(aug)
-        loss, *_ = self.loss(ref, aug)
+        loss, *_ = self.similarity_loss(ref, aug)
         return loss
 
     def validation_step(self, batch, _):
-        [ref, aug], _ = batch
-        loss = self(ref, aug)
+        [ref, aug], asds, _ = batch
+        loss = self((ref, asds), (aug, asds))
         self.log(
             "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
         )
         return loss
 
     def training_step(self, batch, _):
-        [ref, aug], _ = batch
-        loss = self(ref, aug)
+        # unpack batch - can ignore parameters
+        [ref, aug], asds, _ = batch
+
+        # pass reference and augmented data contexts
+        # through embedding and calculate similarity loss
+        loss = self((ref, asds), (aug, asds))
         self.log(
             "train_loss", loss, on_epoch=True, prog_bar=True, sync_dist=False
         )

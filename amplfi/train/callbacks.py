@@ -105,7 +105,7 @@ class SaveAugmentedSimilarityBatch(pl.Callback):
             X = X.to(device)
 
             cross, plus, parameters = datamodule.waveform_sampler.sample(X)
-            [ref, aug], parameters = datamodule.inject(
+            [ref, aug], asds, parameters = datamodule.inject(
                 X, cross, plus, parameters
             )
 
@@ -114,6 +114,7 @@ class SaveAugmentedSimilarityBatch(pl.Callback):
             with h5py.File(os.path.join(save_dir, "train-batch.h5"), "w") as f:
                 f["ref"] = ref.cpu().numpy()
                 f["aug"] = aug.cpu().numpy()
+                f["asds"] = asds.cpu().numpy()
                 f["parameters"] = parameters.cpu().numpy()
 
             # save an example validation batch
@@ -133,12 +134,13 @@ class SaveAugmentedSimilarityBatch(pl.Callback):
                 if k not in ["dec", "psi", "phi"]
             ]
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
-            [ref, aug], parameters = datamodule.inject(
+            [ref, aug], asds, parameters = datamodule.inject(
                 background, cross, plus, parameters
             )
             with h5py.File(os.path.join(save_dir, "val-batch.h5"), "w") as f:
                 f["ref"] = ref.cpu().numpy()
                 f["aug"] = aug.cpu().numpy()
+                f["asds"] = asds.cpu().numpy()
                 f["parameters"] = parameters.cpu().numpy()
 
 

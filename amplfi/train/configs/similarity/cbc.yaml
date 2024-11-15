@@ -17,9 +17,15 @@ trainer:
   log_every_n_steps: 50
   benchmark: false
 model:
-  class_path: amplfi.train.models.flow.SimilarityModel
+  class_path: amplfi.train.models.SimilarityModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
+    similarity_loss: 
+      class_path: amplfi.train.losses.VICRegLoss
+      init_args:
+        wt_repr: 1.0
+        wt_cov: 1.0
+        wt_std: 1.0
     # add path below when running `trainer.test` to load in a checkpoint
     checkpoint: null
     arch:
@@ -34,7 +40,6 @@ model:
           init_args:
             groups: 8
     patience: null
-    save_top_k_models: 10
     learning_rate: 0.00071444
     weight_decay: 0.0
 data:

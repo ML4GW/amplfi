@@ -6,7 +6,18 @@ from torch import nn
 # TODO: migrate to ml4gw
 # implemented from https://github.com/violatingcp/codec
 class VICRegLoss(nn.Module):
-    def forward(self, x, y, wt_repr=1.0, wt_cov=1.0, wt_std=1.0):
+    def __init__(
+        self,
+        wt_repr: float = 1.0,
+        wt_std: float = 1.0,
+        wt_cov: float = 1.0,
+    ):
+        super(VICRegLoss, self).__init__()
+        self.wt_repr = wt_repr
+        self.wt_std = wt_std
+        self.wt_cov = wt_cov
+
+    def forward(self, x, y):
         x = x.unsqueeze(1)
         y = y.unsqueeze(1)
         repr_loss = F.mse_loss(x, y)
@@ -32,7 +43,11 @@ class VICRegLoss(nn.Module):
         cov_loss = self.off_diagonal(cov_x).pow_(2).sum().div(D)
         cov_loss += self.off_diagonal(cov_y).pow_(2).sum().div(D)
 
-        s = wt_repr * repr_loss + wt_cov * cov_loss + wt_std * std_loss
+        s = (
+            self.wt_repr * repr_loss
+            + self.wt_cov * cov_loss
+            + self.wt_std * std_loss
+        )
         return s, repr_loss, cov_loss, std_loss
 
     def off_diagonal(self, x):
