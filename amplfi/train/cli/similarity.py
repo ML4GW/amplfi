@@ -9,7 +9,7 @@ class AmplfiSimilarityCLI(AmplfiBaseCLI):
 
         parser.link_arguments(
             "data.init_args.ifos",
-            "model.init_args.arch.init_args.num_ifos",
+            "model.init_args.arch.init_args.embedding.init_args.num_ifos",
             compute_fn=lambda x: len(x),
             apply_on="parse",
         )

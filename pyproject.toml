@@ -26,6 +26,7 @@ mldatafind = ">=0.1.2"
 luigi = "^3.5.1"
 gwpy="3.0.8"
 wandb = "^0.18.5"
+lightly = "^1.5.14"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"

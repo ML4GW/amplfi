@@ -1,7 +1,8 @@
-import torch
+from lightly.loss.vicreg_loss import VICRegLoss
+from lightly.utils.debug import std_of_l2_normalized
 
+from ..architectures.similarity import SimilarityEmbedding
 from ..callbacks import SaveAugmentedSimilarityBatch
-from ..losses import VICRegLoss
 from .base import AmplfiModel
 
 
@@ -18,7 +19,7 @@ class SimilarityModel(AmplfiModel):
     def __init__(
         self,
         *args,
-        arch: torch.nn.Module,
+        arch: SimilarityEmbedding,
         similarity_loss: VICRegLoss,
         **kwargs,
     ):
@@ -39,15 +40,35 @@ class SimilarityModel(AmplfiModel):
     ):
         ref = self.model(ref)
         aug = self.model(aug)
-        loss, *_ = self.similarity_loss(ref, aug)
-        return loss
+        loss = self.similarity_loss(ref, aug)
+        # loss, *elements = self.similarity_loss(ref, aug)
+        return loss, (ref, aug)  # , elements
 
     def validation_step(self, batch, _):
         [ref, aug], asds, _ = batch
-        loss = self((ref, asds), (aug, asds))
+        loss, (ref, aug) = self((ref, asds), (aug, asds))
+        ref_std = std_of_l2_normalized(ref)
+        aug_std = std_of_l2_normalized(aug)
+        self.log(
+            "val_ref_std",
+            ref_std,
+            on_step=True,
+            on_epoch=False,
+            prog_bar=True,
+            sync_dist=True,
+        )
+        self.log(
+            "val_aug_std",
+            aug_std,
+            on_step=True,
+            on_epoch=False,
+            prog_bar=True,
+            sync_dist=True,
+        )
         self.log(
             "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
         )
+
         return loss
 
     def training_step(self, batch, _):
@@ -56,10 +77,34 @@ class SimilarityModel(AmplfiModel):
 
         # pass reference and augmented data contexts
         # through embedding and calculate similarity loss
-        loss = self((ref, asds), (aug, asds))
+        loss, (ref, aug) = self((ref, asds), (aug, asds))
+        ref_std = std_of_l2_normalized(ref)
+        aug_std = std_of_l2_normalized(aug)
         self.log(
-            "train_loss", loss, on_epoch=True, prog_bar=True, sync_dist=False
+            "ref_std",
+            ref_std,
+            on_step=True,
+            on_epoch=False,
+            prog_bar=True,
+            sync_dist=True,
         )
+        self.log(
+            "aug_std",
+            aug_std,
+            on_step=True,
+            on_epoch=False,
+            prog_bar=True,
+            sync_dist=True,
+        )
+        self.log(
+            "train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True,
+        )
+
         return loss
 
     def configure_callbacks(self):
