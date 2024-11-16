@@ -32,7 +32,7 @@ model:
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
     similarity_loss: 
-      class_path: lightly.loss.vicreg_loss.VICRegLoss
+      class_path: amplfi.train.losses.VICRegLoss
       init_args:
         lambda_param: 25
         mu_param: 25.0

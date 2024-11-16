@@ -1,8 +1,6 @@
-from lightly.loss.vicreg_loss import VICRegLoss
-from lightly.utils.debug import std_of_l2_normalized
-
 from ..architectures.similarity import SimilarityEmbedding
 from ..callbacks import SaveAugmentedSimilarityBatch
+from ..losses import VICRegLoss
 from .base import AmplfiModel
 
 
@@ -46,24 +44,6 @@ class SimilarityModel(AmplfiModel):
     def validation_step(self, batch, _):
         [ref, aug], asds, _ = batch
         loss, (ref, aug) = self((ref, asds), (aug, asds))
-        ref_std = std_of_l2_normalized(ref)
-        aug_std = std_of_l2_normalized(aug)
-        self.log(
-            "val_ref_std",
-            ref_std,
-            on_step=True,
-            on_epoch=False,
-            prog_bar=True,
-            sync_dist=True,
-        )
-        self.log(
-            "val_aug_std",
-            aug_std,
-            on_step=True,
-            on_epoch=False,
-            prog_bar=True,
-            sync_dist=True,
-        )
         self.log(
             "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
         )
@@ -77,24 +57,7 @@ class SimilarityModel(AmplfiModel):
         # pass reference and augmented data contexts
         # through embedding and calculate similarity loss
         loss, (ref, aug) = self((ref, asds), (aug, asds))
-        ref_std = std_of_l2_normalized(ref)
-        aug_std = std_of_l2_normalized(aug)
-        self.log(
-            "ref_std",
-            ref_std,
-            on_step=True,
-            on_epoch=False,
-            prog_bar=True,
-            sync_dist=True,
-        )
-        self.log(
-            "aug_std",
-            aug_std,
-            on_step=True,
-            on_epoch=False,
-            prog_bar=True,
-            sync_dist=True,
-        )
+
         self.log(
             "train_loss",
             loss,
