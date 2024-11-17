@@ -68,7 +68,7 @@ class VICRegLoss(torch.nn.Module):
             + self.mu_param * var_loss
             + self.nu_param * cov_loss
         )
-        return loss
+        return loss, (inv_loss, var_loss, cov_loss)
 
 
 def invariance_loss(x: Tensor, y: Tensor) -> Tensor:
