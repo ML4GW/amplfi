@@ -33,13 +33,15 @@ class Expander(nn.Module):
             num_layers:
                 Number of layers in the projection head.
         """
+        super().__init__()
         blocks = [
             (hidden_dim, hidden_dim, nn.BatchNorm1d(hidden_dim), nn.ReLU())
             for _ in range(num_layers - 2)  # Exclude first and last layer.
         ]
         blocks = [
             (input_dim, hidden_dim, nn.BatchNorm1d(hidden_dim), nn.ReLU()),
-            *blocks(hidden_dim, output_dim, None, None),
+            *blocks,
+            (hidden_dim, output_dim, None, None),
         ]
 
         layers = []
@@ -47,8 +49,10 @@ class Expander(nn.Module):
             input_dim, output_dim, batch_norm, non_linearity, *bias = block
             use_bias = bias[0] if bias else not bool(batch_norm)
             layers.append(nn.Linear(input_dim, output_dim, bias=use_bias))
-            layers.append(batch_norm)
-            layers.append(non_linearity)
+            if batch_norm is not None:
+                layers.append(batch_norm)
+            if non_linearity is not None:
+                layers.append(non_linearity)
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
