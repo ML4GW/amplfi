@@ -25,7 +25,7 @@ class SimilarityDataset(AmplfiDataset):
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
         augmented = self.augmentor(waveforms)
 
-        # append extrinisc parameters to parameters
+        # append extrinsic parameters to parameters
         parameters.update({"dec": dec, "phi": phi, "psi": psi})
 
         # downselect to requested inference parameters
@@ -49,4 +49,16 @@ class SimilarityDataset(AmplfiDataset):
         # scale parameters
         parameters = self.scale(parameters)
 
-        return [X_ref, X_aug], parameters
+        # calculate asds and highpass
+        freqs = torch.fft.rfftfreq(
+            X_ref.shape[-1], d=1 / self.hparams.sample_rate
+        )
+        num_freqs = len(freqs)
+        psds = torch.nn.functional.interpolate(
+            psds, size=(num_freqs,), mode="linear"
+        )
+
+        mask = freqs > self.hparams.highpass
+        psds = psds[:, :, mask]
+        asds = torch.sqrt(psds)
+        return [X_ref, X_aug], asds, parameters

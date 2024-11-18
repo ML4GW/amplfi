@@ -44,7 +44,6 @@ model:
               init_args:
                 groups: 8
     patience: null
-    save_top_k_models: 10
     learning_rate: 0.00071444
     weight_decay: 0.0
 data:
@@ -65,6 +64,7 @@ data:
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
+        jitter: 0.1
         num_fit_params: 100000
         parameter_sampler: 
           class_path: amplfi.train.priors.cbc_prior

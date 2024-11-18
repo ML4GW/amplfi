@@ -18,13 +18,6 @@ class FlowModel(AmplfiModel):
         arch:
             Neural network architecture to train.
             This should be a subclass of `FlowArchitecture`.
-        learning_rate;
-            Learning rate for the optimizer
-        weight_decay:
-            Weight decay for the optimizer
-        save_top_k_models:
-            Maximum number of best-performing model checkpoints
-            to keep during training
         samples_per_event:
             Number of samples to draw per event for testing
     """

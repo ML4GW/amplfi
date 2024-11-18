@@ -8,68 +8,72 @@ trainer:
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
-        save_dir: ${oc.env:AMPLFI_OUTDIR}/train
+        save_dir: ${oc.env:AMPLFI_OUTDIR}/train_logs
         project: amplfi
         # uncomment and set to name your run
-        # name: 
-  max_epochs: 50
+        # name: my-amplfi-run 
+  max_epochs: 400
   check_val_every_n_epoch: 1
-  log_every_n_steps: 20
+  log_every_n_steps: 50
   benchmark: false
   callbacks:
-      - class_path: amplfi.train.callbacks.ModelCheckpoint
-        init_args:
-          monitor: "valid_loss"
-          save_top_k: 5
-          save_last: true
-          auto_insert_metric_name : false
-          mode: "min"
-      - class_path: lightning.pytorch.callbacks.LearningRateMonitor
-        init_args:
-          logging_interval: epoch
+    - class_path: amplfi.train.callbacks.ModelCheckpoint
+      init_args:
+        monitor: "valid_loss"
+        save_top_k: 5
+        save_last: true
+        auto_insert_metric_name : false
+        mode: "min"
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: epoch
 model:
   class_path: amplfi.train.models.SimilarityModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
+    similarity_loss: 
+      class_path: amplfi.train.losses.VICRegLoss
+      init_args:
+        lambda_param: 25
+        mu_param: 25.0
+        nu_param: 1.0
+    # add path below when running `trainer.test` to load in a checkpoint
     checkpoint: null
     arch:
-      class_path: amplfi.train.architectures.embeddings.ResNet
+      class_path: amplfi.train.architectures.embeddings.MultiModalPsd
       init_args:
-        context_dim: 8
-        layers: [5, 3, 3]
+        time_context_dim: 8
+        freq_context_dim: 128
+        time_layers: [5, 3, 3]
+        freq_layers: [5, 3, 3]
         norm_layer:
           class_path: ml4gw.nn.norm.GroupNorm1DGetter
           init_args:
-            groups: 16
-    patience: 10
-    factor: 0.1
-    learning_rate: 3.77e-4
+            groups: 8
+    patience: null
+    learning_rate: 0.00071444
     weight_decay: 0.0
 data:
   class_path: amplfi.train.data.datasets.SimilarityDataset
   init_args:
     data_dir: ${oc.env:AMPLFI_DATADIR}
-    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic",  "inclination", "dec", "psi", "phi"]
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048
-    kernel_length: 5
+    kernel_length: 3
     fduration: 1
-    psd_length: 12
+    psd_length: 10
     fftlength: 2
-    batches_per_epoch: 100
-    batch_size: 256
+    batches_per_epoch: 800
+    batch_size: 512
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
-    augmentor: 
-      class_path: amplfi.train.data.augmentors.TimeTranslator
-      init_args:
-        jitter: 0.5
-        sample_rate: 2048
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
         num_fit_params: 100000
-        parameter_sampler: train.priors.cbc_prior
+        parameter_sampler: 
+          class_path: amplfi.train.priors.cbc_prior
         dec: 
           class_path: ml4gw.distributions.Cosine
         psi: 
@@ -83,10 +87,16 @@ data:
             low: -3.14
             high: 3.14
         num_val_waveforms: 10000
-        num_test_waveforms: 100
+        num_test_waveforms: 200
         approximant: ml4gw.waveforms.IMRPhenomD
         f_min: 20
         f_max: 1024
-        padding: 1.0
+        ringdown_duration: 1.0
+        padding: 0.0
         waveform_arguments:
           f_ref: 40
+    augmentor: 
+      class_path: amplfi.train.data.augmentors.TimeTranslator
+      init_args:
+        jitter: 0.1
+        sample_rate: 2048

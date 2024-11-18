@@ -188,7 +188,7 @@ class AmplfiDataset(pl.LightningDataModule):
     @property
     def val_batch_size(self):
         """Use larger batch sizes when we don't need gradients."""
-        return int(2 * self.hparams.batch_size)
+        return int(1 * self.hparams.batch_size)
 
     @property
     def train_val_fnames(self):
