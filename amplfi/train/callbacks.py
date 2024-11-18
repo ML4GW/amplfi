@@ -71,6 +71,7 @@ class SaveAugmentedBatch(pl.Callback):
                     with io.BytesIO() as f:
                         with h5py.File(f, "w") as h5file:
                             h5file["strain"] = strain.cpu().numpy()
+                            h5file["asds"] = asds.cpu().numpy()
                             h5file["parameters"] = parameters.cpu().numpy()
                         s3_file.write(f.getvalue())
 
@@ -78,6 +79,7 @@ class SaveAugmentedBatch(pl.Callback):
                     with io.BytesIO() as f:
                         with h5py.File(f, "w") as h5file:
                             h5file["strain"] = val_strain.cpu().numpy()
+                            h5file["asds"] = val_asds.cpu().numpy()
                             h5file["parameters"] = val_parameters.cpu().numpy()
                         s3_file.write(f.getvalue())
             else:
@@ -85,12 +87,14 @@ class SaveAugmentedBatch(pl.Callback):
                     os.path.join(save_dir, "train-batch.h5"), "w"
                 ) as f:
                     f["strain"] = strain.cpu().numpy()
+                    f["asds"] = asds.cpu().numpy()
                     f["parameters"] = parameters.cpu().numpy()
 
                 with h5py.File(
                     os.path.join(save_dir, "val-batch.h5"), "w"
                 ) as f:
                     f["strain"] = val_strain.cpu().numpy()
+                    f["asds"] = val_asds.cpu().numpy()
                     f["parameters"] = val_parameters.cpu().numpy()
 
 

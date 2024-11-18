@@ -28,7 +28,8 @@ class VICRegLoss(torch.nn.Module):
         lambda_param: float = 25.0,
         mu_param: float = 25.0,
         nu_param: float = 1.0,
-        eps=0.0001,
+        eps: float = 0.0001,
+        max_std: float = 1.0,
     ):
         """Initializes the VICRegLoss module with the specified parameters."""
         super(VICRegLoss, self).__init__()
@@ -36,6 +37,7 @@ class VICRegLoss(torch.nn.Module):
         self.lambda_param = lambda_param
         self.mu_param = mu_param
         self.nu_param = nu_param
+        self.max_std = max_std
         self.eps = eps
 
     def forward(self, z_a: torch.Tensor, z_b: torch.Tensor) -> torch.Tensor:
@@ -57,8 +59,8 @@ class VICRegLoss(torch.nn.Module):
 
         # Variance and covariance terms of the loss
         var_loss = 0.5 * (
-            variance_loss(x=z_a, eps=self.eps)
-            + variance_loss(x=z_b, eps=self.eps)
+            variance_loss(x=z_a, eps=self.eps, max_std=self.max_std)
+            + variance_loss(x=z_b, eps=self.eps, max_std=self.max_std)
         )
         cov_loss = covariance_loss(x=z_a) + covariance_loss(x=z_b)
 
@@ -86,7 +88,9 @@ def invariance_loss(x: Tensor, y: Tensor) -> Tensor:
     return F.mse_loss(x, y)
 
 
-def variance_loss(x: Tensor, eps: float = 0.0001) -> Tensor:
+def variance_loss(
+    x: Tensor, eps: float = 0.0001, max_std: float = 1.0
+) -> Tensor:
     """Returns VICReg variance loss.
 
     Args:
@@ -99,7 +103,7 @@ def variance_loss(x: Tensor, eps: float = 0.0001) -> Tensor:
         The computed VICReg variance loss.
     """
     std = torch.sqrt(x.var(dim=0) + eps)
-    loss = torch.mean(F.relu(1.0 - std))
+    loss = torch.mean(F.relu(max_std - std))
     return loss
 
 
