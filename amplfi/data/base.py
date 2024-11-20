@@ -9,6 +9,12 @@ from .paths import paths
 root = Path(__file__).resolve().parent.parent.parent.parent.parent
 DATA_SANDBOX = f"amplfi::{paths().container_root / 'amplfi.sif'}"
 
+AMPLFI_BIND_DIRS = [
+    "AMPLFI_DATADIR",
+    "AMPLFI_OUTDIR",
+    "AMPLFI_CONDORDIR",
+]
+
 
 class AmplfiDataSandbox(DataSandbox):
     """
@@ -27,6 +33,16 @@ class AmplfiDataSandbox(DataSandbox):
         volumes = super()._get_volumes()
         if self.task and getattr(self.task, "dev", False):
             volumes[str(root)] = "/opt/amplfi"
+
+        # bind AMPLFI env var data directories
+        # so users can point to locations
+        # that are not automatically mounted;
+        # don't bind s3 dirs!
+
+        for path in AMPLFI_BIND_DIRS:
+            value = os.getenv(path)
+            if value is not None and not value.startswith("s3://"):
+                volumes[value] = value
         return volumes
 
     def _get_env(self):
