@@ -34,8 +34,8 @@ model:
     similarity_loss: 
       class_path: amplfi.train.losses.VICRegLoss
       init_args:
-        lambda_param: 1.0
-        mu_param: 1.0
+        lambda_param: 25.0
+        mu_param: 25.0
         nu_param: 1.0
     # add path below when running `trainer.test` to load in a checkpoint
     checkpoint: null
