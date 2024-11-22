@@ -187,3 +187,100 @@ gitRepo:
     # mountPath must be set to /opt
     mountPath: /opt
 ```
+
+### SLURM Ray cluster
+In order to use compute resources that are managed via [SLURM](https://slurm.schedmd.com/), the
+steps to start the `Ray` cluster is different. Once started, the rest of the
+steps using `lightray` is similar to that mentioned above. Note that the steps below closely
+resembles the [deploy on SLURM](https://docs.ray.io/en/latest/cluster/vms/user-guides/community/slurm.html)
+in the Ray documentation.
+
+The following example has been created using [NCSA Delta](https://docs.ncsa.illinois.edu/systems/delta/).
+Also, ensure that the apptainer image already built, referred to as `${AMPLFI_CONTAINER_ROOT}/amplfi.sif`.
+#### SBATCH directives
+```bash
+#!/bin/bash
+#SBATCH --nodes=10
+#SBATCH --tasks-per-node=1
+#SBATCH --gpus-per-task=1
+#SBATCH --cpus-per-task=3
+#SBATCH --job-name=my-tuner
+#SBATCH --account=<account-name>
+#SBATCH --output=%x.out
+#SBATCH --error=%x.err
+#SBATCH --time=6:00:00
+#SBATCH --partition=gpuA100x4
+#SBATCH --mem-per-cpu=10GB
+```
+The first four lines are the relevant ones. In this case, the resources reserved by
+SLURM will be used for 10 Ray workers each with one GPU and three CPUs. 
+```{eval-rst}
+.. note::
+  For the CPU resources, providing one more than that used by a single worker is recommended.
+  In this case this implies ``tune.yaml`` should have: ``cpus_per_trial: 2``,
+  ``gpus_per_trial: 1``. Adjust based on the workers that the dataloaders use.
+```
+
+#### Head worker
+Out of the 10 nodes, the first landing machine will be used for the head worker.
+```bash
+head_node=$(hostname | cut -d. -f1)
+# the cut step is specific to Delta and may not be needed in general
+head_node_ip=$(hostname --ip-address)
+port=6379
+
+echo "#### STARTING HEAD at $head_node ####"
+echo "#### HEAD NODE IP: $head_node_ip ####"
+srun --nodes=1 --ntasks=1 -w "$head_node" \
+    apptainer run --bind ${AMPLFI_DATADIR},${AMPLFI_OUTDIR} --nv \
+    ${AMPLFI_CONTAINER_ROOT}/amplfi.sif \
+      ray start --head --node-ip-address="$head_node_ip" --port=$port \
+      --num-cpus "${SLURM_CPUS_PER_TASK}" \
+      --num-gpus 1 --block &
+sleep 10
+echo "#### HEAD NODE ASSUMED TO HAVE STARTED ####"
+```
+Adjust the `sleep 10` statement in case you find the next step start before the head is up.
+
+#### Remaining workers
+Use the address of the head node to start the worker nodes.
+```bash
+worker_num=$(($SLURM_JOB_NUM_NODES - 1))
+srun --ntasks=$worker_num --nodes=$worker_num --ntasks-per-node=1 --exclude=$head_node \
+  apptainer run --bind ${AMPLFI_DATADIR},${AMPLFI_OUTDIR} --nv \
+  ${AMPLFI_CONTAINER_ROOT}/amplfi.sif \
+    ray start --address $head_node_ip:$port \
+    --num-cpus "${SLURM_CPUS_PER_TASK}" \
+    --num-gpus 1 --block &
+
+echo "#### SLEEPING FOR 60s BEFORE CALLING SCRIPT ####"
+sleep 60
+```
+
+The `--ntasks=$worker_num` and `--ntasks-per-node=1` will ensure only one instance of `Ray` is started on
+the remaining nodes, and they find the head through `--address $head_node_ip:$port`. Adjust
+the `sleep` duration based on whether the full Ray cluster becomes active.
+
+```{eval-rst}
+.. note::
+  Because the individual training runs will be sent to the nodes above, ensure that all the necessary mounts are bound
+  using the ``--bind`` for every ``apptainer run`` entrypoint. If you are getting a permission issue, check if you missed binding a mount.
+```
+
+#### Launch HPO using `lightray`
+Finally, launch the hyperparameter tuning using `lightray` as above.
+```bash
+echo "#### ASSUMING RAY CLUSTER IS UP, CALLING SCRIPT ####"
+apptainer run --bind ${AMPLFI_DATADIR},${AMPLFI_OUTDIR} \
+  --nv ${AMPLFI_CONTAINER_ROOT}/amplfi.sif \
+  lightray --tune.yaml --ray_init.configure_logging false -- \
+  --config cbc.yaml
+```
+We have to set `configure_logging=False` in `ray.init` to since by default the logging
+is done under `/tmp` which may point to different filesystems on different nodes. This is fine
+since the logs will be directed to the `stdout` and `stderr` files in the SBATCH directives.
+
+Put all the steps above in a single file called `tune.slurm` and submit it.
+```bash
+$ sbatch tune.slurm
+```
