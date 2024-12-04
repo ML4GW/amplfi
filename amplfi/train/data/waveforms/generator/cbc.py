@@ -56,7 +56,7 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         # set approximant (possibly torch.nn.Module) as an attribute
         # so that it will get moved to the proper device when `.to` is called
         self.approximant = approximant
-        self.waveform = partial(approximant, **waveform_arguments)
+        self.waveform = partial(approximant, **self.waveform_arguments)
         self.f_min = f_min
         self.f_max = f_max
         self.padding = padding
@@ -64,28 +64,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
 
         frequencies = torch.linspace(0, self.nyquist, self.num_freqs)
         self.register_buffer("frequencies", frequencies)
-
-    @property
-    def right_pad_size(self):
-        """
-        Size of additional right padding in samples
-        """
-        return math.ceil(self.padding * self.sample_rate)
-
-    @property
-    def left_pad_size(self):
-        """
-        Size of left padding required to ensure
-        the waveform is sufficiently long to slice
-        according to the user requested `duration`
-        """
-        # calculate the size of the time domain
-        # waveform after ffting
-        freq_dim = self.freq_mask.sum()
-        time_dim = 2 * (freq_dim - 1)
-        # calculate the left padding required
-        left_padding = self.num_samples - self.right_pad_size - time_dim
-        return left_padding if left_padding > 0 else 0
 
     @property
     def nyquist(self):
@@ -107,10 +85,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
             self.frequencies < self.f_max
         )
 
-    @property
-    def times(self):
-        pass
-
     def time_domain_strain(self, **parameters):
         """
         Generate time domain strain from a given set of parameters.
@@ -128,10 +102,22 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
 
         parameters.update(self.waveform_arguments)
 
+        # generate hc and hp at specified frequencies
         hc, hp = self.approximant(freqs[self.freq_mask], **parameters)
 
-        # fourier transform
-        hc, hp = torch.fft.irfft(hc), torch.fft.irfft(hp)
+        # create spectrum of frequencies, initially filled with zeros,
+        # with a delta_f such that after we fft to time domain the duration
+        # of the waveform will be `self.duration`
+        hc_spectrum = torch.zeros_like(self.frequencies, dtype=torch.complex64)
+        hp_spectrum = torch.zeros_like(self.frequencies, dtype=torch.complex64)
+
+        # fill the spectrum with the
+        # hc and hp values at the specified frequencies
+        hc_spectrum[self.freq_mask] = hc
+        hp_spectrum[self.freq_mask] = hp
+
+        # now, irfft and scale the waveforms by sample_rate
+        hc, hp = torch.fft.irfft(hc_spectrum), torch.fft.irfft(hp_spectrum)
         hc *= self.sample_rate
         hp *= self.sample_rate
 
@@ -140,15 +126,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         ringdown_size = int(self.ringdown_duration * self.sample_rate)
         hc = torch.roll(hc, -ringdown_size)
         hp = torch.roll(hp, -ringdown_size)
-
-        # pad the waveform on the right based on user specified padding;
-        # pad the left side to ensure the waveform is long enough to slice
-        hc = torch.nn.functional.pad(
-            hc, (self.left_pad_size, self.right_pad_size, 0, 0)
-        )
-        hp = torch.nn.functional.pad(
-            hp, (self.left_pad_size, self.right_pad_size, 0, 0)
-        )
 
         return hc, hp
 
