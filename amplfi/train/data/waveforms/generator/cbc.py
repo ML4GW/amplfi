@@ -28,11 +28,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
             waveform to the left to join the coalescence and ringdown.
             This will place the coalescence time `ringdown_duration` seconds
             from the right edge of the waveform. Defaults to 0.5.
-        padding:
-            Additional zero padding in seconds on top of `ringdown_duration`
-            to add to the right of the waveform. So, the coalescence time
-            of the waveform will be placed `ringdown_duration + padding`
-            seconds from the right edge of the kernel. Defaults to 0.0.
         waveform_arguments:
             A dictionary of fixed arguments to pass to the waveform model,
             e.g. `f_ref` for CBC waveforms
@@ -45,7 +40,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         f_min: float = 0.0,
         f_max: float = 0.0,
         ringdown_duration: float = 0.5,
-        padding: float = 0.0,
         waveform_arguments: Dict[str, Any] = None,
         **kwargs
     ):
@@ -59,7 +53,6 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         self.waveform = partial(approximant, **self.waveform_arguments)
         self.f_min = f_min
         self.f_max = f_max
-        self.padding = padding
         self.ringdown_duration = ringdown_duration
 
         frequencies = torch.linspace(0, self.nyquist, self.num_freqs)
