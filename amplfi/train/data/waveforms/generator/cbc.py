@@ -102,8 +102,8 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         # with a delta_f such that after we fft to time domain the duration
         # of the waveform will be `self.duration`
         shape = (hc.shape[0], self.num_freqs)
-        hc_spectrum = torch.zeros(shape, dtype=torch.complex64, device=device)
-        hp_spectrum = torch.zeros(shape, dtype=torch.complex64, device=device)
+        hc_spectrum = torch.zeros(shape, dtype=hc.dtype, device=device)
+        hp_spectrum = torch.zeros(shape, dtype=hc.dtype, device=device)
 
         # fill the spectrum with the
         # hc and hp values at the specified frequencies
