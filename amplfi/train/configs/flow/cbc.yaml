@@ -86,6 +86,5 @@ data:
         f_min: 20
         f_max: 1024
         ringdown_duration: 1.0
-        padding: 0.0
         waveform_arguments:
           f_ref: 40
