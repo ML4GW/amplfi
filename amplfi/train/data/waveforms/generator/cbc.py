@@ -101,13 +101,14 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         # create spectrum of frequencies, initially filled with zeros,
         # with a delta_f such that after we fft to time domain the duration
         # of the waveform will be `self.duration`
-        hc_spectrum = torch.zeros_like(self.frequencies, dtype=torch.complex64)
-        hp_spectrum = torch.zeros_like(self.frequencies, dtype=torch.complex64)
+        shape = (hc.shape[0], self.num_freqs)
+        hc_spectrum = torch.zeros(shape, dtype=torch.complex64, device=device)
+        hp_spectrum = torch.zeros(shape, dtype=torch.complex64, device=device)
 
         # fill the spectrum with the
         # hc and hp values at the specified frequencies
-        hc_spectrum[self.freq_mask] = hc
-        hp_spectrum[self.freq_mask] = hp
+        hc_spectrum[:, self.freq_mask] = hc
+        hp_spectrum[:, self.freq_mask] = hp
 
         # now, irfft and scale the waveforms by sample_rate
         hc, hp = torch.fft.irfft(hc_spectrum), torch.fft.irfft(hp_spectrum)
