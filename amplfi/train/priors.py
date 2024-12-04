@@ -54,3 +54,29 @@ def cbc_prior() -> ParameterSampler:
             torch.as_tensor(0, dtype=torch.float32),
         ),
     )
+
+
+def cbc_testing_delta_function_prior() -> ParameterSampler:
+    return ParameterSampler(
+        chirp_mass=distributions.DeltaFunction(
+            torch.as_tensor(55, dtype=torch.float32),
+        ),
+        mass_ratio=distributions.DeltaFunction(
+            torch.as_tensor(0.9, dtype=torch.float32),
+        ),
+        distance=distributions.DeltaFunction(
+            torch.as_tensor(1000, dtype=torch.float32),
+        ),
+        inclination=distributions.DeltaFunction(
+            torch.as_tensor(torch.pi / 6, dtype=torch.float32),
+        ),
+        phic=distributions.DeltaFunction(
+            torch.as_tensor(torch.pi, dtype=torch.float32),
+        ),
+        chi1=distributions.DeltaFunction(
+            torch.as_tensor(0, dtype=torch.float32),
+        ),
+        chi2=distributions.DeltaFunction(
+            torch.as_tensor(0, dtype=torch.float32),
+        ),
+    )
