@@ -70,10 +70,7 @@ class MDCDataset(FlowDataset):
         # determine slice indices. It is assumed the coalescence
         # time of the waveform is in the middle
         middle = strain.shape[-1] // 2
-        post = (
-            self.waveform_sampler.padding
-            + self.waveform_sampler.ringdown_duration
-        )
+        post = self.waveform_sampler.ringdown_duration
         pre = (
             post
             - self.hparams.kernel_length
