@@ -17,14 +17,9 @@ def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
         gmst = t.sidereal_time("mean", "greenwich").to("rad").value
         gmsts.append(gmst)
 
+    gmsts = np.array(gmsts)
     # calculate the relative azimuthal angle in the range [0, 2pi]
-    phi = ra - gmst
-    mask = phi < 0
-    phi[mask] += 2 * np.pi
-
-    # convert phi from range [0, 2pi] to [-pi, pi]
-    mask = phi > np.pi
-    phi[mask] -= 2 * np.pi
+    phi = np.remainder(ra - gmsts, 2 * np.pi)
 
     return phi
 
