@@ -47,11 +47,13 @@ def cbc_prior() -> ParameterSampler:
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(2 * torch.pi, dtype=torch.float32),
         ),
-        chi1=distributions.DeltaFunction(
+        chi1=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
+            torch.as_tensor(0.999, dtype=torch.float32),
         ),
-        chi2=distributions.DeltaFunction(
+        chi2=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
+            torch.as_tensor(0.999, dtype=torch.float32),
         ),
     )
 
