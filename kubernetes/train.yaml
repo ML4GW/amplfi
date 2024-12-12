@@ -28,8 +28,14 @@ spec:
         env:
         - name: AWS_ENDPOINT_URL
           value: https://s3-west.nrp-nautilus.io
+        # note: if using amplfi-init, the below variables 
+        # will be automatically filled in
         - name: WANDB_API_KEY
           value: # fill with your wandb key
+        - name: AMPLFI_OUTDIR
+          value: # fill with your output directory on s3
+        - name: AMPLFI_DATADIR
+          value: # fill with your data directory on s3
         envFrom:
         - secretRef:
             name: s3-credentials

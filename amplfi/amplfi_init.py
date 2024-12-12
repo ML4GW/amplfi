@@ -26,7 +26,7 @@ TRAIN_CONFIGS = {
 }
 
 
-def fill_kubernetes_template(output: Path):
+def fill_kubernetes_template(output: Path, s3_bucket):
     """
     Fill in the kubernetes template with the users environment variables
     """
@@ -42,6 +42,13 @@ def fill_kubernetes_template(output: Path):
         config["spec"]["template"]["spec"]["containers"][0]["env"][1][
             "value"
         ] = os.getenv("WANDB_API_KEY", "")
+        config["spec"]["template"]["spec"]["containers"][0]["env"][2][
+            "value"
+        ] = s3_bucket
+        config["spec"]["template"]["spec"]["containers"][0]["env"][3][
+            "value"
+        ] = f"{s3_bucket}/data"
+
         with open(output, "w") as f:
             yaml.safe_dump_all([config, s3], f)
 
@@ -82,13 +89,20 @@ def write_content(content: str, path: Path):
 def create_remote_runfile(
     path: Path,
     name: str,
-    s3_bucket: Optional[Path] = None,
+    s3_bucket: Path,
 ):
-
+    rundir = path / name
+    config = rundir / "datagen.cfg"
     content = f"""
     #!/bin/bash
+    export AMPLFI_DATADIR={s3_bucket}/data/
+
     # move config file to remote s3 location
-    s3cmd put {path}/train.yaml s3://{s3_bucket}/train.yaml
+    s3cmd put {rundir}/train.yaml {s3_bucket}/train.yaml
+
+    # launch data generation pipeline
+    LAW_CONFIG_FILE={config}
+    law run amplfi.data.DataGeneration --workers 5
 
     # launch job
     kubectl apply -f {path}/kubernetes.yaml
@@ -133,7 +147,7 @@ def create_runfile(
     # launch the data generation pipeline
     {data_cmd}
 
-    # launch {pipeline}ing pipeline
+    # launch {pipeline} pipeline
     {train_cmd}
     """
 
@@ -204,8 +218,16 @@ def main():
         else Path(os.environ.get("AMPLFI_RUNDIR")).resolve()
     )
 
-    if args.s3_bucket is not None and not args.s3_bucket.startswith("s3://"):
-        raise ValueError("S3 bucket must be in the format s3://{bucket-name}/")
+    if args.s3_bucket is not None:
+        s3_bucket = args.s3_bucket.rstrip("/")
+        if not args.s3_bucket.startswith("s3://"):
+            raise ValueError(
+                "S3 bucket must be in the format s3://{bucket-name}/"
+            )
+    elif args.remote_train and args.s3_bucket is None:
+        raise ValueError(
+            "S3 bucket must be provided to train remotely on nautilus"
+        )
 
     # construct the config files to copy
     # for the given mode and pipeline
@@ -220,11 +242,13 @@ def main():
     copy_configs(directory / args.name, configs)
 
     if args.remote_train:
-        fill_kubernetes_template(directory / args.name / "kubernetes.yaml")
-        create_remote_runfile(directory, args.name, args.s3_bucket)
+        fill_kubernetes_template(
+            directory / args.name / "kubernetes.yaml", s3_bucket
+        )
+        create_remote_runfile(directory, args.name, s3_bucket)
     else:
         create_runfile(
-            directory, args.name, args.mode, args.pipeline, args.s3_bucket
+            directory, args.name, args.mode, args.pipeline, s3_bucket
         )
 
     logging.info(
