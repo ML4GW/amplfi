@@ -39,6 +39,14 @@ def fill_kubernetes_template(output: Path, s3_bucket):
         s3["stringData"]["AWS_SECRET_ACCESS_KEY"] = os.getenv(
             "AWS_SECRET_ACCESS_KEY", ""
         )
+
+        # set remote training config path
+        config["spec"]["template"]["spec"]["containers"][0]["args"][
+            2
+        ] = f"{s3_bucket}/cbc.yaml"
+
+        # set environment variables that will
+        # be used in the training job by lightning
         config["spec"]["template"]["spec"]["containers"][0]["env"][1][
             "value"
         ] = os.getenv("WANDB_API_KEY", "")
@@ -95,14 +103,14 @@ def create_remote_runfile(
     config = rundir / "datagen.cfg"
     content = f"""
     #!/bin/bash
-    export AMPLFI_DATADIR={s3_bucket}/data/
-
-    # move config file to remote s3 location
-    s3cmd put {rundir}/train.yaml {s3_bucket}/train.yaml
+    export AMPLFI_DATADIR={s3_bucket}/data
 
     # launch data generation pipeline
     LAW_CONFIG_FILE={config}
     law run amplfi.data.DataGeneration --workers 5
+
+    # move config file to remote s3 location
+    s3cmd put {rundir}/cbc.yaml {s3_bucket}/cbc.yaml
 
     # launch job
     kubectl apply -f {path}/kubernetes.yaml
