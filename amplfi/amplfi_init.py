@@ -106,14 +106,13 @@ def create_remote_runfile(
     export AMPLFI_DATADIR={s3_bucket}/data
 
     # launch data generation pipeline
-    LAW_CONFIG_FILE={config}
-    law run amplfi.data.DataGeneration --workers 5
+    LAW_CONFIG_FILE={config} law run amplfi.data.DataGeneration --workers 5
 
     # move config file to remote s3 location
     s3cmd put {rundir}/cbc.yaml {s3_bucket}/cbc.yaml
 
     # launch job
-    kubectl apply -f {path}/kubernetes.yaml
+    kubectl apply -f {rundir}/kubernetes.yaml
 
     """
 
