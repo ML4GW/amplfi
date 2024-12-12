@@ -43,7 +43,7 @@ based on the specified `s3_bucket`:
 ```{eval-rst}
     .. note::
         If you already have a remote data directory you wish to train with, you can specify the 
-        `AMPLFI_DATADIR` environment variable in the `run.sh` and `kubernetes.yaml` 
+        :code:`AMPLFI_DATADIR` environment variable in the :code:`run.sh` and :code:`kubernetes.yaml` 
         to point to your data directory.
 ```
 
