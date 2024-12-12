@@ -56,12 +56,11 @@ The `run.sh` file will look slightly different than the local training job:
 #!/bin/bash
 export AMPLFI_DATADIR=s3://my_bucket/my-first-remote-train/data
 
+# launch data generation pipeline
+LAW_CONFIG_FILE=/home/ethan.marx/amplfi/my-first-remote-train/datagen.cfg law run amplfi.data.DataGeneration --workers 5
+
 # move config file to remote s3 location
 s3cmd put /home/ethan.marx/amplfi/my-first-remote-train/cbc.yaml s3://my_bucket/my-first-remote-train/cbc.yaml
-
-# launch data generation pipeline
-LAW_CONFIG_FILE=/home/ethan.marx/amplfi/my-first-remote-train/datagen.cfg
-law run amplfi.data.DataGeneration --workers 5
 
 # launch job
 kubectl apply -f /home/ethan.marx/amplfi/kubernetes.yaml
