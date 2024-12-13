@@ -7,10 +7,7 @@ import numpy as np
 
 
 class Result(bilby.result.Result):
-    def get_sky_projection(
-        self,
-        nside: int = 32,
-    ):
+    def get_sky_projection(self, nside: int):
         """Store a HEALPix array with the sky coordinates
 
         Args:
@@ -19,6 +16,8 @@ class Result(bilby.result.Result):
         ra = self.posterior["phi"]
         dec = self.posterior["dec"]
         theta = np.pi / 2 - dec
+
+        num_samples = len(ra)
 
         # mask out non physical samples;
         mask = (ra > -np.pi) * (ra < np.pi)
@@ -34,14 +33,15 @@ class Result(bilby.result.Result):
         ipix = np.sort(ipix)
         uniq, counts = np.unique(ipix, return_counts=True)
 
-        # create empty map and then fill in non-zero pix with counts
+        # create empty map and then fill in non-zero pix with density
+        # estimated by fraction of total samples in each pixel
         m = np.zeros(NPIX)
-        m[np.in1d(range(NPIX), uniq)] = counts
+        m[np.in1d(range(NPIX), uniq)] = counts / num_samples
 
         return m
 
-    def calculate_searched_area(self, nside: int = 32):
-        healpix = self.get_sky_projection(nside=nside)
+    def calculate_searched_area(self, nside: int):
+        healpix = self.get_sky_projection(nside)
 
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
@@ -59,11 +59,7 @@ class Result(bilby.result.Result):
         )
         return searched_area
 
-    def plot_mollview(
-        self,
-        outpath: Path = None,
-        nside: int = 32,
-    ):
+    def plot_mollview(self, nside: int, outpath: Path = None):
         healpix = self.get_sky_projection(nside)
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
