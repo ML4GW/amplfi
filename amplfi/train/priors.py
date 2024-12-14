@@ -34,10 +34,9 @@ def cbc_prior() -> ParameterSampler:
             torch.as_tensor(0.125, dtype=torch.float32),
             torch.as_tensor(0.999, dtype=torch.float32),
         ),
-        distance=distributions.PowerLaw(
+        distance=Uniform(
             torch.as_tensor(100, dtype=torch.float32),
-            torch.as_tensor(3000, dtype=torch.float32),
-            index=2,
+            torch.as_tensor(3100, dtype=torch.float32),
         ),
         inclination=distributions.Sine(
             torch.as_tensor(0, dtype=torch.float32),
