@@ -7,10 +7,12 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Literal, Optional
 
+import yaml
 from jsonargparse import ArgumentParser
 
 root = Path(__file__).resolve().parent.parent
 data_config = (root / "amplfi" / "data" / "datagen.cfg",)
+kubernetes_config = root / "kubernetes" / "train.yaml"
 TUNE_CONFIGS = [
     root / "amplfi" / "train" / "configs" / "tune.yaml",
 ]
@@ -22,6 +24,41 @@ TRAIN_CONFIGS = {
     ],
     "flow": [root / "amplfi" / "train" / "configs" / "flow" / "cbc.yaml"],
 }
+
+
+def fill_kubernetes_template(output: Path, s3_bucket):
+    """
+    Fill in the kubernetes template with the users environment variables
+    """
+    with open(kubernetes_config) as f:
+        docs = list(yaml.safe_load_all(f))
+        config, s3 = docs
+        s3["stringData"]["AWS_ACCESS_KEY_ID"] = os.getenv(
+            "AWS_ACCESS_KEY_ID", ""
+        )
+        s3["stringData"]["AWS_SECRET_ACCESS_KEY"] = os.getenv(
+            "AWS_SECRET_ACCESS_KEY", ""
+        )
+
+        # set remote training config path
+        config["spec"]["template"]["spec"]["containers"][0]["args"][
+            2
+        ] = f"{s3_bucket}/cbc.yaml"
+
+        # set environment variables that will
+        # be used in the training job by lightning
+        config["spec"]["template"]["spec"]["containers"][0]["env"][1][
+            "value"
+        ] = os.getenv("WANDB_API_KEY", "")
+        config["spec"]["template"]["spec"]["containers"][0]["env"][2][
+            "value"
+        ] = s3_bucket
+        config["spec"]["template"]["spec"]["containers"][0]["env"][3][
+            "value"
+        ] = f"{s3_bucket}/data"
+
+        with open(output, "w") as f:
+            yaml.safe_dump_all([config, s3], f)
 
 
 def copy_configs(
@@ -55,6 +92,32 @@ def write_content(content: str, path: Path):
     # make the file executable
     path.chmod(0o755)
     return content
+
+
+def create_remote_runfile(
+    path: Path,
+    name: str,
+    s3_bucket: Path,
+):
+    rundir = path / name
+    config = rundir / "datagen.cfg"
+    content = f"""
+    #!/bin/bash
+    export AMPLFI_DATADIR={s3_bucket}/data
+
+    # launch data generation pipeline
+    LAW_CONFIG_FILE={config} law run amplfi.data.DataGeneration --workers 5
+
+    # move config file to remote s3 location
+    s3cmd put {rundir}/cbc.yaml {s3_bucket}/cbc.yaml
+
+    # launch job
+    kubectl apply -f {rundir}/kubernetes.yaml
+
+    """
+
+    runfile = path / name / "run.sh"
+    write_content(content, runfile)
 
 
 def create_runfile(
@@ -91,7 +154,7 @@ def create_runfile(
     # launch the data generation pipeline
     {data_cmd}
 
-    # launch {pipeline}ing pipeline
+    # launch {pipeline} pipeline
     {train_cmd}
     """
 
@@ -100,6 +163,7 @@ def create_runfile(
 
 
 def main():
+
     parser = ArgumentParser(
         description="Initialize a directory with configuration files "
         "for running end-to-end amplfi training or tuning pipelines"
@@ -137,7 +201,21 @@ def main():
         "variable AMPLFI_RUNDIR will be used.",
     )
 
-    parser.add_argument("--s3-bucket")
+    parser.add_argument(
+        "--remote-train",
+        type=bool,
+        default=None,
+        help="Whether to train remotely on nautilus. "
+        "If `True`, will copy a yaml file to the run directory "
+        "that contains kubernetes yaml for a remote training job.",
+    )
+
+    parser.add_argument(
+        "--s3-bucket",
+        type=str,
+        default=None,
+        help="The s3 bucket where training data is stored",
+    )
     log_format = "%(levelname)s - %(message)s"
     logging.basicConfig(level=logging.INFO, format=log_format)
     args = parser.parse_args()
@@ -147,8 +225,16 @@ def main():
         else Path(os.environ.get("AMPLFI_RUNDIR")).resolve()
     )
 
-    if args.s3_bucket is not None and not args.s3_bucket.startswith("s3://"):
-        raise ValueError("S3 bucket must be in the format s3://{bucket-name}/")
+    if args.s3_bucket is not None:
+        s3_bucket = args.s3_bucket.rstrip("/")
+        if not args.s3_bucket.startswith("s3://"):
+            raise ValueError(
+                "S3 bucket must be in the format s3://{bucket-name}/"
+            )
+    elif args.remote_train and args.s3_bucket is None:
+        raise ValueError(
+            "S3 bucket must be provided to train remotely on nautilus"
+        )
 
     # construct the config files to copy
     # for the given mode and pipeline
@@ -161,9 +247,17 @@ def main():
         configs.extend(data_config)
 
     copy_configs(directory / args.name, configs)
-    create_runfile(
-        directory, args.name, args.mode, args.pipeline, args.s3_bucket
-    )
+
+    if args.remote_train:
+        fill_kubernetes_template(
+            directory / args.name / "kubernetes.yaml", s3_bucket
+        )
+        create_remote_runfile(directory, args.name, s3_bucket)
+    else:
+        create_runfile(
+            directory, args.name, args.mode, args.pipeline, s3_bucket
+        )
+
     logging.info(
         f"Initialized a {args.mode} {args.pipeline} "
         f"pipeline at {directory / args.name}"

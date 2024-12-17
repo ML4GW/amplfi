@@ -19,7 +19,8 @@ Framework for performing rapid (~ 1s) parameter estimation of gravitational wave
    :maxdepth: 1
 
    Running in containers <containers>
-   Tuning <tuning>
+   Remote Training <remote_training>
+   Hyperparameter Tuning <tuning>
 ```
 
 Please cite https://arxiv.org/abs/2407.19048 if you have benefited from `AMPLFI` in your work

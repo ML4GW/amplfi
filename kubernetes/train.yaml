@@ -1,0 +1,70 @@
+# template for setting up kubernetes job to train an amplfi model
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: amplfi-train
+spec:
+  template:
+    metadata: 
+      name: amplfi-train
+    spec:
+      restartPolicy: Never
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nvidia.com/gpu.memory
+                operator: Gt
+                values:
+                - "15000"
+      containers:
+      - args:
+        - fit
+        - --config
+        - # fill with your config file on s3
+        command:
+        - amplfi-flow-cli
+        env:
+        - name: AWS_ENDPOINT_URL
+          value: https://s3-west.nrp-nautilus.io
+        # note: if using amplfi-init, the below variables 
+        # will be automatically filled in
+        - name: WANDB_API_KEY
+          value: # fill with your wandb key
+        - name: AMPLFI_OUTDIR
+          value: # fill with your output directory on s3
+        - name: AMPLFI_DATADIR
+          value: # fill with your data directory on s3
+        envFrom:
+        - secretRef:
+            name: s3-credentials
+        image: ghcr.io/ml4gw/amplfi/amplfi:main
+        imagePullPolicy: Always
+        name: train
+        resources:
+          limits:
+            cpu: "96"
+            memory: 416G
+            nvidia.com/gpu: "8"
+          requests:
+            cpu: "96"
+            memory: 416G
+            nvidia.com/gpu: "8"
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+      volumes:
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 256Gi
+        name: dshm
+---
+apiVersion: v1
+stringData:
+  AWS_ACCESS_KEY_ID: # fill with your AWS ACCESS KEY
+  AWS_SECRET_ACCESS_KEY: # fill with your AWS SECRET ACCESS KEY
+kind: Secret
+metadata:
+  name: s3-credentials
+type: Opaque
