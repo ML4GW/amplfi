@@ -11,7 +11,7 @@ authors = [
 python = ">=3.9,<3.13"
 numpy = "<2.0.0"
 lightning = "<=2.2.1"
-ml4gw = "^0.5"
+ml4gw = "<=0.6.1"
 h5py = "^3.10.0"
 ray = {version = "^2.38.0", extras = ["default", "tune"]}
 bilby = "^2.2.3"

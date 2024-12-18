@@ -118,8 +118,8 @@ class FrequencyDomainCBCGenerator(WaveformGenerator):
         # roll the waveforms to join
         # the coalescence and ringdown
         ringdown_size = int(self.ringdown_duration * self.sample_rate)
-        hc = torch.roll(hc, -ringdown_size)
-        hp = torch.roll(hp, -ringdown_size)
+        hc = torch.roll(hc, -ringdown_size, dims=-1)
+        hp = torch.roll(hp, -ringdown_size, dims=-1)
 
         return hc, hp
 
