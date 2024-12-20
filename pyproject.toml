@@ -26,6 +26,8 @@ mldatafind = ">=0.1.3"
 luigi = "^3.5.1"
 gwpy="3.0.8"
 wandb = "^0.18.5"
+astropy-healpix = "^1.0.3"
+mhealpy = "^0.3.4"
 
 
 [tool.poetry.group.dev.dependencies]

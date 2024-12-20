@@ -57,6 +57,40 @@ def cbc_prior() -> ParameterSampler:
     )
 
 
+# all uniform priors; useful for MC marginalization
+def cbc_prior_flat() -> ParameterSampler:
+    return ParameterSampler(
+        chirp_mass=Uniform(
+            torch.as_tensor(10, dtype=torch.float32),
+            torch.as_tensor(100, dtype=torch.float32),
+        ),
+        mass_ratio=Uniform(
+            torch.as_tensor(0.125, dtype=torch.float32),
+            torch.as_tensor(0.999, dtype=torch.float32),
+        ),
+        distance=Uniform(
+            torch.as_tensor(100, dtype=torch.float32),
+            torch.as_tensor(3100, dtype=torch.float32),
+        ),
+        inclination=Uniform(
+            torch.as_tensor(0, dtype=torch.float32),
+            torch.as_tensor(torch.pi, dtype=torch.float32),
+        ),
+        phic=Uniform(
+            torch.as_tensor(0, dtype=torch.float32),
+            torch.as_tensor(2 * torch.pi, dtype=torch.float32),
+        ),
+        chi1=Uniform(
+            torch.as_tensor(-0.999, dtype=torch.float32),
+            torch.as_tensor(0.999, dtype=torch.float32),
+        ),
+        chi2=Uniform(
+            torch.as_tensor(-0.999, dtype=torch.float32),
+            torch.as_tensor(0.999, dtype=torch.float32),
+        ),
+    )
+
+
 def cbc_testing_delta_function_prior() -> ParameterSampler:
     return ParameterSampler(
         chirp_mass=distributions.DeltaFunction(
