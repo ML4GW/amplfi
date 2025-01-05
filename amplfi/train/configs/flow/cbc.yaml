@@ -25,6 +25,7 @@ model:
     arch:
       class_path: amplfi.train.architectures.flows.MaskedAutoregressiveFlow
       init_args:
+        transform_type: "affine"
         hidden_features: 128
         num_transforms: 80
         num_blocks: 6

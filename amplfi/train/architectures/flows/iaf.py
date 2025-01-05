@@ -1,10 +1,52 @@
+from typing import Literal
+
 import torch
 import torch.distributions as dist
 from pyro.distributions.conditional import ConditionalComposeTransformModule
-from pyro.distributions.transforms import ConditionalAffineAutoregressive
+from pyro.distributions.transforms import (
+    ConditionalAffineAutoregressive,
+    ConditionalSplineAutoregressive,
+)
 from pyro.nn import ConditionalAutoRegressiveNN
 
 from . import FlowArchitecture
+
+
+def conditional_spline_autoregressive(
+    input_dim,
+    context_dim,
+    activation=None,
+    hidden_dims=None,
+    count_bins=8,
+    bound=3.0,
+):
+    if hidden_dims is None:
+        hidden_dims = [input_dim * 10, input_dim * 10]
+
+    param_dims = [count_bins, count_bins, count_bins]
+
+    arn = ConditionalAutoRegressiveNN(
+        input_dim,
+        context_dim,
+        hidden_dims,
+        nonlinearity=activation,
+        param_dims=param_dims,
+    )
+    return ConditionalSplineAutoregressive(
+        input_dim, arn, count_bins=count_bins, bound=bound, order="quadratic"
+    )
+
+
+def conditional_affine_autoregressive(
+    input_dim, context_dim, hidden_dims, activation=None
+):
+    arn = ConditionalAutoRegressiveNN(
+        input_dim,
+        context_dim,
+        hidden_dims,
+        nonlinearity=activation,
+    )
+    return ConditionalAffineAutoregressive(arn)
 
 
 class InverseAutoregressiveFlow(FlowArchitecture):
@@ -15,10 +57,12 @@ class InverseAutoregressiveFlow(FlowArchitecture):
         num_transforms: int = 5,
         num_blocks: int = 2,
         activation: torch.nn.modules.activation = torch.nn.Tanh(),
+        transform_type: Literal["spline", "affine"] = "spline",
         **kwargs,
     ):
 
         super().__init__(*args, **kwargs)
+        self.transform_type = transform_type
         self.hidden_features = hidden_features
         self.num_blocks = num_blocks
         self.num_transforms = num_transforms
@@ -33,14 +77,25 @@ class InverseAutoregressiveFlow(FlowArchitecture):
         self.transforms = self.build_transforms()
 
     def transform_block(self):
-        """Returns single autoregressive transform"""
-        arn = ConditionalAutoRegressiveNN(
-            self.num_params,
-            self.embedding_net.context_dim,
-            self.num_blocks * [self.hidden_features],
-            nonlinearity=self.activation,
-        )
-        return ConditionalAffineAutoregressive(arn)
+        if self.transform_type == "affine":
+            return conditional_affine_autoregressive(
+                self.num_params,
+                self.embedding_net.context_dim,
+                hidden_dims=[self.hidden_features] * self.num_blocks,
+                activation=self.activation,
+            )
+        elif self.transform_type == "spline":
+            return conditional_spline_autoregressive(
+                self.num_params,
+                self.embedding_net.context_dim,
+                hidden_dims=[self.hidden_features] * self.num_blocks,
+                activation=self.activation,
+            )
+        else:
+            raise ValueError(
+                f"Transform type {self.transform_type} not recognized. "
+                "Must be one of ['spline', 'affine']"
+            )
 
     def distribution(self):
         """Returns the base distribution for the flow"""

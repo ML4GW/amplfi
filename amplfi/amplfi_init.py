@@ -235,6 +235,8 @@ def main():
         raise ValueError(
             "S3 bucket must be provided to train remotely on nautilus"
         )
+    else:
+        s3_bucket = None
 
     # construct the config files to copy
     # for the given mode and pipeline
