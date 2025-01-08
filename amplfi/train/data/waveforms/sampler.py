@@ -34,7 +34,8 @@ class WaveformSampler(torch.nn.Module):
 
     def __init__(
         self,
-        duration: float,
+        fduration: float,
+        kernel_length: float,
         sample_rate: float,
         inference_params: list[str],
         dec: Distribution,
@@ -47,7 +48,9 @@ class WaveformSampler(torch.nn.Module):
         super().__init__()
         self.parameter_transformer = parameter_transformer or (lambda x: x)
         self.inference_params = inference_params
-        self.duration = duration
+        self.fduration = fduration
+        self.kernel_length = kernel_length
+
         self.sample_rate = sample_rate
         self.dec, self.psi, self.phi = dec, psi, phi
         self.time_translator = (
@@ -63,6 +66,14 @@ class WaveformSampler(torch.nn.Module):
         psi = self.psi.sample((N,)).to(X.device)
         phi = self.phi.sample((N,)).to(X.device)
         return dec, psi, phi
+
+    @property
+    def duration(self):
+        """
+        Length of kernel before whitening removes
+        fduration / 2 from each side
+        """
+        return self.fduration + self.kernel_length
 
     @property
     def waveform_size(self):

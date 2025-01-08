@@ -20,9 +20,14 @@ class AmplfiBaseCLI(LightningCLI):
         )
 
         parser.link_arguments(
-            ("data.init_args.kernel_length", "data.init_args.fduration"),
-            "data.init_args.waveform_sampler.init_args.duration",
-            compute_fn=lambda *x: sum(x),
+            "data.init_args.kernel_length",
+            "data.init_args.waveform_sampler.init_args.kernel_length",
+            apply_on="parse",
+        )
+
+        parser.link_arguments(
+            "data.init_args.fduration",
+            "data.init_args.waveform_sampler.init_args.fduration",
             apply_on="parse",
         )
 
