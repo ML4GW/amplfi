@@ -139,6 +139,7 @@ class FlowModel(AmplfiModel):
             descaled.cpu().numpy(),
             parameters.cpu().numpy()[0],
         )
+        result.calculate_distance_ansatz()
         self.test_results.append(result)
 
         # plot corner and skymap for a subset of the test results
