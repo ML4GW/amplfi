@@ -137,9 +137,8 @@ class Result(bilby.result.Result):
         return fig
 
     def get_dist_params(self):
-        """Get DISTMU, DISTSIGMA, DISTNORM parameters
-        from posterior samples. Note that this is not
-        conditioned per pixel."""
+        """Get d^2, d^3, d^4 moments from posterior samples.
+        Note that this is not conditioned per pixel."""
         d = self.posterior["distance"]
         # calculate moments
         d_2 = d**2
