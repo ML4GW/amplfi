@@ -198,20 +198,25 @@ class FlowModel(AmplfiModel):
                 parameters = self.trainer.datamodule.scale(parameters)
                 parameters = parameters.reshape(n_pts_per_pix, n_pix, -1)
                 # store distances separately
-                distances.append(parameters[...,2])
+                distances.append(parameters[..., 2])
                 log_prob.append(self.model.log_prob(parameters, context))
             log_prob = torch.vstack(log_prob)
             distances = torch.vstack(distances)
             p = torch.logsumexp(log_prob, dim=0).exp()
 
-            d = torch.einsum('ij,ij->j', distances, log_prob.exp())
+            d = torch.einsum("ij,ij->j", distances, log_prob.exp())
             d_scaled = d * self.trainer.datamodule.scaler.std[2]
             d_scaled += self.trainer.datamodule.scaler.mean[2]
 
-            d_sq = torch.einsum('ij,ij->j', distances**2, log_prob.exp())
-            d_sq_scaled = d_sq * self.trainer.datamodule.scaler.std[2]**2
-            d_sq_scaled += 2 * self.trainer.datamodule.scaler.mean[2] * self.trainer.datamodule.scaler.std[2] * d
-            d_sq_scaled += self.trainer.datamodule.scaler.mean[2]**2 * p
+            d_sq = torch.einsum("ij,ij->j", distances**2, log_prob.exp())
+            d_sq_scaled = d_sq * self.trainer.datamodule.scaler.std[2] ** 2
+            d_sq_scaled += (
+                2
+                * self.trainer.datamodule.scaler.mean[2]
+                * self.trainer.datamodule.scaler.std[2]
+                * d
+            )
+            d_sq_scaled += self.trainer.datamodule.scaler.mean[2] ** 2 * p
 
             cells[-nrefine:] = zip(p, new_nside, new_ipix)
 
