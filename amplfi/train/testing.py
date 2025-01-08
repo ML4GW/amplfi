@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
 
+"""Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
+
 
 def P(x):
     return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
