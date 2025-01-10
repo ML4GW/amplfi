@@ -6,13 +6,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
 
+"""Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
+
 
 def P(x):
     return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
 
 
 def Q(x):
-    return sp.special.erf(x / np.sqrt(2)) / 2
+    return sp.special.erfc(x / np.sqrt(2)) / 2
 
 
 def H(x):
@@ -137,8 +139,9 @@ class Result(bilby.result.Result):
         return fig
 
     def get_dist_params(self):
-        """Get d^2, d^3, d^4 moments from posterior samples.
-        Note that this is not conditioned per pixel."""
+        """Calculate d^2, d^3, d^4 moments from posterior samples.
+        Use them to obtain rho, m, s. This is not conditioned
+        per pixel."""
         d = self.posterior["distance"]
         # calculate moments
         d_2 = d**2
@@ -152,14 +155,20 @@ class Result(bilby.result.Result):
         s = np.sqrt(d_4 / rho - m**2)
         return rho, m, s
 
-    def get_mu_sigma(self, maxiter=10):
+    def calculate_distance_ansatz(self, maxiter=10):
+        """Calculate the DISTMU, DISTSIGMA, DISTNORM parameters"""
         rho, m, s = self.get_dist_params()
         z0 = m / s
         sol = sp.optimize.root_scalar(f, args=(s, m), fprime=fprime, x0=z0)
         if not sol.converged:
-            return 0, float("inf"), 0
+            self.dist_mu = 0
+            self.dist_sigma = float("inf")
+            self.dist_norm = 0
+            return
         z_hat = sol.root
         sigma = m * x2(z_hat) / x3(z_hat)
         mu = sigma * z_hat
-        N = 1 / Q(-z_hat) * sigma**2 * x2(z_hat)
-        return mu, sigma, N
+        N = 1 / (Q(-z_hat) * sigma**2 * x2(z_hat))
+        self.dist_mu = mu
+        self.dist_sigma = sigma
+        self.norm = N
