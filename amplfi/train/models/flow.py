@@ -9,7 +9,6 @@ from astropy import units as u
 from mhealpy import HealpixMap
 
 from ..architectures.flows import FlowArchitecture
-from ..priors import cbc_prior_flat
 from ..testing import Result
 from .base import AmplfiModel
 
@@ -38,7 +37,7 @@ class FlowModel(AmplfiModel):
         self,
         *args,
         arch: FlowArchitecture,
-        samples_per_event: int = 10000,
+        samples_per_event: int = 200000,
         num_corner: int = 10,
         nside: int = 64,
         **kwargs,
@@ -137,11 +136,12 @@ class FlowModel(AmplfiModel):
 
     def get_skymap_hpx(self, samples, context, top_nside=16, rounds=8):
         """Adaptive grid implemented from ligo.skymap"""
-        # FIXME: samples are not used
+        # calculate density of the original samples
+        log_prob_orig = self.model.log_prob(samples, context=context)
+
         top_npix = ah.nside_to_npix(top_nside)
         nrefine = top_npix // 4
         cells = zip([0] * nrefine, [top_nside // 2] * nrefine, range(nrefine))
-        flat_prior = cbc_prior_flat()
         for iround in range(rounds + 1):
             print(
                 "adaptive refinement round {} of {} ...".format(iround, rounds)
@@ -159,64 +159,67 @@ class FlowModel(AmplfiModel):
             )
             n_pix = len(lon)
             lon = torch.from_numpy(lon.value).to(
-                dtype=torch.float32,
+                dtype=torch.float32, device=self.device
             )
             lon[lon > torch.pi] -= 2 * torch.pi
             lat = torch.from_numpy(lat.value).to(
-                dtype=torch.float32,
+                dtype=torch.float32, device=self.device
             )
-            n_pts_per_pix = 200
-            n_repeats = 5
-            log_prob = []
-            distances = []
-            for _ in range(n_repeats):
-                flat_prior_samples = flat_prior(n_pix * n_pts_per_pix)
-                psi_samples = (
-                    self.trainer.datamodule.waveform_sampler.psi.sample(
-                        (n_pix * n_pts_per_pix,)
-                    )
-                )
-                dec_samples = lat.repeat(n_pts_per_pix)
-                phi_samples = lon.repeat(n_pts_per_pix)
-                flat_prior_samples.update(
-                    {
-                        "dec": dec_samples,
-                        "phi": phi_samples,
-                        "psi": psi_samples,
-                    }
-                )
-                parameters = {
-                    k: v
-                    for k, v in flat_prior_samples.items()
-                    if k in self.hparams.inference_params
-                }
-                parameters = [
-                    torch.Tensor(parameters[k])
-                    for k in self.hparams.inference_params
-                ]
-                parameters = torch.vstack(parameters).T.to(device=self.device)
-                parameters = self.trainer.datamodule.scale(parameters)
-                parameters = parameters.reshape(n_pts_per_pix, n_pix, -1)
-                # store distances separately
-                distances.append(parameters[..., 2])
-                log_prob.append(self.model.log_prob(parameters, context))
-            log_prob = torch.vstack(log_prob)
-            distances = torch.vstack(distances)
-            p = torch.logsumexp(log_prob, dim=0).exp()
+            lon_mean = self.trainer.datamodule.scaler.mean[7]
+            lon_std = self.trainer.datamodule.scaler.std[7]
+            lat_mean = self.trainer.datamodule.scaler.mean[5]
+            lat_std = self.trainer.datamodule.scaler.std[5]
+            # scale lon, lat
+            lon = (lon - lon_mean) / lon_std
+            lat = (lat - lat_mean) / lat_std
 
-            d = torch.einsum("ij,ij->j", distances, log_prob.exp())
-            d_scaled = d * self.trainer.datamodule.scaler.std[2]
-            d_scaled += self.trainer.datamodule.scaler.mean[2]
+            n_pix = len(lon)
+            n_pts_per_pix = samples.shape[0] // n_pix
+            # drop last few samples and their densities
+            samples = samples[: -(n_pix * n_pts_per_pix)]
 
-            d_sq = torch.einsum("ij,ij->j", distances**2, log_prob.exp())
-            d_sq_scaled = d_sq * self.trainer.datamodule.scaler.std[2] ** 2
-            d_sq_scaled += (
-                2
-                * self.trainer.datamodule.scaler.mean[2]
-                * self.trainer.datamodule.scaler.std[2]
-                * d
-            )
-            d_sq_scaled += self.trainer.datamodule.scaler.mean[2] ** 2 * p
+            log_prob_orig = log_prob_orig[(n_pix * n_pts_per_pix) :]
+            log_prob_orig = log_prob_orig.reshape(n_pts_per_pix, n_pix)
+
+            dec_samples = lat.repeat(
+                n_pts_per_pix
+            )  # shape (n_pts_per_pix * n_pix)
+            phi_samples = lon.repeat(n_pts_per_pix)
+
+            # take original samples and replace the RA and Dec from pixels
+            parameters = torch.hstack(
+                samples[..., 0],
+                samples[..., 1],
+                samples[..., 2],
+                samples[..., 3],
+                samples[..., 4],
+                dec_samples,
+                samples[..., 6],
+                phi_samples,
+            )  # shape (n_pts_per_pix * n_pix, n_dim)
+            # reshape samples as (n_pts_per_pix, n_pix, n_dim)
+            parameters = parameters.reshape(n_pts_per_pix, n_pix, -1)
+            # store distances separately
+            log_prob_new = self.model.log_prob(
+                parameters, context
+            )  # shape (n_pts_per_pix, n_pix)
+            logw = log_prob_new - log_prob_orig
+
+            p = torch.logsumexp(logw, dim=0).exp()  # sum across n_pts_per_pix
+
+            # d = torch.einsum("ij,ij->j", distances, log_prob.exp())
+            # d_scaled = d * self.trainer.datamodule.scaler.std[2]
+            # d_scaled += self.trainer.datamodule.scaler.mean[2]
+
+            # d_sq = torch.einsum("ij,ij->j", distances**2, log_prob.exp())
+            # d_sq_scaled = d_sq * self.trainer.datamodule.scaler.std[2] ** 2
+            # d_sq_scaled += (
+            #     2
+            #     * self.trainer.datamodule.scaler.mean[2]
+            #     * self.trainer.datamodule.scaler.std[2]
+            #     * d
+            # )
+            # d_sq_scaled += self.trainer.datamodule.scaler.mean[2] ** 2 * p
 
             cells[-nrefine:] = zip(p, new_nside, new_ipix)
 
