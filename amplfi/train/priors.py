@@ -1,12 +1,13 @@
 from math import pi
 
 import torch
+from torch.distributions import Uniform
+
 from ml4gw import distributions
 from ml4gw.waveforms.conversion import (
     bilby_spins_to_lalsim,
     chirp_mass_and_mass_ratio_to_components,
 )
-from torch.distributions import Uniform
 
 from .data.utils.utils import ParameterSampler, ParameterTransformer
 
@@ -82,7 +83,7 @@ def precessing_cbc_prior() -> ParameterSampler:
         a_1, a_2 = parameters.pop("a_1"), parameters.pop("a_2")
         tilt_1, tilt_2 = parameters.pop("tilt_1"), parameters.pop("tilt_2")
         inclination = parameters.pop("inclination")
-        phi_jl, phi_12 = parameters.pop("phijl"), parameters.pop("phi_12")
+        phi_jl, phi_12 = parameters.pop("phi_jl"), parameters.pop("phi_12")
         phic = parameters.pop("phic")
 
         # TODO: hard coding f_ref = 40 here b/c not sure best way to link this
@@ -98,7 +99,7 @@ def precessing_cbc_prior() -> ParameterSampler:
             mass_1,
             mass_2,
             40,
-            0,
+            torch.zeros(len(inclination), device=inclination.device),
         )
 
         output = {}
@@ -113,6 +114,7 @@ def precessing_cbc_prior() -> ParameterSampler:
         output["distance"] = parameters["distance"]
         output["inclination"] = incl
         output["phic"] = phic
+        return output
 
     return ParameterSampler(
         conversion_function=conversion_function,
