@@ -44,10 +44,6 @@ class FlowModel(AmplfiModel):
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
 
-        # if checkpoint is not None, load in model weights;
-        # checkpint should only be specified here if running trainer.test
-        self.maybe_load_checkpoint(self.checkpoint)
-
     def forward(self, context, parameters) -> Tensor:
         return -self.model.log_prob(parameters, context=context)
 
@@ -180,5 +176,7 @@ class FlowModel(AmplfiModel):
         plt.xlabel("Searched Area (deg^2)")
         plt.ylabel("Cumulative Probability")
         plt.title("Searched Area Cumulative Distribution Function")
+        plt.grid()
+        plt.axhline(0.5, color="grey", linestyle="--")
         plt.savefig(self.outdir / "searched_area.png")
         np.save(self.outdir / "searched_area.npy", searched_areas)

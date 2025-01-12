@@ -304,7 +304,6 @@ class AmplfiDataset(pl.LightningDataModule):
             self.val_parameters = torch.column_stack(params)
 
         elif stage == "test":
-            self.test_background = self.load_background(self.test_fnames)
             self._logger.info(
                 f"Loaded background files {self.test_fnames} for testing"
             )
@@ -463,8 +462,6 @@ class AmplfiDataset(pl.LightningDataModule):
         )
 
     def test_dataloader(self):
-        # TODO: allow for multiple test segment files
-
         # build waveform dataloader
         cross, plus = self.test_waveforms
         waveform_dataset = torch.utils.data.TensorDataset(
@@ -478,14 +475,25 @@ class AmplfiDataset(pl.LightningDataModule):
             num_workers=10,
         )
 
-        background_dataset = InMemoryDataset(
-            self.test_background[0],
-            kernel_size=int(self.hparams.sample_rate * self.sample_length),
-            batch_size=1,
-            batches_per_epoch=len(waveform_dataloader),
-            coincident=False,
-            shuffle=False,
-        )
+        if len(self.test_fnames) == 1:
+            test_background = self.load_background(self.test_fnames)[0]
+            background_dataset = InMemoryDataset(
+                test_background,
+                kernel_size=int(self.hparams.sample_rate * self.sample_length),
+                batch_size=self.hparams.batch_size,
+                coincident=False,
+                batches_per_epoch=self.hparams.batches_per_epoch,
+                shuffle=True,
+            )
+        else:
+            background_dataset = Hdf5TimeSeriesDataset(
+                self.test_fnames,
+                channels=self.hparams.ifos,
+                kernel_size=int(self.hparams.sample_rate * self.sample_length),
+                batch_size=1,
+                batches_per_epoch=len(waveform_dataloader),
+                coincident=False,
+            )
 
         background_dataloader = torch.utils.data.DataLoader(
             background_dataset, pin_memory=False, num_workers=10
