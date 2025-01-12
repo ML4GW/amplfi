@@ -44,10 +44,6 @@ class FlowModel(AmplfiModel):
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
 
-        # if checkpoint is not None, load in model weights;
-        # checkpint should only be specified here if running trainer.test
-        self.maybe_load_checkpoint(self.checkpoint)
-
     def forward(self, context, parameters) -> Tensor:
         return -self.model.log_prob(parameters, context=context)
 
