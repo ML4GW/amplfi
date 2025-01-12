@@ -1,13 +1,12 @@
 from math import pi
 
 import torch
-from torch.distributions import Uniform
-
 from ml4gw import distributions
 from ml4gw.waveforms.conversion import (
     bilby_spins_to_lalsim,
     chirp_mass_and_mass_ratio_to_components,
 )
+from torch.distributions import Uniform
 
 from .data.utils.utils import ParameterSampler, ParameterTransformer
 
