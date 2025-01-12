@@ -16,16 +16,28 @@ trainer:
   check_val_every_n_epoch: 1
   log_every_n_steps: 50
   benchmark: false
+  callbacks:
+    - class_path: amplfi.train.callbacks.ModelCheckpoint
+      init_args:
+        monitor: "valid_loss"
+        save_top_k: 5
+        save_last: true
+        auto_insert_metric_name : false
+        mode: "min"
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: epoch
 model:
   class_path: amplfi.train.models.flow.FlowModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
-    # add path below when running `trainer.test` to load in a checkpoint
-    checkpoint: null
+    nside: 32
+    samples_per_event: 10000
+    num_corner: 50
     arch:
       class_path: amplfi.train.architectures.flows.MaskedAutoregressiveFlow
       init_args:
-        transform_type: "affine"
+        transform_type: "spline"
         hidden_features: 128
         num_transforms: 80
         num_blocks: 6
@@ -44,7 +56,7 @@ model:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
               init_args:
                 groups: 8
-    patience: null
+    patience: 40
     learning_rate: 0.00071444
     weight_decay: 0.0
 data:
@@ -55,7 +67,7 @@ data:
     highpass: 25
     sample_rate: 2048
     kernel_length: 3
-    fduration: 1
+    fduration: 2
     psd_length: 10
     fftlength: 2
     batches_per_epoch: 800

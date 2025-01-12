@@ -31,6 +31,9 @@ model:
   class_path: amplfi.train.models.flow.FlowModel
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
+    nside: 32
+    samples_per_event: 10000
+    num_corner: 50
     arch:
       class_path: amplfi.train.architectures.flows.InverseAutoregressiveFlow
       init_args:
@@ -62,7 +65,7 @@ data:
     highpass: 25
     sample_rate: 2048
     kernel_length: 5
-    fduration: 1
+    fduration: 2
     psd_length: 12
     fftlength: 2
     batches_per_epoch: 200
