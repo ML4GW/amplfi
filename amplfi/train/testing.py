@@ -5,6 +5,8 @@ import healpy as hp
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy as sp
+from astropy import io, table
+from astropy import units as u
 
 """Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
 
@@ -69,6 +71,41 @@ def fprime(z, s, m):
     return r
 
 
+def dist_moments_from_samples_impl(d):
+    # calculate moments and evaluate rho, m, s
+    d_2 = d**2
+    rho = d_2.sum()
+    d_3 = d**3
+    d_3 = d_3.sum()
+    d_4 = d**4
+    d_4 = d_4.sum()
+
+    m = d_3 / rho
+    s = np.sqrt(d_4 / rho - m**2)
+    return rho, m, s
+
+
+def distance_ansatz_impl(s, m, maxiter=10):
+    z0 = m / s
+    sol = sp.optimize.root_scalar(
+        f, args=(s, m), fprime=fprime, x0=z0, maxiter=maxiter
+    )
+    if not sol.converged:
+        dist_mu = float("inf")
+        dist_sigma = 1
+        dist_norm = 0
+    else:
+        z_hat = sol.root
+        dist_sigma = m * x2(z_hat) / x3(z_hat)
+        dist_mu = dist_sigma * z_hat
+        dist_norm = 1 / (Q(-z_hat) * dist_sigma**2 * x2(z_hat))
+    return dist_mu, dist_sigma, dist_norm
+
+
+def nest2uniq(nside, ipix):
+    return 4 * nside * nside + ipix
+
+
 class Result(bilby.result.Result):
     def get_sky_projection(self, nside: int):
         """Store a HEALPix array with the sky coordinates
@@ -78,9 +115,8 @@ class Result(bilby.result.Result):
         """
         ra = self.posterior["phi"]
         dec = self.posterior["dec"]
+        distance = self.posterior["distance"]
         theta = np.pi / 2 - dec
-
-        num_samples = len(ra)
 
         # mask out non physical samples;
         mask = (ra > -np.pi) * (ra < np.pi)
@@ -89,22 +125,77 @@ class Result(bilby.result.Result):
         ra = ra[mask]
         dec = dec[mask]
         theta = theta[mask]
+        distance = distance[mask]
+
+        num_samples = len(ra)
 
         # calculate number of samples in each pixel
         NPIX = hp.nside2npix(nside)
-        ipix = hp.ang2pix(nside, theta, ra)
-        ipix = np.sort(ipix)
+        ipix = hp.ang2pix(nside, theta, ra, nest=True)
         uniq, counts = np.unique(ipix, return_counts=True)
 
         # create empty map and then fill in non-zero pix with density
         # estimated by fraction of total samples in each pixel
         m = np.zeros(NPIX)
-        m[np.in1d(range(NPIX), uniq)] = counts / num_samples
+        m[np.in1d(range(NPIX), uniq)] = counts
+        post = m / num_samples
+        post /= hp.nside2pixarea(nside)
+        post /= u.sr
 
-        return m
+        # compute distance ansatz for pixels containing
+        # greater than a threshold number
+        min_samples_count_ansatz = 15  # FIXME: make configurable
+        good_ipix = uniq[counts > min_samples_count_ansatz]
+        dist_mu = []
+        dist_sigma = []
+        dist_norm = []
+        for _ipix in good_ipix:
+            _distance = distance[ipix == _ipix]
+            _rho, _m, _s = dist_moments_from_samples_impl(_distance)
+            _mu, _sigma, _norm = distance_ansatz_impl(_s, _m)
+            dist_mu.append(_mu)
+            dist_sigma.append(_sigma)
+            dist_norm.append(_norm)
+
+        mu = np.ones(NPIX) * np.inf
+        mu[np.in1d(range(NPIX), good_ipix)] = np.array(dist_mu)
+        mu *= u.Mpc
+        sigma = np.ones(NPIX)
+        sigma[np.in1d(range(NPIX), good_ipix)] = np.array(dist_sigma)
+        sigma *= u.Mpc
+        norm = np.zeros(NPIX)
+        norm[np.in1d(range(NPIX), good_ipix)] = np.array(dist_norm)
+        norm /= u.Mpc**2
+        uniq_ipix = nest2uniq(nside, np.arange(NPIX))
+
+        # convert to astropy table
+        t = table.Table(
+            [uniq_ipix, post, mu, sigma, norm],
+            names=["UNIQ", "PROBDENSITY", "DISTMU", "DISTSIGMA", "DISTNORM"],
+            copy=False,
+        )
+        fits_table = io.fits.table_to_hdu(t)
+        # headers required for ligo.skymap cli
+        fits_table.header.extend(
+            [
+                ("PIXTYPE", "HEALPIX", "HEALPIX pixelisation"),
+                (
+                    "ORDERING",
+                    "NUNIQ",
+                    "Pixel ordering scheme: RING, NESTED, or NUNIQ",
+                ),
+            ]
+        )
+        self.fits_table = fits_table  # attach as an attrib
+        return fits_table
 
     def calculate_searched_area(self, nside: int):
-        healpix = self.get_sky_projection(nside)
+        healpix = (
+            self.get_sky_projection(nside)
+            if not hasattr(self, "fits_table")
+            else self.fits_table
+        )
+        healpix = healpix.data["PROBDENSITY"]
 
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
@@ -123,7 +214,12 @@ class Result(bilby.result.Result):
         return searched_area
 
     def plot_mollview(self, nside: int, outpath: Path = None):
-        healpix = self.get_sky_projection(nside)
+        healpix = (
+            self.get_sky_projection(nside)
+            if not hasattr(self, "fits_table")
+            else self.fits_table
+        )
+        healpix = healpix.data["PROBDENSITY"]
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
         theta_inj = np.pi / 2 - dec_inj
@@ -138,37 +234,6 @@ class Result(bilby.result.Result):
 
         return fig
 
-    def get_dist_params(self):
-        """Calculate d^2, d^3, d^4 moments from posterior samples.
-        Use them to obtain rho, m, s. This is not conditioned
-        per pixel."""
-        d = self.posterior["distance"]
-        # calculate moments
-        d_2 = d**2
-        rho = d_2.sum()
-        d_3 = d**3
-        d_3 = d_3.sum()
-        d_4 = d**4
-        d_4 = d_4.sum()
-
-        m = d_3 / rho
-        s = np.sqrt(d_4 / rho - m**2)
-        return rho, m, s
-
-    def calculate_distance_ansatz(self, maxiter=10):
+    def calculate_distance_ansatz(self, nside, maxiter=10):
         """Calculate the DISTMU, DISTSIGMA, DISTNORM parameters"""
-        rho, m, s = self.get_dist_params()
-        z0 = m / s
-        sol = sp.optimize.root_scalar(f, args=(s, m), fprime=fprime, x0=z0)
-        if not sol.converged:
-            self.dist_mu = 0
-            self.dist_sigma = float("inf")
-            self.dist_norm = 0
-            return
-        z_hat = sol.root
-        sigma = m * x2(z_hat) / x3(z_hat)
-        mu = sigma * z_hat
-        N = 1 / (Q(-z_hat) * sigma**2 * x2(z_hat))
-        self.dist_mu = mu
-        self.dist_sigma = sigma
-        self.norm = N
+        _ = self.get_sky_projection(nside)  # set the fits_table attrib
