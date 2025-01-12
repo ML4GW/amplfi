@@ -1,4 +1,5 @@
 import logging
+import math
 import sys
 from pathlib import Path
 from typing import Optional
@@ -99,7 +100,7 @@ class AmplfiModel(pl.LightningModule):
         else:
             world_size = torch.distributed.get_world_size()
 
-        lr = self.hparams.learning_rate * world_size
+        lr = self.hparams.learning_rate * math.sqrt(world_size)
         optimizer = torch.optim.AdamW(
             self.model.parameters(),
             lr=lr,
