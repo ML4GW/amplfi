@@ -180,5 +180,7 @@ class FlowModel(AmplfiModel):
         plt.xlabel("Searched Area (deg^2)")
         plt.ylabel("Cumulative Probability")
         plt.title("Searched Area Cumulative Distribution Function")
+        plt.grid()
+        plt.axhline(0.5, color="grey", linestyle="--")
         plt.savefig(self.outdir / "searched_area.png")
         np.save(self.outdir / "searched_area.npy", searched_areas)

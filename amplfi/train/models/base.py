@@ -2,7 +2,6 @@ import logging
 import math
 import sys
 from pathlib import Path
-from typing import Optional
 
 import lightning.pytorch as pl
 import torch
@@ -35,7 +34,6 @@ class AmplfiModel(pl.LightningModule):
         weight_decay: float = 0.0,
         patience: int = 10,
         factor: float = 0.1,
-        checkpoint: Optional[Path] = None,
         verbose: bool = False,
     ):
         super().__init__()
@@ -45,21 +43,12 @@ class AmplfiModel(pl.LightningModule):
         self.outdir = outdir
         outdir.mkdir(exist_ok=True, parents=True)
         self.inference_params = inference_params
-        self.checkpoint = checkpoint
+
         self.save_hyperparameters()
 
         # initialize an unfit scaler here so that it is available
         # for the LightningModule to save and load from checkpoints
         self.scaler = ChannelWiseScaler(len(inference_params))
-
-    def maybe_load_checkpoint(self, checkpoint: Optional[Path] = None):
-        if checkpoint is not None:
-            self._logger.info(
-                f"Loading model weights from checkpoint path: {checkpoint}"
-            )
-            map_location = None if torch.cuda.is_available() else "cpu"
-            checkpoint = torch.load(checkpoint, map_location=map_location)
-            self.load_state_dict(checkpoint["state_dict"])
 
     def init_logging(self, verbose):
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
