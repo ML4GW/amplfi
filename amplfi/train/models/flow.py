@@ -176,9 +176,9 @@ class FlowModel(AmplfiModel):
             n_pix = len(lon)
             n_pts_per_pix = samples.shape[0] // n_pix
             # drop last few samples and their densities
-            samples = samples[: -(n_pix * n_pts_per_pix)]
+            samples = samples[: (n_pix * n_pts_per_pix)]
 
-            log_prob_orig = log_prob_orig[(n_pix * n_pts_per_pix) :]
+            log_prob_orig = log_prob_orig[: (n_pix * n_pts_per_pix)]
             log_prob_orig = log_prob_orig.reshape(n_pts_per_pix, n_pix)
 
             dec_samples = lat.repeat(
@@ -187,7 +187,7 @@ class FlowModel(AmplfiModel):
             phi_samples = lon.repeat(n_pts_per_pix)
 
             # take original samples and replace the RA and Dec from pixels
-            parameters = torch.hstack(
+            parameters = torch.vstack((
                 samples[..., 0],
                 samples[..., 1],
                 samples[..., 2],
@@ -196,7 +196,7 @@ class FlowModel(AmplfiModel):
                 dec_samples,
                 samples[..., 6],
                 phi_samples,
-            )  # shape (n_pts_per_pix * n_pix, n_dim)
+            )).mT  # shape (n_pts_per_pix * n_pix, n_dim)
             # reshape samples as (n_pts_per_pix, n_pix, n_dim)
             parameters = parameters.reshape(n_pts_per_pix, n_pix, -1)
             # store distances separately
@@ -205,7 +205,7 @@ class FlowModel(AmplfiModel):
             )  # shape (n_pts_per_pix, n_pix)
             logw = log_prob_new - log_prob_orig
 
-            p = torch.logsumexp(logw, dim=0).exp()  # sum across n_pts_per_pix
+            p = torch.logsumexp(logw, dim=0)  # sum across n_pts_per_pix
 
             # d = torch.einsum("ij,ij->j", distances, log_prob.exp())
             # d_scaled = d * self.trainer.datamodule.scaler.std[2]
@@ -220,17 +220,19 @@ class FlowModel(AmplfiModel):
             #     * d
             # )
             # d_sq_scaled += self.trainer.datamodule.scaler.mean[2] ** 2 * p
-
             cells[-nrefine:] = zip(p, new_nside, new_ipix)
 
-        post, nside, ipix = zip(*cells)
-        post = torch.stack(post)
+        logpost, nside, ipix = zip(*cells)
+        logpost = torch.stack(logpost)
         nside = np.stack(nside)
         ipix = np.stack(ipix)
-
         uniq = nest2uniq(nside, ipix)
-        post = post.cpu().numpy()
-        post /= np.sum(post * ah.nside_to_pixel_area(nside).to_value(u.sr))
+        logpost = logpost.cpu().numpy()
+        logpost += np.log(ah.nside_to_pixel_area(nside).to_value(u.sr))
+        shift = logpost.max()
+        post = np.exp(logpost - shift)
+        post /= post.sum()
+
         t = table.Table(
             [uniq, post], names=["UNIQ", "PROBDENSITY"], copy=False
         )
