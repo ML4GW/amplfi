@@ -30,7 +30,7 @@ class FlowModel(AmplfiModel):
         arch: FlowArchitecture,
         samples_per_event: int = 200000,
         num_corner: int = 10,
-        nside: int = 128,
+        nside: int = 32,
         **kwargs,
     ) -> None:
 
@@ -135,13 +135,14 @@ class FlowModel(AmplfiModel):
             descaled.cpu().numpy(),
             parameters.cpu().numpy()[0],
         )
-        result.calculate_distance_ansatz()
+        result.calculate_distance_ansatz(self.nside)
         self.test_results.append(result)
 
         # plot corner and skymap for a subset of the test results
         if self.idx < self.num_corner:
             skymap_filename = self.outdir / f"{self.idx}_mollview.png"
             corner_filename = self.outdir / f"{self.idx}_corner.png"
+            fits_filename = self.outdir / f"{self.idx}.fits"
             result.plot_corner(
                 save=True,
                 filename=corner_filename,
@@ -151,6 +152,7 @@ class FlowModel(AmplfiModel):
                 self.nside,
                 outpath=skymap_filename,
             )
+            result.fits_table.writeto(fits_filename, overwrite=True)
         self.idx += 1
 
     def on_test_epoch_end(self):
