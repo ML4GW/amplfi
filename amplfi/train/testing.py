@@ -225,7 +225,7 @@ class Result(bilby.result.Result):
         theta_inj = np.pi / 2 - dec_inj
         plt.close()
         # plot molleweide
-        fig = hp.mollview(healpix)
+        fig = hp.mollview(healpix, nest=True)
         hp.visufunc.projscatter(
             theta_inj, ra_inj, marker="x", color="red", s=150
         )
