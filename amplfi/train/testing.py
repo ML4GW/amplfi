@@ -140,7 +140,7 @@ class Result(bilby.result.Result):
         """Calculate the 3D skymap. This involves the probability
         per pixel along with DISTMU, DISTSIGMA, DISTNORM parameters"""
         fits_table = get_sky_projection(
-            self.posterior["ra"],
+            self.posterior["phi"],
             self.posterior["dec"],
             self.posterior["distance"],
             nside=nside,

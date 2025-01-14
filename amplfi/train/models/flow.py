@@ -31,6 +31,7 @@ class FlowModel(AmplfiModel):
         samples_per_event: int = 200000,
         num_corner: int = 10,
         nside: int = 32,
+        min_samples_per_pix: int = 15,
         **kwargs,
     ) -> None:
 
@@ -40,6 +41,7 @@ class FlowModel(AmplfiModel):
         self.samples_per_event = samples_per_event
         self.num_corner = num_corner
         self.nside = nside
+        self.min_samples_per_pix = min_samples_per_pix
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
@@ -135,7 +137,7 @@ class FlowModel(AmplfiModel):
             descaled.cpu().numpy(),
             parameters.cpu().numpy()[0],
         )
-        result.calculate_distance_ansatz(self.nside)
+        result.calculate_skymap(self.nside, self.min_samples_per_pix)
         self.test_results.append(result)
 
         # plot corner and skymap for a subset of the test results
@@ -149,7 +151,6 @@ class FlowModel(AmplfiModel):
                 levels=(0.5, 0.9),
             )
             result.plot_mollview(
-                self.nside,
                 outpath=skymap_filename,
             )
             result.fits_table.writeto(fits_filename, overwrite=True)

@@ -32,6 +32,7 @@ model:
   init_args:
     outdir: ${oc.env:AMPLFI_OUTDIR}
     nside: 32
+    min_samples_per_pix: 15
     samples_per_event: 10000
     num_corner: 50
     arch:
