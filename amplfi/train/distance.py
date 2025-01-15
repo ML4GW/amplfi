@@ -1,7 +1,7 @@
 """Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
 
-import numpy as np
-import scipy as sp
+import torch
+from ml4gw.constants import PI
 
 
 def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
@@ -30,7 +30,7 @@ def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
             fpx = fprime(x0, *args)
         else:
             fpx = (f(x0 + xtol, *args) - f(x0 - xtol, *args)) / (2 * xtol)
-        if abs(fpx) < np.finfo(float).eps:
+        if abs(fpx) < torch.finfo(float).eps:
             res["root"] = x0
             res["converged"] = True
             return res
@@ -44,11 +44,11 @@ def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
 
 
 def P(x):
-    return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
+    return torch.exp(-0.5 * x**2) / torch.sqrt(2 * PI)
 
 
 def Q(x):
-    return sp.special.erfc(x / np.sqrt(2)) / 2
+    return torch.special.erfc(x / torch.sqrt(2)) / 2
 
 
 def H(x):
@@ -120,7 +120,7 @@ def moments_from_samples_impl(d):
     d_4 = d_4.sum()
 
     m = d_3 / rho
-    s = np.sqrt(d_4 / rho - m**2)
+    s = torch.sqrt(d_4 / rho - m**2)
     return rho, m, s
 
 
