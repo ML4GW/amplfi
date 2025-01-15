@@ -1,6 +1,46 @@
 """Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
+
 import numpy as np
 import scipy as sp
+
+
+def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
+    """
+    Find a root of a scalar function.
+
+    Args:
+        f (callable): The function whose root is to be found.
+        x0 (float): Initial guess.
+        args (tuple, optional): Extra arguments passed to the objective
+        function `f` and its derivative(s).
+        fprime (callable, optional): The derivative of the function.
+        xtol (float, optional): The tolerance for the root.
+        maxiter (int, optional): The maximum number of iterations.
+
+    Returns:
+        dict: A dictionary containing the root, and whether the optimization
+        was successful.
+    """
+    if x0 is None:
+        raise ValueError("x0 must be provided")
+    res = {"converged": False, "root": None}
+    for _ in range(maxiter):
+        fx = f(x0, *args)
+        if fprime is not None:
+            fpx = fprime(x0, *args)
+        else:
+            fpx = (f(x0 + xtol, *args) - f(x0 - xtol, *args)) / (2 * xtol)
+        if abs(fpx) < np.finfo(float).eps:
+            res["root"] = x0
+            res["converged"] = True
+            return res
+        x1 = x0 - fx / fpx
+        if abs(x1 - x0) < xtol:
+            res["root"] = x1
+            res["converged"] = True
+            return res
+        x0 = x1
+    return res
 
 
 def P(x):
@@ -96,15 +136,13 @@ def ansatz_impl(s, m, maxiter=10):
             Conditional distance mean per pixel
     """
     z0 = m / s
-    sol = sp.optimize.root_scalar(
-        f, args=(s, m), fprime=fprime, x0=z0, maxiter=maxiter
-    )
-    if not sol.converged:
+    sol = root_scalar(f, z0, args=(s, m), fprime=fprime, maxiter=maxiter)
+    if not sol["converged"]:
         dist_mu = float("inf")
         dist_sigma = 1
         dist_norm = 0
     else:
-        z_hat = sol.root
+        z_hat = sol["root"]
         dist_sigma = m * x2(z_hat) / x3(z_hat)
         dist_mu = dist_sigma * z_hat
         dist_norm = 1 / (Q(-z_hat) * dist_sigma**2 * x2(z_hat))
