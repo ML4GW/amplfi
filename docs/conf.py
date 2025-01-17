@@ -33,6 +33,7 @@ release = dist.metadata["Version"]
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.extlinks",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx_tabs.tabs",
@@ -40,6 +41,10 @@ extensions = [
     "sphinx.ext.githubpages",
     "myst_parser",
 ]
+
+extlinks = {
+    "doi": ("https://dx.doi.org/%s", "doi:%s"),
+}
 
 myst_enable_extensions = [
     "amsmath",
