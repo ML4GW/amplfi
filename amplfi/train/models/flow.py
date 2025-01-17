@@ -14,6 +14,7 @@ Tensor = torch.Tensor
 class FlowModel(AmplfiModel):
     """
     A LightningModule for training normalizing flows
+
     Args:
         arch:
             Neural network architecture to train.

@@ -64,7 +64,14 @@ def fprime(z, s, m):
 
 
 def moments_from_samples_impl(d):
-    # calculate moments and evaluate rho, m, s
+    """
+    Given distance samples, assumed to be posterior
+    samples, compute distance moments in monte-carlo sense.
+
+    Args:
+        d:
+           Distance samples
+    """
     d_2 = d**2
     rho = d_2.sum()
     d_3 = d**3
@@ -78,8 +85,16 @@ def moments_from_samples_impl(d):
 
 
 def ansatz_impl(s, m, maxiter=10):
-    """Given m and s calculated from sample moments,
-    back out the mu, sigma, and norm parameters."""
+    """Given s and m parameters (see Eqs. 1-3 of
+    :doi:`10.3847/0067-0049/226/1/10`) solve for
+    mu, sigma, and norm parameters.
+
+    Args:
+        s:
+            Std. dev calculated from moments
+        m:
+            Conditional distance mean per pixel
+    """
     z0 = m / s
     sol = sp.optimize.root_scalar(
         f, args=(s, m), fprime=fprime, x0=z0, maxiter=maxiter
