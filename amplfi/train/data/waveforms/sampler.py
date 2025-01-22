@@ -34,6 +34,7 @@ class WaveformSampler(torch.nn.Module):
 
     def __init__(
         self,
+        *args,
         fduration: float,
         kernel_length: float,
         sample_rate: float,
@@ -43,9 +44,10 @@ class WaveformSampler(torch.nn.Module):
         phi: Distribution,
         jitter: Optional[float] = None,
         parameter_transformer: Optional[ParameterTransformer] = None,
+        **kwargs,
     ) -> None:
 
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.parameter_transformer = parameter_transformer or (lambda x: x)
         self.inference_params = inference_params
         self.fduration = fduration

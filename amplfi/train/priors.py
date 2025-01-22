@@ -102,6 +102,8 @@ def precessing_cbc_prior() -> ParameterSampler:
         )
 
         output = {}
+        output["mass_1"] = mass_1
+        output["mass_2"] = mass_2
         output["chirp_mass"] = chirp_mass
         output["mass_ratio"] = mass_ratio
         output["s1x"] = s1x
