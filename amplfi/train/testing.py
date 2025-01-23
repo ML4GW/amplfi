@@ -116,7 +116,14 @@ class Result(bilby.result.Result):
         searched_area = num_pix_before_injection * hp.nside2pixarea(
             nside, degrees=True
         )
-        return searched_area
+        healpix_cumsum = np.cumsum(healpix[sorted_idxs])
+        fifty = np.argmin(healpix_cumsum < 0.5) * hp.nside2pixarea(
+            nside, degrees=True
+        )
+        ninety = np.argmin(healpix_cumsum < 0.9) * hp.nside2pixarea(
+            nside, degrees=True
+        )
+        return searched_area, fifty, ninety
 
     def plot_mollview(self, outpath: Path = None):
         if not hasattr(self, "fits_table"):
