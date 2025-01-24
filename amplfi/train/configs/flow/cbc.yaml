@@ -92,8 +92,8 @@ data:
         phi: 
           class_path: torch.distributions.Uniform
           init_args:
-            low: -3.14
-            high: 3.14
+            low: 0
+            high: 6.28
         num_val_waveforms: 10000
         num_test_waveforms: 200
         approximant: ml4gw.waveforms.IMRPhenomD

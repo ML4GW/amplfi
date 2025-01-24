@@ -168,9 +168,15 @@ class FlowModel(AmplfiModel):
 
         # searched area cum hist
         searched_areas = []
+        fifty_percent_areas = []
+        ninety_percent_areas = []
         for result in self.test_results:
-            searched_area = result.calculate_searched_area(self.nside)
+            searched_area, fifty, ninety = result.calculate_searched_area(
+                self.nside
+            )
             searched_areas.append(searched_area)
+            fifty_percent_areas.append(fifty)
+            ninety_percent_areas.append(ninety)
         searched_areas = np.sort(searched_areas)
         counts = np.arange(1, len(searched_areas) + 1) / len(searched_areas)
 
@@ -184,3 +190,15 @@ class FlowModel(AmplfiModel):
         plt.axhline(0.5, color="grey", linestyle="--")
         plt.savefig(self.outdir / "searched_area.png")
         np.save(self.outdir / "searched_area.npy", searched_areas)
+
+        plt.close()
+        plt.figure(figsize=(10, 6))
+        mm, bb, pp = plt.hist(
+            fifty_percent_areas, label="50 percent area", bins=50
+        )
+        _, _, _ = plt.hist(
+            ninety_percent_areas, label="90 percent area", bins=bb
+        )
+        plt.xlabel("Sq. deg.")
+        plt.legend()
+        plt.savefig(self.outdir / "fifty_ninety_areas.png")
