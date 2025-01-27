@@ -25,7 +25,7 @@ def nside2pixarea(nside, degrees=True):
     pixarea = 4 * PI / nside2npix(nside)
 
     if degrees:
-        pixarea = torch.rad2deg(torch.rad2deg(pixarea))
+        pixarea = pixarea * (180.0 / PI) ** 2
 
     return pixarea
 
@@ -47,7 +47,7 @@ def isnsideok(nside, nest=False):
 
 
 def check_nside(nside, nest=False):
-    """Raises exception is nside is not valid"""
+    """Raises exception if nside is not valid"""
     if not torch.all(isnsideok(nside, nest=nest)):
         raise ValueError(
             f"{nside} is not a valid nside parameter (must be a power of 2,\
@@ -104,16 +104,22 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
 
     # calculate number of samples in each pixel
     NPIX = nside2npix(nside)
-    ipix = ang2pix(nside, theta, ra, nest=True)
+
+    device = theta.device
+    NPIX_arange = torch.arange(NPIX, device=device)
+
+    theta, ra = theta.to("cpu"), ra.to("cpu")
+    ipix = hp.ang2pix(nside, theta, ra, nest=True)
+    theta, ra, ipix = theta.to(device), ra.to(device), ipix.to(device)
     uniq, counts = torch.unique(ipix, return_counts=True)
 
     # create empty map and then fill in non-zero pix with density
     # estimated by fraction of total samples in each pixel
-    m = torch.zeros(NPIX)
-    m[torch.isin(range(NPIX), uniq)] = counts
+    m = torch.zeros(NPIX, device=device)
+    m[torch.isin(NPIX_arange, uniq)] = counts.to(m.dtype)
     post = m / num_samples
     post /= nside2pixarea(nside)
-    post /= u.sr
+    # post /= u.sr #TODO: cant add units to torch tensors
 
     # compute distance ansatz for pixels containing
     # greater than a threshold number
@@ -129,16 +135,29 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
         dist_sigma.append(_sigma)
         dist_norm.append(_norm)
 
-    mu = torch.ones(NPIX) * torch.inf
-    mu[torch.isin(range(NPIX), good_ipix)] = torch.tensor(dist_mu)
-    mu *= u.Mpc
-    sigma = torch.ones(NPIX)
-    sigma[torch.isin(range(NPIX), good_ipix)] = torch.tensor(dist_sigma)
-    sigma *= u.Mpc
-    norm = torch.zeros(NPIX)
-    norm[torch.isin(range(NPIX), good_ipix)] = torch.tensor(dist_norm)
-    norm /= u.Mpc**2
-    uniq_ipix = nest2uniq(nside, torch.arange(NPIX))
+    mu = torch.ones(NPIX, device=device) * torch.inf
+    mu[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
+        dist_mu, device=device, dtype=mu.dtype
+    )
+    # mu *= u.Mpc #TODO: cant add units to torch tensors
+    sigma = torch.ones(NPIX, device=device)
+    sigma[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
+        dist_sigma, device=device, dtype=sigma.dtype
+    )
+    # sigma *= u.Mpc #TODO: cant add units to torch tensors
+    norm = torch.zeros(NPIX, device=device)
+    norm[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
+        dist_norm, device=device, dtype=norm.dtype
+    )
+    # norm /= u.Mpc**2 #TODO: cant add units to torch tensors
+    uniq_ipix = nest2uniq(nside, NPIX_arange)
+
+    breakpoint()
+    uniq_ipix = uniq_ipix.cpu().numpy()
+    post = post.cpu().numpy() * u.sr
+    mu = mu.cpu().numpy() * u.Mpc
+    sigma = sigma.cpu().numpy() * u.Mpc
+    norm = norm.cpu().numpy() / (u.Mpc**2)
 
     # convert to astropy table
     t = table.Table(
@@ -170,7 +189,7 @@ class Result(bilby.result.Result):
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
         theta_inj = PI / 2 - dec_inj
-        true_ipix = ang2pix(nside, theta_inj, ra_inj)
+        true_ipix = hp.ang2pix(nside, theta_inj, ra_inj)
 
         sorted_idxs = torch.argsort(healpix)[
             ::-1
