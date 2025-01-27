@@ -30,7 +30,7 @@ def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
             fpx = fprime(x0, *args)
         else:
             fpx = (f(x0 + xtol, *args) - f(x0 - xtol, *args)) / (2 * xtol)
-        if abs(fpx) < torch.finfo(float).eps:
+        if abs(fpx) < torch.finfo(torch.float).eps:
             res["root"] = x0
             res["converged"] = True
             return res
@@ -44,11 +44,16 @@ def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
 
 
 def P(x):
-    return torch.exp(-0.5 * x**2) / torch.sqrt(2 * PI)
+    return torch.exp(-0.5 * x**2) / torch.sqrt(
+        torch.tensor(2 * PI, device=x.device)
+    )
 
 
 def Q(x):
-    return torch.special.erfc(x / torch.sqrt(2)) / 2
+    return (
+        torch.special.erfc(x / torch.sqrt(torch.tensor(2, device=x.device)))
+        / 2
+    )
 
 
 def H(x):
