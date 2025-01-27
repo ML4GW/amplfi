@@ -119,7 +119,6 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     m[torch.isin(NPIX_arange, uniq)] = counts.to(m.dtype)
     post = m / num_samples
     post /= nside2pixarea(nside)
-    # post /= u.sr #TODO: cant add units to torch tensors
 
     # compute distance ansatz for pixels containing
     # greater than a threshold number
@@ -139,20 +138,19 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     mu[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
         dist_mu, device=device, dtype=mu.dtype
     )
-    # mu *= u.Mpc #TODO: cant add units to torch tensors
+
     sigma = torch.ones(NPIX, device=device)
     sigma[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
         dist_sigma, device=device, dtype=sigma.dtype
     )
-    # sigma *= u.Mpc #TODO: cant add units to torch tensors
+
     norm = torch.zeros(NPIX, device=device)
     norm[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
         dist_norm, device=device, dtype=norm.dtype
     )
-    # norm /= u.Mpc**2 #TODO: cant add units to torch tensors
+
     uniq_ipix = nest2uniq(nside, NPIX_arange)
 
-    breakpoint()
     uniq_ipix = uniq_ipix.cpu().numpy()
     post = post.cpu().numpy() * u.sr
     mu = mu.cpu().numpy() * u.Mpc
