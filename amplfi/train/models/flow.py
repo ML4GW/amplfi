@@ -110,7 +110,6 @@ class FlowModel(AmplfiModel):
         for idx, k in enumerate(self.inference_params):
             posterior[k] = samples.T[idx].flatten()
 
-        breakpoint()
         # posterior = pd.DataFrame(posterior)
 
         r = Result(

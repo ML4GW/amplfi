@@ -155,7 +155,7 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     post = post.cpu().numpy() * u.sr
     mu = mu.cpu().numpy() * u.Mpc
     sigma = sigma.cpu().numpy() * u.Mpc
-    norm = norm.cpu().numpy() / (u.Mpc**2)
+    norm = norm.cpu().numpy() / u.Mpc / u.Mpc
 
     # convert to astropy table
     t = table.Table(
