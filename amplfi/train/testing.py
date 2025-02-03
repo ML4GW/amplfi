@@ -4,7 +4,7 @@ import bilby
 import healpy as hp
 import matplotlib.pyplot as plt
 import ml4gw.utils.healpix as mlhp
-import torch
+import numpy as np
 from astropy import io, table
 from astropy import units as u
 from ml4gw.constants import PI
@@ -25,7 +25,7 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     """
     theta = PI / 2 - dec
     # mask out non physical samples;
-    mask = (ra > -PI) * (ra < PI)
+    mask = (ra > 0) * (ra < 2 * PI)
     mask &= (theta > 0) * (theta < PI)
 
     ra = ra[mask]
@@ -36,22 +36,17 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     num_samples = len(ra)
 
     # calculate number of samples in each pixel
-    NPIX = mlhp.nside2npix(nside)
-
-    device = theta.device
-    NPIX_arange = torch.arange(NPIX, device=device)
-
-    theta, ra = theta.to("cpu"), ra.to("cpu")
+    NPIX = int(mlhp.nside2npix(nside))
     ipix = hp.ang2pix(nside, theta, ra, nest=True)
-    theta, ra, ipix = theta.to(device), ra.to(device), ipix.to(device)
-    uniq, counts = torch.unique(ipix, return_counts=True)
+    uniq, counts = np.unique(ipix, return_counts=True)
 
     # create empty map and then fill in non-zero pix with density
     # estimated by fraction of total samples in each pixel
-    m = torch.zeros(NPIX, device=device)
-    m[torch.isin(NPIX_arange, uniq)] = counts.to(m.dtype)
+    m = np.zeros(NPIX)
+    m[np.in1d(range(NPIX), uniq)] = counts
     post = m / num_samples
     post /= mlhp.nside2pixarea(nside)
+    post /= u.sr
 
     # compute distance ansatz for pixels containing
     # greater than a threshold number
@@ -67,28 +62,16 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
         dist_sigma.append(_sigma)
         dist_norm.append(_norm)
 
-    mu = torch.ones(NPIX, device=device) * torch.inf
-    mu[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
-        dist_mu, device=device, dtype=mu.dtype
-    )
-
-    sigma = torch.ones(NPIX, device=device)
-    sigma[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
-        dist_sigma, device=device, dtype=sigma.dtype
-    )
-
-    norm = torch.zeros(NPIX, device=device)
-    norm[torch.isin(NPIX_arange, good_ipix)] = torch.tensor(
-        dist_norm, device=device, dtype=norm.dtype
-    )
-
-    uniq_ipix = mlhp.nest2uniq(nside, NPIX_arange)
-
-    uniq_ipix = uniq_ipix.cpu().numpy()
-    post = post.cpu().numpy() * u.sr
-    mu = mu.cpu().numpy() * u.Mpc
-    sigma = sigma.cpu().numpy() * u.Mpc
-    norm = norm.cpu().numpy() / u.Mpc / u.Mpc
+    mu = np.ones(NPIX) * np.inf
+    mu[np.in1d(range(NPIX), good_ipix)] = np.array(dist_mu)
+    mu *= u.Mpc
+    sigma = np.ones(NPIX)
+    sigma[np.in1d(range(NPIX), good_ipix)] = np.array(dist_sigma)
+    sigma *= u.Mpc
+    norm = np.zeros(NPIX)
+    norm[np.in1d(range(NPIX), good_ipix)] = np.array(dist_norm)
+    norm /= u.Mpc**2
+    uniq_ipix = mlhp.nest2uniq(nside, np.arange(NPIX))
 
     # convert to astropy table
     t = table.Table(
@@ -120,18 +103,25 @@ class Result(bilby.result.Result):
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
         theta_inj = PI / 2 - dec_inj
-        true_ipix = hp.ang2pix(nside, theta_inj, ra_inj)
+        true_ipix = hp.ang2pix(nside, theta_inj, ra_inj, nest=True)
 
-        sorted_idxs = torch.argsort(healpix)[
+        sorted_idxs = np.argsort(healpix)[
             ::-1
         ]  # sort pixels in descending order
         # count number of pixels before hitting the pixel with injection
         # in the sorted array
-        num_pix_before_injection = 1 + torch.argmax(sorted_idxs == true_ipix)
-        searched_area = num_pix_before_injection * mlhp.nside2pixarea(
+        num_pix_before_injection = 1 + np.argmax(sorted_idxs == true_ipix)
+        searched_area = num_pix_before_injection * hp.nside2pixarea(
             nside, degrees=True
         )
-        return searched_area
+        healpix_cumsum = np.cumsum(healpix[sorted_idxs])
+        fifty = np.argmin(healpix_cumsum < 0.5) * hp.nside2pixarea(
+            nside, degrees=True
+        )
+        ninety = np.argmin(healpix_cumsum < 0.9) * hp.nside2pixarea(
+            nside, degrees=True
+        )
+        return searched_area, fifty, ninety
 
     def plot_mollview(self, outpath: Path = None):
         if not hasattr(self, "fits_table"):
