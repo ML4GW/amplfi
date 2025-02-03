@@ -1,21 +1,23 @@
 """Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
 
+import numpy as np
+import scipy as sp
 import torch
 from ml4gw.constants import PI
-from ml4gw.optimize import root_scalar
 
 
 def P(x):
-    return torch.exp(-0.5 * x**2) / torch.sqrt(
-        torch.tensor(2 * PI, device=x.device)
-    )
+    if isinstance(x, torch.Tensor):
+        return torch.exp(-0.5 * x**2) / np.sqrt(2 * PI)
+    else:
+        return np.exp(-0.5 * x**2) / np.sqrt(2 * PI)
 
 
 def Q(x):
-    return (
-        torch.special.erfc(x / torch.sqrt(torch.tensor(2, device=x.device)))
-        / 2
-    )
+    if isinstance(x, torch.Tensor):
+        return 0.5 * torch.special.erfc(x / np.sqrt(2))
+    else:
+        return 0.5 * sp.special.erfc(x / np.sqrt(2))
 
 
 def H(x):
@@ -87,7 +89,7 @@ def moments_from_samples_impl(d):
     d_4 = d_4.sum()
 
     m = d_3 / rho
-    s = torch.sqrt(d_4 / rho - m**2)
+    s = np.sqrt(d_4 / rho - m**2)
     return rho, m, s
 
 
@@ -103,13 +105,15 @@ def ansatz_impl(s, m, maxiter=10):
             Conditional distance mean per pixel
     """
     z0 = m / s
-    sol = root_scalar(f, z0, args=(s, m), fprime=fprime, maxiter=maxiter)
-    if not sol["converged"]:
+    sol = sp.optimize.root_scalar(
+        f, args=(s, m), fprime=fprime, x0=z0, maxiter=maxiter
+    )
+    if not sol.converged:
         dist_mu = float("inf")
         dist_sigma = 1
         dist_norm = 0
     else:
-        z_hat = sol["root"]
+        z_hat = sol.root
         dist_sigma = m * x2(z_hat) / x3(z_hat)
         dist_mu = dist_sigma * z_hat
         dist_norm = 1 / (Q(-z_hat) * dist_sigma**2 * x2(z_hat))
