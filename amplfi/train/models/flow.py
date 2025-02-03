@@ -110,7 +110,7 @@ class FlowModel(AmplfiModel):
         for idx, k in enumerate(self.inference_params):
             posterior[k] = samples.T[idx].flatten()
 
-        # posterior = pd.DataFrame(posterior)
+        posterior = pd.DataFrame(posterior)
 
         r = Result(
             label="PEModel",
