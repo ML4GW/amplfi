@@ -80,6 +80,7 @@ class AmplfiDataset(pl.LightningDataModule):
         waveform_sampler: WaveformSampler,
         fftlength: Optional[int] = None,
         min_valid_duration: float = 10000,
+        num_files_per_batch: Optional[int] = None,
         verbose: bool = False,
     ):
         super().__init__()
@@ -409,6 +410,7 @@ class AmplfiDataset(pl.LightningDataModule):
                 batch_size=self.hparams.batch_size,
                 batches_per_epoch=self.hparams.batches_per_epoch,
                 coincident=False,
+                num_files_per_batch=self.hparams.num_files_per_batch,
             )
 
         self._logger.info(
