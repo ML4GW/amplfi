@@ -75,6 +75,7 @@ data:
     batch_size: 512
     ifos: ["H1", "L1"]
     min_valid_duration: 10000.0
+    num_files_per_batch: 10
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:
