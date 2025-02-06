@@ -17,6 +17,7 @@ class CBCGenerator(WaveformGenerator):
         **kwargs,
     ):
         """
+<<<<<<< HEAD
         A lightweight wrapper around
         `ml4gw.waveforms.generator.TimeDomainCBCWaveformGenerator`
         to make it compatible with
@@ -42,6 +43,9 @@ class CBCGenerator(WaveformGenerator):
             **kwargs:
                 Keyword arguments passed to
                 `amplfi.train.data.waveforms.generator.WaveformGenerator`
+=======
+        A torch module for generating CBC waveforms on the fly.
+>>>>>>> 7acdd8f (add time domain sampler)
         """
         super().__init__(*args, **kwargs)
         self.right_pad = right_pad
@@ -61,5 +65,9 @@ class CBCGenerator(WaveformGenerator):
         if self.time_translator is not None:
             waveforms = self.time_translator(waveforms)
         hc, hp = waveforms.transpose(1, 0)
+<<<<<<< HEAD
 
         return hc.float(), hp.float()
+=======
+        return hc, hp
+>>>>>>> 7acdd8f (add time domain sampler)

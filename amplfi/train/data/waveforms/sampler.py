@@ -62,6 +62,8 @@ class WaveformSampler(torch.nn.Module):
 
         self.sample_rate = sample_rate
         self.dec, self.psi, self.phi = dec, psi, phi
+        if jitter is not None:
+            print(f"Using jitter: {jitter}")
         self.time_translator = (
             TimeTranslator(jitter, sample_rate) if jitter is not None else None
         )
