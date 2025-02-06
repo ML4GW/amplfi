@@ -10,8 +10,8 @@ authors = [
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
 numpy = "<2.0.0"
-lightning = "<=2.2.1"
 ml4gw = ">=0.7.0"
+lightning = ">=2.5.0"
 h5py = "^3.10.0"
 ray = {version = "^2.38.0", extras = ["default", "tune"]}
 bilby = "^2.2.3"
@@ -20,13 +20,14 @@ pyro-ppl = "^1.9.0"
 jsonargparse = {version = "^4.27.1", extras = ["signatures"]}
 urllib3 = ">=1.25.4,<1.27"
 omegaconf = "^2.3.0"
-lightray = ">=0.2.3"
+#lightray = ">=0.2.3"
 law = ">=0.1.19"
 mldatafind = ">=0.1.3"
 luigi = "^3.5.1"
 gwpy="3.0.8"
 wandb = "^0.18.5"
-torch = "<2.5.0"
+torch = ">=2.5.0"
+s3fs = "^2024.12.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"

@@ -27,11 +27,11 @@ def sg_prior() -> ParameterSampler:
     )
 
 
-def to_lalsimulation_parameters(
+def precessing_to_lalsimulation_parameters(
     parameters: dict[str, torch.Tensor]
 ) -> dict[str, torch.Tensor]:
     """
-    Convert to lalsimulation parameters
+    Convert precessing spin parameters to lalsimulation parameters
     """
     chirp_mass, mass_ratio = parameters.pop("chirp_mass"), parameters.pop(
         "mass_ratio"
@@ -79,13 +79,51 @@ def to_lalsimulation_parameters(
     return output
 
 
+def aligned_to_lalsimulation_parameters(
+    parameters: dict[str, torch.Tensor]
+) -> dict[str, torch.Tensor]:
+    """
+    Convert precessing spin parameters to lalsimulation parameters
+    """
+    chirp_mass, mass_ratio = parameters.pop("chirp_mass"), parameters.pop(
+        "mass_ratio"
+    )
+    mass_1, mass_2 = chirp_mass_and_mass_ratio_to_components(
+        chirp_mass, mass_ratio
+    )
+
+    s1x = torch.zeros_like(mass_1)
+    s1y = torch.zeros_like(mass_1)
+
+    s2x = torch.zeros_like(mass_1)
+    s2y = torch.zeros_like(mass_1)
+
+    output = {}
+    output["chi1"] = parameters["chi1"]
+    output["chi2"] = parameters["chi2"]
+    output["mass_1"] = mass_1
+    output["mass_2"] = mass_2
+    output["chirp_mass"] = chirp_mass
+    output["mass_ratio"] = mass_ratio
+    output["s1x"] = s1x
+    output["s1y"] = s1y
+    output["s1z"] = parameters.pop("chi1")
+    output["s2x"] = s2x
+    output["s2y"] = s2y
+    output["s2z"] = parameters.pop("chi2")
+    output["distance"] = parameters.pop("distance")
+    output["inclination"] = parameters.pop("inclination")
+    output["phic"] = parameters.pop("phic")
+    return output
+
+
 # priors and parameter transformers for cbc use case
 def aligned_cbc_prior() -> ParameterSampler:
     """
     Prior for aligned-spin CBC waveform generation, e.g with IMRPhenomD
     """
     return ParameterSampler(
-        conversion_function=to_lalsimulation_parameters,
+        conversion_function=aligned_to_lalsimulation_parameters,
         chirp_mass=Uniform(
             torch.as_tensor(10, dtype=torch.float32),
             torch.as_tensor(100, dtype=torch.float32),
@@ -123,7 +161,7 @@ def precessing_cbc_prior() -> ParameterSampler:
     """
 
     return ParameterSampler(
-        conversion_function=to_lalsimulation_parameters,
+        conversion_function=precessing_to_lalsimulation_parameters,
         chirp_mass=Uniform(
             torch.as_tensor(10, dtype=torch.float32),
             torch.as_tensor(100, dtype=torch.float32),

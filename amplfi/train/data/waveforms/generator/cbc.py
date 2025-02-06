@@ -18,21 +18,23 @@ class CBCGenerator(WaveformGenerator):
     ):
         """
         A torch module for generating CBC waveforms on the fly.
-
-        Args:
-            waveform_generator:
-                A TimeDomainCBCWaveformGenerator object
         """
         super().__init__(*args, **kwargs)
+        self.right_pad = right_pad
+        self.approximant = approximant
         self.waveform_generator = TimeDomainCBCWaveformGenerator(
             approximant,
             self.sample_rate,
             self.duration,
             f_min,
             f_ref,
-            right_pad,
+            right_pad + self.fduration / 2,
         )
 
     def forward(self, **parameters) -> torch.Tensor:
         hc, hp = self.waveform_generator(**parameters)
+        waveforms = torch.stack([hc, hp], dim=1)
+        if self.time_translator is not None:
+            waveforms = self.time_translator(waveforms)
+        hc, hp = waveforms.transpose(1, 0)
         return hc, hp
