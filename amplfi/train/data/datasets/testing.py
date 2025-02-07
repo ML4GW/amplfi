@@ -3,6 +3,7 @@ Additional Lightning DataModules for testing
 amplfi models across various usecases
 """
 from pathlib import Path
+from typing import Optional
 
 import h5py
 import numpy as np
@@ -167,22 +168,59 @@ class ParameterTestingDataset(FlowDataset):
     Args:
         dataset_path:
             Path to hdf5 dataset containing parameters
-            to inject.
+            to inject. Should contain hdf5 datasets
+            for each of the waveform generation parameters
+        waveform_generation_parameters:
+            An optional list of parameters that is used for generating
+            waveforms. If left as `None`, the waveform generation
+            parameters will be assumed to be the keys from the
+            `waveform_sampler.parameter_sampler` object.
     """
 
-    def __init__(self, dataset_path: Path, *args, **kwargs):
+    def __init__(
+        self,
+        dataset_path: Path,
+        *args,
+        waveform_generation_parameters: Optional[list[str]] = None,
+        **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.dataset_path = dataset_path
+
+        # by default, assume waveform generation parameters are those
+        # specified in the parameter sampler parameter keys;
+        # otherwise, use user passed parameters
+        prior_keys = list(
+            self.waveform_sampler.parameter_sampler.parameters.keys()
+        )
+
+        self.waveform_generation_parameters = (
+            prior_keys
+            if waveform_generation_parameters is None
+            else waveform_generation_parameters
+        )
+
+        # only apply parameter sampler conversion function
+        # if the waveform_generation_parameters were not specified
+        self.convert = waveform_generation_parameters is None
         self.i = 0
 
-    def test_dataloader(self) -> torch.utils.data.DataLoader:
+    def setup(self, stage: str):
+        world_size, rank = self.get_world_size_and_rank()
+        self._logger = self.get_logger(world_size, rank)
+        if stage != "test":
+            raise ValueError(
+                "ParameterTestingDataset should only be used for testing"
+            )
+
         parameters = {}
+        load = self.hparams.inference_params + ["ra", "dec", "psi", "gpstime"]
+        if self.waveform_generation_parameters is not None:
+            load += self.waveform_generation_parameters
 
         with h5py.File(self.dataset_path) as f:
-            for parameter in self.hparams.inference_params + ["ra", "gpstime"]:
-                # skip phi since these are proper injections
-                # where we'll need to convert ra to phi
-                # given the gpstime
+            for parameter in load:
+
                 if parameter == "phi":
                     continue
 
@@ -191,11 +229,13 @@ class ParameterTestingDataset(FlowDataset):
                 )
 
         # apply conversion function to parameters
-        waveform_parameters = (
-            self.waveform_sampler.parameter_sampler.conversion_function(
-                **parameters
+        # if we're generating from
+        if self.convert:
+            parameters = (
+                self.waveform_sampler.parameter_sampler.conversion_function(
+                    parameters
+                )
             )
-        )
 
         # convert ra to phi
         parameters["phi"] = torch.tensor(
@@ -205,17 +245,28 @@ class ParameterTestingDataset(FlowDataset):
         )
 
         # generate cross and plus using our infrastructure
-        cross, plus = self.waveform_sampler(**waveform_parameters)
+        cross, plus = self.waveform_sampler(**parameters)
 
+        # convert back to tensor
         params = []
         for k in self.hparams.inference_params:
             if k in parameters.keys():
                 params.append(torch.Tensor(parameters[k]))
 
-        parameters = torch.column_stack(params)
+        self.waveforms = torch.stack([cross, plus], dim=0)
+        self.parameters = torch.column_stack(params)
+
+        # once we've generated validation/testing waveforms on cpu,
+        # build data augmentation modules
+        # and transfer them to appropiate device
+        self.build_transforms(stage)
+        self.transforms_to_device()
+
+    def test_dataloader(self) -> torch.utils.data.DataLoader:
+        cross, plus = self.waveforms
 
         waveform_dataset = torch.utils.data.TensorDataset(
-            cross, plus, parameters
+            cross, plus, self.parameters
         )
 
         waveform_dataloader = torch.utils.data.DataLoader(
