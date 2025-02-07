@@ -46,6 +46,8 @@ class FlowModel(AmplfiModel):
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
+        # create a dictionary of prior objects for each parameter
+        self.log_prior_dict = self._get_log_prior_dict()
 
     def forward(self, context, parameters) -> Tensor:
         return -self.model.log_prob(parameters, context=context)
@@ -124,6 +126,66 @@ class FlowModel(AmplfiModel):
         self.test_results: list[Result] = []
         self.idx = 0
 
+    def _get_log_prior_dict(self, trainer=None):
+        """
+        Get the log prior for each parameter in the model.
+        """
+        if trainer is not None:
+            self.trainer = trainer
+        log_prior_dict = {}
+        sf = self.trainer.datamodule.waveform_sampler.parameter_sampler # need this to get the prior for some parameters
+
+        for param in self.inference_params:
+            if param in sf.parameters:
+                # some priors live in the ```waveform_sampler.parameter_sampler``` object
+                # {chirp_mass': Uniform(low: 10.0, high: 100.0),
+                # 'mass_ratio': Uniform(low: 0.125, high: 0.9990000128746033),
+                # 'distance': PowerLaw(),
+                # 'inclination': Sine(),
+                # 'phic': Uniform(low: 0.0, high: 6.2831854820251465),
+                # 'chi1': DeltaFunction(),
+                # 'chi2': DeltaFunction()}
+                log_prior_dict[param] = sf.parameters[param]
+            else:
+                # others are seperately
+                # waveform_sampler."name"
+                # 'dec': Cosine(),
+                # 'psi': Uniform(low: 0.0, high: 3.140000104904175),
+                # 'phi': Uniform(low: -3.140000104904175, high: 3.140000104904175)
+                log_prior_dict[param] = getattr(self.trainer.datamodule.waveform_sampler, param)
+        # add low and high boundaries (for some parameters these values are missing)
+        log_prior_dict['distance'].low = 100
+        log_prior_dict['distance'].high = 3100
+        log_prior_dict['inclination'].low = 0
+        log_prior_dict['inclination'].high = np.pi
+        log_prior_dict['dec'].low = -np.pi/2
+        log_prior_dict['dec'].high = np.pi/2
+        return log_prior_dict
+
+    def filter_descaled_parameters(self, descaled):
+        """
+        Filter the descaled parameters to keep only valid samples within their boundaries.
+        
+        Args:
+            descaled (torch.Tensor): The descaled parameters tensor.
+        Returns:
+            torch.Tensor: The filtered descaled parameters.
+        """
+        valid_idxs = torch.ones(descaled.shape[0], dtype=torch.bool, device=descaled.device)
+        num_discarded = 0
+        for idx, param in enumerate(self.inference_params):
+            prior = self.log_prior_dict[param]
+            low = prior.low
+            high = prior.high
+            valid_idxs &= (descaled[:, idx] >= low) & (descaled[:, idx] <= high)
+            discarded_count = (~valid_idxs).sum().item()
+            num_discarded += discarded_count
+            print(f"Discarded samples[{param}]: {discarded_count}")
+        print(f"Total discarded samples: {num_discarded}/{descaled.shape[0]}")
+        # Filter the descaled parameters to keep only valid samples
+        descaled = descaled[valid_idxs]
+        return descaled
+
     def test_step(self, batch, _):
         strain, asds, parameters = batch
         context = (strain, asds)
@@ -133,6 +195,7 @@ class FlowModel(AmplfiModel):
         )
         descaled = self.trainer.datamodule.scale(samples, reverse=True)
         parameters = self.trainer.datamodule.scale(parameters, reverse=True)
+        descaled = self.filter_descaled_parameters(descaled) # filter out samples outside of prior boundaries
 
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
