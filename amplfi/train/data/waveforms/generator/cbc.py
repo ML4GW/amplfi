@@ -37,4 +37,5 @@ class CBCGenerator(WaveformGenerator):
         if self.time_translator is not None:
             waveforms = self.time_translator(waveforms)
         hc, hp = waveforms.transpose(1, 0)
-        return hc, hp
+
+        return hc.float(), hp.float()
