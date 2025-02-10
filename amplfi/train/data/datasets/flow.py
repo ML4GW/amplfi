@@ -14,6 +14,7 @@ class FlowDataset(AmplfiDataset):
 
         X, psds = self.psd_estimator(X)
         dec, psi, phi = self.waveform_sampler.sample_extrinsic(X)
+
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
 
         # append extrinsic parameters to parameters

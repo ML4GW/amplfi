@@ -29,7 +29,7 @@ class FlowModel(AmplfiModel):
         self,
         *args,
         arch: FlowArchitecture,
-        samples_per_event: int = 200000,
+        samples_per_event: int = 20000,
         num_corner: int = 10,
         nside: int = 32,
         min_samples_per_pix: int = 15,
@@ -146,6 +146,14 @@ class FlowModel(AmplfiModel):
             skymap_filename = self.outdir / f"{self.idx}_mollview.png"
             corner_filename = self.outdir / f"{self.idx}_corner.png"
             fits_filename = self.outdir / f"{self.idx}.fits"
+            strain_filename = self.outdir / f"{self.idx}_whitened.png"
+
+            plt.figure()
+            plt.plot(strain.cpu().numpy()[0][0], label="H1")
+            plt.plot(strain.cpu().numpy()[0][1], label="L1")
+            plt.legend()
+            plt.savefig(strain_filename)
+
             result.plot_corner(
                 save=True,
                 filename=corner_filename,
