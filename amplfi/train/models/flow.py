@@ -46,8 +46,6 @@ class FlowModel(AmplfiModel):
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
-        # create a dictionary of prior objects for each parameter
-        self.log_prior_dict = self._get_log_prior_dict()
 
     def forward(self, context, parameters) -> Tensor:
         return -self.model.log_prob(parameters, context=context)
@@ -195,7 +193,10 @@ class FlowModel(AmplfiModel):
         )
         descaled = self.trainer.datamodule.scale(samples, reverse=True)
         parameters = self.trainer.datamodule.scale(parameters, reverse=True)
-        descaled = self.filter_descaled_parameters(descaled) # filter out samples outside of prior boundaries
+        # create a dictionary of prior objects for each parameter
+        self.log_prior_dict = self._get_log_prior_dict()
+        # filter out samples outside of prior boundaries
+        descaled = self.filter_descaled_parameters(descaled)
 
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
