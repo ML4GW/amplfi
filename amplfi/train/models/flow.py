@@ -174,7 +174,7 @@ class FlowModel(AmplfiModel):
         discarded_count = 0
         previous_discarded_count = 0
         for idx, param in enumerate(self.inference_params):
-            prior = log_prior_dict[param]
+            prior = self.log_prior_dict[param]
             low = prior.low
             high = prior.high
             valid_idxs &= (descaled[:, idx] >= low) & (descaled[:, idx] <= high)
