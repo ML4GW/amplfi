@@ -178,8 +178,8 @@ class FlowModel(AmplfiModel):
             valid_idxs &= (descaled[:, idx] >= low) & (descaled[:, idx] <= high)
             discarded_count = (~valid_idxs).sum().item()
             num_discarded += discarded_count
-            print(f"Discarded samples[{param}]: {discarded_count}")
-        print(f"Total discarded samples: {num_discarded}/{descaled.shape[0]}")
+            self._logger.info(f"Discarded samples[{param}]: {discarded_count}")
+        self._logger.info(f"Total discarded samples: {num_discarded}/{descaled.shape[0]}")
         # Filter the descaled parameters to keep only valid samples
         descaled = descaled[valid_idxs]
         return descaled
