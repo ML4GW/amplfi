@@ -163,7 +163,7 @@ class FlowModel(AmplfiModel):
     def filter_descaled_parameters(self, descaled):
         """
         Filter the descaled parameters to keep only valid samples within their boundaries.
-        
+
         Args:
             descaled (torch.Tensor): The descaled parameters tensor.
         Returns:
@@ -171,14 +171,17 @@ class FlowModel(AmplfiModel):
         """
         valid_idxs = torch.ones(descaled.shape[0], dtype=torch.bool, device=descaled.device)
         num_discarded = 0
+        discarded_count = 0
+        previous_discarded_count = 0
         for idx, param in enumerate(self.inference_params):
-            prior = self.log_prior_dict[param]
+            prior = log_prior_dict[param]
             low = prior.low
             high = prior.high
             valid_idxs &= (descaled[:, idx] >= low) & (descaled[:, idx] <= high)
             discarded_count = (~valid_idxs).sum().item()
-            num_discarded += discarded_count
-            self._logger.info(f"Discarded samples[{param}]: {discarded_count}")
+            self._logger.info(f"Discarded samples[{param}]: {discarded_count-previous_discarded_count}")
+            num_discarded += discarded_count-previous_discarded_count
+            previous_discarded_count = discarded_count
         self._logger.info(f"Total discarded samples: {num_discarded}/{descaled.shape[0]}")
         # Filter the descaled parameters to keep only valid samples
         descaled = descaled[valid_idxs]
