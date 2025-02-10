@@ -28,6 +28,9 @@ def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
     # calculate the relative azimuthal angle in the range [0, 2pi]
     phi = np.remainder(ra - gmsts, 2 * np.pi)
 
+    # convert to range [-pi, pi]
+    phi[phi > np.pi] -= 2 * np.pi
+
     return phi
 
 
@@ -90,7 +93,10 @@ class StrainTestingDataset(FlowDataset):
         # determine slice indices. It is assumed the coalescence
         # time of the waveform is in the middle
         middle = strain.shape[-1] // 2
-        post = self.waveform_sampler.right_pad + self.hparams.fduration / 2
+        post = (
+            self.waveform_sampler.ringdown_duration
+            + self.hparams.fduration / 2
+        )
         pre = (
             post
             - self.hparams.kernel_length
@@ -225,7 +231,7 @@ class ParameterTestingDataset(FlowDataset):
                     continue
 
                 parameters[parameter] = torch.tensor(
-                    f[parameter][:], dtype=torch.float32
+                    f[parameter][:], dtype=torch.float64
                 )
 
         # apply conversion function to parameters
@@ -300,9 +306,6 @@ class ParameterTestingDataset(FlowDataset):
         """
         Override of the on_after_batch_transfer hook
         defined in `BaseDataset`.
-
-        This is necessary since we're we don't want to
-        do any injections (they are already in the data)
         """
 
         if not self.trainer.testing:
@@ -310,15 +313,52 @@ class ParameterTestingDataset(FlowDataset):
                 "Use of ParameterTestingDataset is for testing only"
             )
 
-        [cross, plus, parameters], [background] = batch
+        [cross, plus, parameters], [X] = batch
+
         keys = [
             k
-            for k in self.hparams.inference_params
-            if k not in ["dec", "psi", "phi"]
+            for k in set(self.hparams.inference_params)
+            + set(["dec", "psi", "phi"])
         ]
         parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
-        strain, asds, parameters = self.inject(
-            background, cross, plus, parameters
+
+        dec, psi, phi = (
+            parameters["dec"].float(),
+            parameters["psi"].float(),
+            parameters["phi"].float(),
+        )
+        waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
+
+        # downselect to requested inference parameters
+        parameters = {
+            k: v
+            for k, v in parameters.items()
+            if k in self.hparams.inference_params
+        }
+
+        # make any requested parameter transforms
+        parameters = self.transform(parameters)
+        parameters = [
+            torch.Tensor(parameters[k]) for k in self.hparams.inference_params
+        ]
+        parameters = torch.vstack(parameters).T
+
+        X, psds = self.psd_estimator(X)
+        X += waveforms
+        X = self.whitener(X, psds)
+
+        # scale parameters
+        parameters = self.scale(parameters)
+
+        # calculate asds and highpass
+        freqs = torch.fft.rfftfreq(X.shape[-1], d=1 / self.hparams.sample_rate)
+        num_freqs = len(freqs)
+        psds = torch.nn.functional.interpolate(
+            psds, size=(num_freqs,), mode="linear"
         )
 
-        return strain, asds, parameters
+        mask = freqs > self.hparams.highpass
+        psds = psds[:, :, mask]
+        asds = torch.sqrt(psds)
+
+        return X, asds, parameters

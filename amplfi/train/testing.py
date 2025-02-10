@@ -27,7 +27,8 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     """
     theta = np.pi / 2 - dec
     # mask out non physical samples;
-    mask = (ra > 0) * (ra < 2 * np.pi)
+    # mask = (ra > 0) * (ra < 2 * np.pi)
+    mask = (ra > -np.pi) * (ra < np.pi)
     mask &= (theta > 0) * (theta < np.pi)
 
     ra = ra[mask]
