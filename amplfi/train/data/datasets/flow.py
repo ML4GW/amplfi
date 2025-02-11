@@ -32,7 +32,6 @@ class FlowDataset(AmplfiDataset):
             torch.Tensor(parameters[k]) for k in self.hparams.inference_params
         ]
         parameters = torch.vstack(parameters).T
-
         X += waveforms
         X = self.whitener(X, psds)
 

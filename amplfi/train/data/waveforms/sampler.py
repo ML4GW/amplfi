@@ -10,13 +10,16 @@ Distribution = torch.distributions.Distribution
 
 class WaveformSampler(torch.nn.Module):
     """
-    Base object for producing waveforms for training validating and testing
+    Base object defining methods that waveform producing classes
+    should implement. Should not be instantiated on its own.
 
     Args:
-        duration:
-            The length of the waveform in seconds to return. This
-            includes kernel that the network analyzes, and extra data
-            lost due to whitening filter settle in.
+        fduration:
+            Desired length in seconds of the time domain
+            response of the whitening filter built from PSDs.
+            See `ml4gw.spectral.truncate_inverse_power_spectrum`
+        kernel_length:
+            Length in seconds of window passed to neural network.
         sample_rate:
             Sample rate in Hz of generated waveforms
         inference_params:
@@ -30,10 +33,16 @@ class WaveformSampler(torch.nn.Module):
         jitter:
             The amount of jitter in seconds to randomly shift
             the waveform coalescence time. If `None`, no jitter is applied.
+        parameter_transformer:
+            A `ParameterTransformer` object that applies any
+            additional transformations to parameters before
+            they are scaled and passed to the neural network.
+
     """
 
     def __init__(
         self,
+        *args,
         fduration: float,
         kernel_length: float,
         sample_rate: float,
@@ -43,9 +52,10 @@ class WaveformSampler(torch.nn.Module):
         phi: Distribution,
         jitter: Optional[float] = None,
         parameter_transformer: Optional[ParameterTransformer] = None,
+        **kwargs,
     ) -> None:
 
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.parameter_transformer = parameter_transformer or (lambda x: x)
         self.inference_params = inference_params
         self.fduration = fduration
@@ -74,10 +84,6 @@ class WaveformSampler(torch.nn.Module):
         fduration / 2 from each side
         """
         return self.fduration + self.kernel_length
-
-    @property
-    def waveform_size(self):
-        return int(self.duration * self.sample_rate)
 
     def get_val_waveforms(self):
         raise NotImplementedError
