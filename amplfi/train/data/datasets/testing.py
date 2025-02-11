@@ -10,6 +10,7 @@ import numpy as np
 import torch
 from astropy.time import Time
 from ml4gw.dataloading import Hdf5TimeSeriesDataset
+from ml4gw.waveforms.conversion import chirp_mass_and_mass_ratio_to_components
 
 from amplfi.train.data.datasets import FlowDataset
 
@@ -187,6 +188,7 @@ class ParameterTestingDataset(FlowDataset):
         waveform_generation_parameters: Optional[list[str]] = None,
         **kwargs
     ):
+
         super().__init__(*args, **kwargs)
         self.dataset_path = dataset_path
 
@@ -228,7 +230,7 @@ class ParameterTestingDataset(FlowDataset):
                     continue
 
                 parameters[parameter] = torch.tensor(
-                    f[parameter][:], dtype=torch.float64
+                    f[parameter][:], dtype=torch.float32
                 )
 
         # apply conversion function to parameters
@@ -240,6 +242,12 @@ class ParameterTestingDataset(FlowDataset):
                 )
             )
 
+        (
+            parameters["mass_1"],
+            parameters["mass_2"],
+        ) = chirp_mass_and_mass_ratio_to_components(
+            parameters["chirp_mass"], parameters["mass_ratio"]
+        )
         # convert ra to phi
         parameters["phi"] = torch.tensor(
             phi_from_ra(
@@ -248,6 +256,11 @@ class ParameterTestingDataset(FlowDataset):
         )
 
         # generate cross and plus using our infrastructure
+        print(
+            parameters["mass_1"].dtype,
+            parameters["phi"].dtype,
+            parameters["chirp_mass"].dtype,
+        )
         cross, plus = self.waveform_sampler(**parameters)
 
         # convert back to tensor
@@ -312,11 +325,7 @@ class ParameterTestingDataset(FlowDataset):
 
         [cross, plus, parameters], [X] = batch
 
-        keys = [
-            k
-            for k in set(self.hparams.inference_params)
-            + set(["dec", "psi", "phi"])
-        ]
+        keys = [k for k in self.hparams.inference_params]
         parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
 
         dec, psi, phi = (
