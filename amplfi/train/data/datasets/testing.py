@@ -2,6 +2,7 @@
 Additional Lightning DataModules for testing
 amplfi models across various usecases
 """
+import random
 from pathlib import Path
 from typing import Optional
 
@@ -9,7 +10,6 @@ import h5py
 import numpy as np
 import torch
 from astropy.time import Time
-from ml4gw.dataloading import Hdf5TimeSeriesDataset
 from ml4gw.waveforms.conversion import chirp_mass_and_mass_ratio_to_components
 
 from amplfi.train.data.datasets import FlowDataset
@@ -186,7 +186,7 @@ class ParameterTestingDataset(FlowDataset):
         dataset_path: Path,
         *args,
         waveform_generation_parameters: Optional[list[str]] = None,
-        **kwargs
+        **kwargs,
     ):
 
         super().__init__(*args, **kwargs)
@@ -209,6 +209,92 @@ class ParameterTestingDataset(FlowDataset):
         # if the waveform_generation_parameters were not specified
         self.convert = waveform_generation_parameters is None
         self.i = 0
+
+    def background_from_gpstimes(self, gpstimes: torch.Tensor) -> torch.Tensor:
+        """
+        Find background segments corresponding to gpstimes
+        """
+
+        # load in background segments corresponding to gpstimes
+        background = []
+        segments = [
+            tuple(map(float, f.name.split(".")[0].split("-")[1:]))
+            for f in self.test_fnames
+        ]
+
+        def find_file(time: float) -> Optional[Path]:
+            """
+            Find file that contains `time`
+            """
+            for i, (start, length) in enumerate(segments):
+                in_segment = (
+                    time
+                    > start
+                    + self.hparams.psd_length
+                    + self.hparams.sample_length
+                )
+                in_segment &= time < (
+                    start
+                    + length
+                    - self.hparams.psd_length
+                    + self.hparams.sample_length
+                )
+                if in_segment:
+                    return self.test_fnames[i], start
+            else:
+                return None, None
+
+        # calculate seconds of data to query
+        # before and after coalescence time
+        post = self.waveform_sampler.right_pad + self.hparams.fduration / 2
+        pre = (
+            post
+            - self.hparams.kernel_length
+            - (self.hparams.fduration / 2)
+            - self.hparams.psd_length
+        )
+
+        # convert to number of indices
+        post = int(post * self.hparams.sample_rate)
+        pre = int(pre * self.hparams.sample_rate)
+
+        background = []
+        for time in gpstimes:
+            time = time.item()
+            strain = []
+
+            # find file for this gpstime
+            file, start = find_file(time)
+
+            # if none exists, use random segment
+            if file is None:
+                self._logger.info(
+                    "No segement in testing directory containing "
+                    f"{time}. Using random segment"
+                )
+                file = random.choice(self.test_fnames)
+                start, length = list(
+                    map(float, file.name.split(".")[0].split("-")[1:])
+                )
+                time = start + random.randint(
+                    self.hparams.psd_length + self.hparams.sample_length,
+                    length
+                    - self.hparams.psd_length
+                    + self.hparams.sample_length,
+                )
+
+            # convert from time to index in file
+            middle_idx = int((time - start) * self.hparams.sample_rate)
+            start_idx = middle_idx + pre
+            end_idx = middle_idx + post
+
+            with h5py.File(file) as f:
+                for ifo in self.hparams.ifos:
+                    strain.append(torch.tensor(f[ifo][start_idx:end_idx]))
+                strain = torch.stack(strain, dim=0)
+                background.append(strain)
+        background = torch.stack(background, dim=0)
+        return background
 
     def setup(self, stage: str):
         world_size, rank = self.get_world_size_and_rank()
@@ -256,11 +342,6 @@ class ParameterTestingDataset(FlowDataset):
         )
 
         # generate cross and plus using our infrastructure
-        print(
-            parameters["mass_1"].dtype,
-            parameters["phi"].dtype,
-            parameters["chirp_mass"].dtype,
-        )
         cross, plus = self.waveform_sampler(**parameters)
 
         # convert back to tensor
@@ -271,6 +352,7 @@ class ParameterTestingDataset(FlowDataset):
 
         self.waveforms = torch.stack([cross, plus], dim=0)
         self.parameters = torch.column_stack(params)
+        self.background = self.background_from_gpstimes(parameters["gpstime"])
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
@@ -293,19 +375,10 @@ class ParameterTestingDataset(FlowDataset):
             num_workers=10,
         )
 
-        # TODO: add ability to inject at
-        # specific times into the strain data
-        background_dataset = Hdf5TimeSeriesDataset(
-            self.test_fnames,
-            channels=self.hparams.ifos,
-            kernel_size=int(self.hparams.sample_rate * self.sample_length),
-            batch_size=1,
-            batches_per_epoch=len(waveform_dataloader),
-            coincident=True,
-        )
+        background_dataset = torch.utils.data.TensorDataset(self.background)
 
         background_dataloader = torch.utils.data.DataLoader(
-            background_dataset, pin_memory=False, num_workers=10
+            background_dataset, pin_memory=False, num_workers=10, shuffle=False
         )
         return ZippedDataset(
             waveform_dataloader,
