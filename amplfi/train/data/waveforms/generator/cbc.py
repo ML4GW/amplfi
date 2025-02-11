@@ -17,7 +17,30 @@ class CBCGenerator(WaveformGenerator):
         **kwargs,
     ):
         """
-        A torch module for generating CBC waveforms on the fly.
+        A lightweight wrapper around
+        `ml4gw.waveforms.generator.TimeDomainCBCWaveformGenerator`
+        to make it compatible with
+        `amplfi.train.data.waveforms.generator.WaveformGenerator`.
+
+
+        Args:
+            *args:
+                Positional arguments passed to
+                `amplfi.train.data.waveforms.generator.WaveformGenerator`
+            approximant:
+                A callable that takes parameter tensors
+                and returns the cross and plus polarizations
+            f_min:
+                Lowest frequency at which waveform signal content
+                is generated
+            f_ref:
+                Reference frequency
+            right_pad:
+                Position in seconds where coalesence is placed
+                relative to the right edge of the window
+            **kwargs:
+                Keyword arguments passed to
+                `amplfi.train.data.waveforms.generator.WaveformGenerator`
         """
         super().__init__(*args, **kwargs)
         self.right_pad = right_pad
