@@ -124,12 +124,10 @@ class FlowModel(AmplfiModel):
         self.test_results: list[Result] = []
         self.idx = 0
 
-    def _get_log_prior_dict(self, trainer=None):
+    def _get_log_prior_dict(self):
         """
         Get the log prior for each parameter in the model.
         """
-        if trainer is not None:
-            self.trainer = trainer
         log_prior_dict = {}
         sf = self.trainer.datamodule.waveform_sampler.parameter_sampler # need this to get the prior for some parameters
 
