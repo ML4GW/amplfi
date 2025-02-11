@@ -93,10 +93,7 @@ class StrainTestingDataset(FlowDataset):
         # determine slice indices. It is assumed the coalescence
         # time of the waveform is in the middle
         middle = strain.shape[-1] // 2
-        post = (
-            self.waveform_sampler.ringdown_duration
-            + self.hparams.fduration / 2
-        )
+        post = self.waveform_sampler.right_pad + self.hparams.fduration / 2
         pre = (
             post
             - self.hparams.kernel_length
