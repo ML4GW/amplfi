@@ -29,7 +29,8 @@ class CBCGenerator(WaveformGenerator):
                 `amplfi.train.data.waveforms.generator.WaveformGenerator`
             approximant:
                 A callable that takes parameter tensors
-                and returns the cross and plus polarizations
+                and returns the cross and plus polarizations.
+                For example, `ml4gw.waveforms.IMRPhenomD()`
             f_min:
                 Lowest frequency at which waveform signal content
                 is generated
