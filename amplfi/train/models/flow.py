@@ -157,6 +157,7 @@ class FlowModel(AmplfiModel):
             plt.plot(strain.cpu().numpy()[0][1], label="L1")
             plt.legend()
             plt.savefig(strain_filename)
+            plt.close()
 
             qscans = []
             for i in range(2):
@@ -165,7 +166,7 @@ class FlowModel(AmplfiModel):
                     dt=1 / self.trainer.datamodule.hparams.sample_rate,
                 )
                 spec = ts.q_transform(
-                    logf=True, whiten=False, frange=(32, 512), qrange=(11, 11)
+                    logf=True, whiten=False, frange=(20, 512), qrange=(11, 11)
                 )
                 qscans.append(spec)
 
@@ -176,13 +177,18 @@ class FlowModel(AmplfiModel):
             title = f"chirp_mass: {chirp_mass:2f}, mass_ratio: {mass_ratio:2f}"
             plot = Plot(
                 *qscans,
-                figsize=(15, 5),
+                figsize=(18, 5),
                 geometry=(1, 2),
                 yscale="log",
                 method="pcolormesh",
                 cmap="viridis",
                 title=title,
             )
+
+            for i, ax in enumerate(plot.axes):
+                label = "" if i != 1 else "Normalized Energy"
+
+                plot.colorbar(ax=ax, label=label)
 
             plot.savefig(spec_filename)
             plt.close()
