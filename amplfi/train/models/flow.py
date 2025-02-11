@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
+from gwpy.plot import Plot
+from gwpy.timeseries import TimeSeries
 
 from ..architectures.flows import FlowArchitecture
 from ..testing import Result
@@ -147,12 +149,51 @@ class FlowModel(AmplfiModel):
             corner_filename = self.outdir / f"{self.idx}_corner.png"
             fits_filename = self.outdir / f"{self.idx}.fits"
             strain_filename = self.outdir / f"{self.idx}_whitened.png"
+            spec_filename = self.outdir / f"{self.idx}_spectrogram.png"
+            asd_filename = self.outdir / f"{self.idx}_asd.png"
 
             plt.figure()
             plt.plot(strain.cpu().numpy()[0][0], label="H1")
             plt.plot(strain.cpu().numpy()[0][1], label="L1")
             plt.legend()
             plt.savefig(strain_filename)
+
+            qscans = []
+            for i in range(2):
+                ts = TimeSeries(
+                    strain.cpu().numpy()[0][i],
+                    dt=1 / self.trainer.datamodule.hparams.sample_rate,
+                )
+                spec = ts.q_transform(
+                    logf=True, whiten=False, frange=(32, 512), qrange=(11, 11)
+                )
+                qscans.append(spec)
+
+            chirp_mass, mass_ratio = (
+                result.injection_parameters["chirp_mass"],
+                result.injection_parameters["mass_ratio"],
+            )
+            title = f"chirp_mass: {chirp_mass:2f}, mass_ratio: {mass_ratio:2f}"
+            plot = Plot(
+                *qscans,
+                figsize=(15, 5),
+                geometry=(1, 2),
+                yscale="log",
+                method="pcolormesh",
+                cmap="viridis",
+                title=title,
+            )
+
+            plot.savefig(spec_filename)
+            plt.close()
+
+            plt.figure()
+            plt.loglog(asds.cpu().numpy()[0][0], label="H1")
+            plt.loglog(asds.cpu().numpy()[0][1], label="L1")
+
+            plt.legend()
+            plt.savefig(asd_filename)
+            plt.close()
 
             result.plot_corner(
                 save=True,
