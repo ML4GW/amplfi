@@ -30,8 +30,8 @@ class AmplfiModel(pl.LightningModule):
     def __init__(
         self,
         inference_params: list[str],
-        train_outdir: Path,
         learning_rate: float,
+        train_outdir: Path,
         test_outdir: Optional[Path] = None,
         weight_decay: float = 0.0,
         patience: int = 10,
