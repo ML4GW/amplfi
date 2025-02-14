@@ -1,10 +1,15 @@
 import io
 import os
 import shutil
+from pathlib import Path
 
 import h5py
 import lightning.pytorch as pl
+import matplotlib.pyplot as plt
+import numpy as np
 import s3fs
+from gwpy.plot import Plot
+from gwpy.timeseries import TimeSeries
 from lightning.pytorch.cli import SaveConfigCallback
 from lightning.pytorch.loggers import WandbLogger
 
@@ -152,3 +157,144 @@ class ModelCheckpoint(pl.callbacks.ModelCheckpoint):
     def on_train_end(self, trainer, pl_module):
         save_dir = trainer.logger.save_dir
         shutil.copy(self.best_model_path, os.path.join(save_dir, "best.ckpt"))
+
+
+class StrainVisualization(pl.Callback):
+    """
+    Lightning Callback for visualizing the strain data
+    and asds being analyzed during the test step
+    """
+
+    def __init__(self, outdir: Path, num_plot: int):
+        self.outdir = outdir
+        self.num_plot = num_plot
+
+    def on_test_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ) -> None:
+        """
+        Called at the end of each test step.
+        `outputs` consists of objects returned by `pl_module.test_step`.
+        """
+
+        # test_step returns bilby result object
+        result = outputs
+
+        if dataloader_idx >= self.num_plot:
+            return
+
+        # unpack batch
+        strain, asds, parameters = batch
+        strain, asds = strain[0], asds[0]
+
+        # steal some attributes needed from datamodule
+        # TODO: should we link these to the pl_module?
+        highpass = trainer.datamodule.hparams.highpass
+        sample_rate = trainer.datamodule.hparams.sample_rate
+        ifos = trainer.datamodule.hparams.ifos
+
+        # filenames for various plots
+        whitened_td_strain_fname = (
+            self.outdir / f"{dataloader_idx}_whitened_td.png"
+        )
+        whitened_fd_strain_fname = (
+            self.outdir / f"{dataloader_idx}_whitened_fd.png"
+        )
+        qscan_fname = self.outdir / f"{dataloader_idx}_qscan.png"
+        asd_fname = self.outdir / f"{dataloader_idx}_asd.png"
+
+        # whitened time domain strain
+        plt.figure()
+        plt.title("Whitened Time Domain Strain")
+
+        for i, ifo in enumerate(ifos):
+            plt.plot(strain[i], label=ifo)
+
+        plt.legend()
+        plt.savefig(whitened_td_strain_fname)
+        plt.close()
+
+        # qscans
+        qscans = []
+
+        for i, ifo in enumerate(ifos):
+            ts = TimeSeries(
+                strain[i],
+                dt=1 / sample_rate,
+            )
+
+            spec = ts.q_transform(
+                logf=True,
+                whiten=False,
+                frange=(25, 200),
+                qrange=(4, 108),
+                outseg=(3.35, 3.6),
+            )
+            qscans.append(spec)
+
+        chirp_mass, mass_ratio = (
+            result.injection_parameters["chirp_mass"],
+            result.injection_parameters["mass_ratio"],
+        )
+        title = f"chirp_mass: {chirp_mass:2f}, mass_ratio: {mass_ratio:2f}"
+        plot = Plot(
+            *qscans,
+            figsize=(18, 5),
+            geometry=(1, 2),
+            yscale="log",
+            method="pcolormesh",
+            cmap="viridis",
+            title=title,
+        )
+
+        for i, ax in enumerate(plot.axes):
+            label = "" if i != 1 else "Normalized Energy"
+            plot.colorbar(ax=ax, label=label)
+
+        plot.savefig(qscan_fname)
+        plt.close()
+
+        # asds
+        frequencies = trainer.datamodule.frequencies.numpy()
+        mask = frequencies > highpass
+        frequencies_masked = frequencies[mask]
+        plt.figure()
+        for i, ifo in enumerate(ifos):
+
+            plt.loglog(frequencies_masked, asds[i], label=f"{ifo} asd")
+            plt.title("ASDs")
+            plt.xlabel("Frequency (Hz)")
+            plt.ylabel("Scaled Amplitude")
+
+        plt.legend()
+        plt.savefig(asd_fname)
+        plt.close()
+
+        # whitened frequency domain data
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        for i, ifo in enumerate(ifos):
+            strain_fft = np.fft.rfft(strain[i])
+            freqs = np.fft.rfftfreq(n=strain[i].shape[-1], d=1 / sample_rate)
+
+            axes[0].plot(
+                freqs,
+                strain_fft.real / (sample_rate ** (1 / 2)),
+                label=f"{ifo} data",
+            )
+            axes[1].plot(
+                freqs,
+                strain_fft.imag / (sample_rate ** (1 / 2)),
+                label=f"{ifo} data",
+            )
+
+        axes[0].set_title("Real")
+        axes[1].set_title("Imaginary")
+
+        axes[0].set_ylabel("Whitened Amplitude")
+        axes[0].set_xlabel("Frequency (Hz)")
+        axes[0].set_xlabel("Frequency (Hz)")
+
+        plt.legend()
+
+        plt.savefig(whitened_fd_strain_fname)
+        plt.close()

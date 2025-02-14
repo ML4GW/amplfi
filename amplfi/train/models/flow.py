@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 
 from ..architectures.flows import FlowArchitecture
+from ..callbacks import StrainVisualization
 from ..testing import Result
 from .base import AmplfiModel
 
@@ -16,33 +17,44 @@ class FlowModel(AmplfiModel):
     A LightningModule for training normalizing flows
 
     Args:
+        *args:
+            See arguments in `amplfi.train.models.base.AmplfiModel`
         arch:
             Neural network architecture to train.
             This should be a subclass of `FlowArchitecture`.
         samples_per_event:
             Number of samples to draw per event for testing
         nside:
-            nside parameter for healpy
+            Healpix nside used when creating skymaps
+        min_samples_per_pix:
+        num_plot:
+            Number of testing events to plot skymaps, corner
+            plots and, if `plot_data` is `True`, strain data
+            visualizations.
+        plot_data:
+            If `True`, plot strain visualization for `num_plot`
+            of the testing set events
     """
 
     def __init__(
         self,
         *args,
         arch: FlowArchitecture,
-        samples_per_event: int = 200000,
-        num_corner: int = 10,
+        samples_per_event: int = 10000,
         nside: int = 32,
         min_samples_per_pix: int = 15,
+        num_plot: int = 10,
+        plot_data: bool = False,
         **kwargs,
     ) -> None:
 
         super().__init__(*args, **kwargs)
-        # construct our model
         self.model = arch
         self.samples_per_event = samples_per_event
-        self.num_corner = num_corner
+        self.num_plot = num_plot
         self.nside = nside
         self.min_samples_per_pix = min_samples_per_pix
+        self.plot_data = plot_data
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
@@ -124,9 +136,9 @@ class FlowModel(AmplfiModel):
         self.test_results: list[Result] = []
         self.idx = 0
 
-    def test_step(self, batch, _):
+    def test_step(self, batch, _) -> bilby.result.Result:
         strain, asds, parameters = batch
-        context = (strain, asds)
+        context = (strain, asds.clone())
 
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
@@ -142,10 +154,10 @@ class FlowModel(AmplfiModel):
         self.test_results.append(result)
 
         # plot corner and skymap for a subset of the test results
-        if self.idx < self.num_corner:
-            skymap_filename = self.outdir / f"{self.idx}_mollview.png"
-            corner_filename = self.outdir / f"{self.idx}_corner.png"
-            fits_filename = self.outdir / f"{self.idx}.fits"
+        if self.idx < self.num_plot:
+            skymap_filename = self.test_outdir / f"{self.idx}_mollview.png"
+            corner_filename = self.test_outdir / f"{self.idx}_corner.png"
+            fits_filename = self.test_outdir / f"{self.idx}.fits"
             result.plot_corner(
                 save=True,
                 filename=corner_filename,
@@ -157,12 +169,14 @@ class FlowModel(AmplfiModel):
             result.fits_table.writeto(fits_filename, overwrite=True)
         self.idx += 1
 
+        return result
+
     def on_test_epoch_end(self):
         # pp plot
         bilby.result.make_pp_plot(
             self.test_results,
             save=True,
-            filename=self.outdir / "pp-plot.png",
+            filename=self.test_outdir / "pp-plot.png",
             keys=self.inference_params,
         )
 
@@ -188,8 +202,8 @@ class FlowModel(AmplfiModel):
         plt.title("Searched Area Cumulative Distribution Function")
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(self.outdir / "searched_area.png")
-        np.save(self.outdir / "searched_area.npy", searched_areas)
+        plt.savefig(self.test_outdir / "searched_area.png")
+        np.save(self.test_outdir / "searched_area.npy", searched_areas)
 
         plt.close()
         plt.figure(figsize=(10, 6))
@@ -201,4 +215,12 @@ class FlowModel(AmplfiModel):
         )
         plt.xlabel("Sq. deg.")
         plt.legend()
-        plt.savefig(self.outdir / "fifty_ninety_areas.png")
+        plt.savefig(self.test_outdir / "fifty_ninety_areas.png")
+
+    def configure_callbacks(self):
+        callbacks = []
+        if self.plot_data:
+            callbacks.append(
+                StrainVisualization(self.test_outdir, self.num_plot)
+            )
+        return callbacks
