@@ -220,5 +220,7 @@ class FlowModel(AmplfiModel):
     def configure_callbacks(self):
         callbacks = []
         if self.plot_data:
-            callbacks.append(StrainVisualization(self.test_outdir))
+            callbacks.append(
+                StrainVisualization(self.test_outdir, self.num_plot)
+            )
         return callbacks

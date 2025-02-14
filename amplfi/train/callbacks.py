@@ -185,18 +185,23 @@ class StrainVisualization(pl.Callback):
 
         # unpack batch
         strain, asds, parameters = batch
+        strain, asds = strain[0], asds[0]
 
         # steal some attributes needed from datamodule
         # TODO: should we link these to the pl_module?
-        highpass = self.trainer.datamodule.hparams.highpass
-        sample_rate = self.trainer.datamodule.hparams.sample_rate
-        ifos = self.trainer.datamodule.hparams.ifos
+        highpass = trainer.datamodule.hparams.highpass
+        sample_rate = trainer.datamodule.hparams.sample_rate
+        ifos = trainer.datamodule.hparams.ifos
 
         # filenames for various plots
-        whitened_td_strain_fname = self.outdir / f"{self.idx}_whitened_td.png"
-        whitened_fd_strain_fname = self.outdir / f"{self.idx}_whitened_fd.png"
-        qscan_fname = self.outdir / f"{self.idx}_qscan.png"
-        asd_fname = self.outdir / f"{self.idx}_asd.png"
+        whitened_td_strain_fname = (
+            self.outdir / f"{dataloader_idx}_whitened_td.png"
+        )
+        whitened_fd_strain_fname = (
+            self.outdir / f"{dataloader_idx}_whitened_fd.png"
+        )
+        qscan_fname = self.outdir / f"{dataloader_idx}_qscan.png"
+        asd_fname = self.outdir / f"{dataloader_idx}_asd.png"
 
         # whitened time domain strain
         plt.figure()
@@ -250,7 +255,7 @@ class StrainVisualization(pl.Callback):
         plt.close()
 
         # asds
-        frequencies = self.trainer.datamodule.frequencies.numpy()
+        frequencies = trainer.datamodule.frequencies.numpy()
         mask = frequencies > highpass
         frequencies_masked = frequencies[mask]
         plt.figure()
