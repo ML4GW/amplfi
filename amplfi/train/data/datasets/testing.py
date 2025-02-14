@@ -63,7 +63,14 @@ class StrainTestingDataset(FlowDataset):
         self.dataset_path = dataset_path
         self.i = 0
 
-    def test_dataloader(self) -> torch.utils.data.DataLoader:
+    def setup(self, stage):
+        world_size, rank = self.get_world_size_and_rank()
+        self._logger = self.get_logger(world_size, rank)
+        if stage != "test":
+            raise ValueError(
+                "StrainTestingDataset should only be used for testing"
+            )
+
         # load in the strain data and parameters
         strain = []
         parameters = {}
@@ -108,18 +115,29 @@ class StrainTestingDataset(FlowDataset):
         start, stop = middle + pre, middle + post
         strain = strain[..., start:stop]
 
+        print(parameters["chirp_mass"][0], parameters["mass_ratio"][0])
         # convert parameters to a tensor
         parameters = [
             torch.Tensor(parameters[k]) for k in self.hparams.inference_params
         ]
         parameters = torch.vstack(parameters).T
 
+        # once we've generated validation/testing waveforms on cpu,
+        # build data augmentation modules
+        # and transfer them to appropiate device
+        self.build_transforms(stage)
+        self.transforms_to_device()
+
+        self.parameters = parameters
+        self.strain = strain
+
+    def test_dataloader(self) -> torch.utils.data.DataLoader:
         # build dataset and dataloader that will
         # simply load one injection (and its parameters) at a time
-        dataset = torch.utils.data.TensorDataset(strain, parameters)
+        dataset = torch.utils.data.TensorDataset(self.strain, self.parameters)
 
         return torch.utils.data.DataLoader(
-            dataset, batch_size=1, num_workers=12
+            dataset, batch_size=1, num_workers=12, shuffle=False
         )
 
     def on_after_batch_transfer(self, batch, _):
@@ -227,18 +245,8 @@ class ParameterTestingDataset(FlowDataset):
             Find file that contains `time`
             """
             for i, (start, length) in enumerate(segments):
-                in_segment = (
-                    time
-                    > start
-                    + self.hparams.psd_length
-                    + self.hparams.sample_length
-                )
-                in_segment &= time < (
-                    start
-                    + length
-                    - self.hparams.psd_length
-                    + self.hparams.sample_length
-                )
+                in_segment = time > start + self.sample_length
+                in_segment &= time < (start + length - self.sample_length)
                 if in_segment:
                     return self.test_fnames[i], start
             else:
@@ -269,7 +277,7 @@ class ParameterTestingDataset(FlowDataset):
             # if none exists, use random segment
             if file is None:
                 self._logger.info(
-                    "No segement in testing directory containing "
+                    "No segment in testing directory containing "
                     f"{time}. Using random segment"
                 )
                 file = random.choice(self.test_fnames)
@@ -277,10 +285,8 @@ class ParameterTestingDataset(FlowDataset):
                     map(float, file.name.split(".")[0].split("-")[1:])
                 )
                 time = start + random.randint(
-                    self.hparams.psd_length + self.hparams.sample_length,
-                    length
-                    - self.hparams.psd_length
-                    + self.hparams.sample_length,
+                    self.sample_length,
+                    length - self.sample_length,
                 )
 
             # convert from time to index in file
