@@ -2,6 +2,7 @@ import logging
 import math
 import sys
 from pathlib import Path
+from typing import Optional
 
 import lightning.pytorch as pl
 import torch
@@ -29,8 +30,9 @@ class AmplfiModel(pl.LightningModule):
     def __init__(
         self,
         inference_params: list[str],
-        outdir: Path,
+        train_outdir: Path,
         learning_rate: float,
+        test_outdir: Optional[Path] = None,
         weight_decay: float = 0.0,
         patience: int = 10,
         factor: float = 0.1,
@@ -40,8 +42,15 @@ class AmplfiModel(pl.LightningModule):
         self.scheduler_patience = patience
         self.scheduler_factor = factor
         self._logger = self.init_logging(verbose)
-        self.outdir = outdir
-        outdir.mkdir(exist_ok=True, parents=True)
+
+        if test_outdir is None:
+            test_outdir = train_outdir / "test_results"
+
+        train_outdir.mkdir(exist_ok=True)
+        test_outdir.mkdir(exist_ok=True)
+        self.test_outdir = test_outdir
+        self.train_outdir = train_outdir
+
         self.inference_params = inference_params
 
         self.save_hyperparameters()

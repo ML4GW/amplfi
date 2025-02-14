@@ -3,10 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from gwpy.plot import Plot
-from gwpy.timeseries import TimeSeries
 
 from ..architectures.flows import FlowArchitecture
+from ..callbacks import StrainVisualization
 from ..testing import Result
 from .base import AmplfiModel
 
@@ -18,23 +17,33 @@ class FlowModel(AmplfiModel):
     A LightningModule for training normalizing flows
 
     Args:
+        *args:
+            See arguments in `amplfi.train.models.base.AmplfiModel`
         arch:
             Neural network architecture to train.
             This should be a subclass of `FlowArchitecture`.
         samples_per_event:
             Number of samples to draw per event for testing
         nside:
-            nside parameter for healpy
+            Healpix nside used when creating skymaps
+        min_samples_per_pix:
+        num_plot:
+            Number of testing events to plot skymaps, corner
+            plots and, if `plot_data` is `True`, strain data
+            visualizations.
+        plot_data:
+            If `True`, plot strain visualization for `num_plot`
+            of the testing set events
     """
 
     def __init__(
         self,
         *args,
         arch: FlowArchitecture,
-        samples_per_event: int = 200000,
-        num_corner: int = 10,
+        samples_per_event: int = 10000,
         nside: int = 32,
         min_samples_per_pix: int = 15,
+        num_plot: int = 10,
         plot_data: bool = False,
         **kwargs,
     ) -> None:
@@ -42,7 +51,7 @@ class FlowModel(AmplfiModel):
         super().__init__(*args, **kwargs)
         self.model = arch
         self.samples_per_event = samples_per_event
-        self.num_corner = num_corner
+        self.num_plot = num_plot
         self.nside = nside
         self.min_samples_per_pix = min_samples_per_pix
         self.plot_data = plot_data
@@ -123,126 +132,11 @@ class FlowModel(AmplfiModel):
         )
         return r
 
-    def plot(
-        self, strain: np.ndarray, asds: np.ndarray, result: bilby.result.Result
-    ):
-        """
-        Create various plots for debugging purposes
-        """
-        sample_rate = self.trainer.datamodule.hparams.sample_rate
-
-        strain_filename = self.outdir / f"{self.idx}_whitened.png"
-        spec_filename = self.outdir / f"{self.idx}_spectrogram.png"
-        asd_filename = self.outdir / f"{self.idx}_asd.png"
-        freq_data_filename = self.outdir / f"{self.idx}_whitened_frequency.png"
-
-        ifos = self.trainer.datamodule.hparams.ifos
-
-        # whitened time domain strain
-        plt.figure()
-        plt.title("Whitened Time Domain Strain")
-
-        # window data
-        # window = scipy.signal.get_window(("tukey", 0.1), strain.shape[-1])
-        # strain *= window[None]
-
-        for i, ifo in enumerate(ifos):
-            plt.plot(strain[i], label=ifo)
-
-        plt.legend()
-        plt.savefig(strain_filename)
-        plt.close()
-
-        # qscans
-        qscans = []
-
-        for i, ifo in enumerate(ifos):
-            ts = TimeSeries(
-                strain[i],
-                dt=1 / sample_rate,
-            )
-
-            spec = ts.q_transform(
-                logf=True,
-                whiten=False,
-                frange=(25, 200),
-                qrange=(4, 108),
-                outseg=(3.35, 3.6),
-            )
-            qscans.append(spec)
-
-        chirp_mass, mass_ratio = (
-            result.injection_parameters["chirp_mass"],
-            result.injection_parameters["mass_ratio"],
-        )
-        title = f"chirp_mass: {chirp_mass:2f}, mass_ratio: {mass_ratio:2f}"
-        plot = Plot(
-            *qscans,
-            figsize=(18, 5),
-            geometry=(1, 2),
-            yscale="log",
-            method="pcolormesh",
-            cmap="viridis",
-            title=title,
-        )
-
-        for i, ax in enumerate(plot.axes):
-            label = "" if i != 1 else "Normalized Energy"
-            plot.colorbar(ax=ax, label=label)
-
-        plot.savefig(spec_filename)
-        plt.close()
-
-        # asds
-        frequencies = self.trainer.datamodule.frequencies.numpy()
-        mask = frequencies > self.trainer.datamodule.hparams.highpass
-        frequencies_masked = frequencies[mask]
-        plt.figure()
-        for i, ifo in enumerate(ifos):
-
-            plt.loglog(frequencies_masked, asds[i], label=f"{ifo} asd")
-            plt.title("ASDs")
-            plt.xlabel("Frequency (Hz)")
-            plt.ylabel("Scaled Amplitude")
-
-        plt.legend()
-        plt.savefig(asd_filename)
-        plt.close()
-
-        # whitened frequency domain data
-        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-        for i, ifo in enumerate(ifos):
-            strain_fft = np.fft.rfft(strain[i])
-            freqs = np.fft.rfftfreq(n=strain[i].shape[-1], d=1 / sample_rate)
-
-            axes[0].plot(
-                freqs,
-                strain_fft.real / (sample_rate ** (1 / 2)),
-                label=f"{ifo} data",
-            )
-            axes[1].plot(
-                freqs,
-                strain_fft.imag / (sample_rate ** (1 / 2)),
-                label=f"{ifo} data",
-            )
-
-        axes[0].set_title("Real")
-        axes[1].set_title("Imaginary")
-
-        axes[0].set_ylabel("Whitened Amplitude")
-        axes[0].set_xlabel("Frequency (Hz)")
-        axes[0].set_xlabel("Frequency (Hz)")
-
-        plt.legend()
-
-        plt.savefig(freq_data_filename)
-        plt.close()
-
     def on_test_epoch_start(self):
         self.test_results: list[Result] = []
         self.idx = 0
 
-    def test_step(self, batch, _):
+    def test_step(self, batch, _) -> bilby.result.Result:
         strain, asds, parameters = batch
         context = (strain, asds.clone())
 
@@ -260,10 +154,10 @@ class FlowModel(AmplfiModel):
         self.test_results.append(result)
 
         # plot corner and skymap for a subset of the test results
-        if self.idx < self.num_corner:
-            skymap_filename = self.outdir / f"{self.idx}_mollview.png"
-            corner_filename = self.outdir / f"{self.idx}_corner.png"
-            fits_filename = self.outdir / f"{self.idx}.fits"
+        if self.idx < self.num_plot:
+            skymap_filename = self.test_outdir / f"{self.idx}_mollview.png"
+            corner_filename = self.test_outdir / f"{self.idx}_corner.png"
+            fits_filename = self.test_outdir / f"{self.idx}.fits"
             result.plot_corner(
                 save=True,
                 filename=corner_filename,
@@ -275,12 +169,14 @@ class FlowModel(AmplfiModel):
             result.fits_table.writeto(fits_filename, overwrite=True)
         self.idx += 1
 
+        return result
+
     def on_test_epoch_end(self):
         # pp plot
         bilby.result.make_pp_plot(
             self.test_results,
             save=True,
-            filename=self.outdir / "pp-plot.png",
+            filename=self.test_outdir / "pp-plot.png",
             keys=self.inference_params,
         )
 
@@ -306,8 +202,8 @@ class FlowModel(AmplfiModel):
         plt.title("Searched Area Cumulative Distribution Function")
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(self.outdir / "searched_area.png")
-        np.save(self.outdir / "searched_area.npy", searched_areas)
+        plt.savefig(self.test_outdir / "searched_area.png")
+        np.save(self.test_outdir / "searched_area.npy", searched_areas)
 
         plt.close()
         plt.figure(figsize=(10, 6))
@@ -319,4 +215,10 @@ class FlowModel(AmplfiModel):
         )
         plt.xlabel("Sq. deg.")
         plt.legend()
-        plt.savefig(self.outdir / "fifty_ninety_areas.png")
+        plt.savefig(self.test_outdir / "fifty_ninety_areas.png")
+
+    def configure_callbacks(self):
+        callbacks = []
+        if self.plot_data:
+            callbacks.append(StrainVisualization(self.test_outdir))
+        return callbacks
