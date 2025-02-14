@@ -257,7 +257,7 @@ class AmplfiDataset(pl.LightningDataModule):
             window_length,
             self.hparams.sample_rate,
             fftlength,
-            fast=self.hparams.highpass is not None,
+            fast=False,  # self.hparams.highpass is not None,
             average="median",
         )
 
