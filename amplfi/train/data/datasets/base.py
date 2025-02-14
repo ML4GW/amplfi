@@ -165,6 +165,16 @@ class AmplfiDataset(pl.LightningDataModule):
     # ================================================ #
     # Re-parameterizing some attributes
     # ================================================ #
+
+    @property
+    def frequencies(self):
+        """
+        Frequencies corresponding to an fft
+        of a timeseries of length `kernel_length`
+        """
+        size = int(self.hparams.kernel_length * self.hparams.sample_rate)
+        return torch.fft.rfftfreq(size, d=1 / self.hparams.sample_rate)
+
     @property
     def sample_length(self):
         return (
@@ -247,7 +257,7 @@ class AmplfiDataset(pl.LightningDataModule):
             window_length,
             self.hparams.sample_rate,
             fftlength,
-            fast=self.hparams.highpass is not None,
+            fast=False,  # self.hparams.highpass is not None,
             average="median",
         )
 
