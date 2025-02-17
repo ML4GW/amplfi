@@ -166,7 +166,7 @@ class FlowModel(AmplfiModel):
         # qscans
         qscans = []
 
-        for i, ifo in enumerate(ifos):
+        for i in range(len(ifos)):
             ts = TimeSeries(
                 strain[i],
                 dt=1 / sample_rate,
@@ -209,7 +209,6 @@ class FlowModel(AmplfiModel):
         frequencies_masked = frequencies[mask]
         plt.figure()
         for i, ifo in enumerate(ifos):
-
             plt.loglog(frequencies_masked, asds[i], label=f"{ifo} asd")
             plt.title("ASDs")
             plt.xlabel("Frequency (Hz)")
