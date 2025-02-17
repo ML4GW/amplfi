@@ -10,10 +10,10 @@ From: /sw/external/NGC/pytorch_23.05-py3.sif
 
 %post
 
-python -m pip install --upgrade pip && python -m pip install poetry
+python -m pip install --upgrade pip && python -m pip install uv
 
 cd /amplfi/ \
-    && poetry export -f requirements.txt -o requirements.txt.tmp --without-hashes \
+    && uv export --format requirements-txt -o requirements.txt.tmp --no-hashes \
     && cat requirements.txt.tmp | grep -v 'torch==' | grep -v 'torchaudio==' | grep -v 'triton' | grep -v 'protobuf' | grep -v 'nvidia' > requirements.txt \
     && rm requirements.txt.tmp \
     && python -m pip install -r requirements.txt --no-deps \

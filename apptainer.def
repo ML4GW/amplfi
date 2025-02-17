@@ -5,7 +5,7 @@ Stage: build
 %files
 ./amplfi /opt/amplfi/amplfi
 pyproject.toml /opt/amplfi/pyproject.toml
-poetry.lock /opt/amplfi/poetry.lock
+uv.lock /opt/amplfi/uv.lock
 conda-lock.yml /opt/amplfi/conda-lock.yml
 
 %post
@@ -21,7 +21,10 @@ apt-get clean
 micromamba create -p /env -f /opt/amplfi/conda-lock.yml
 
 cd /opt/amplfi
-micromamba run -p /env python -m pip install -e .
+micromamba run -p /env python -m pip install uv
+micromamba run -p /env uv export --no-hashes -o /tmp/requirements.txt
+micromamba run -p /env python -m pip install --no-deps -r /tmp/requirements.txt
+micromamba run -p /env python -m pip install --no-deps -e .
 
 # initialize our shell so that we can execute
 # commands in our environment at run time
