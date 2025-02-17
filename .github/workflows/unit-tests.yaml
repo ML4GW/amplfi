@@ -38,3 +38,4 @@ jobs:
             apt-get install -y build-essential
             apt-get clean
             uv run pytest tests
+        shell: bash
