@@ -152,10 +152,6 @@ class FlowModel(AmplfiModel):
         plt.figure()
         plt.title("Whitened Time Domain Strain")
 
-        # window data
-        # window = scipy.signal.get_window(("tukey", 0.1), strain.shape[-1])
-        # strain *= window[None]
-
         for i, ifo in enumerate(ifos):
             plt.plot(strain[i], label=ifo)
 
