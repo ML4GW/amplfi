@@ -41,9 +41,9 @@ def fill_kubernetes_template(output: Path, s3_bucket):
         )
 
         # set remote training config path
-        config["spec"]["template"]["spec"]["containers"][0]["args"][
-            2
-        ] = f"{s3_bucket}/cbc.yaml"
+        config["spec"]["template"]["spec"]["containers"][0]["args"][2] = (
+            f"{s3_bucket}/cbc.yaml"
+        )
 
         # set environment variables that will
         # be used in the training job by lightning
@@ -163,7 +163,6 @@ def create_runfile(
 
 
 def main():
-
     parser = ArgumentParser(
         description="Initialize a directory with configuration files "
         "for running end-to-end amplfi training or tuning pipelines"

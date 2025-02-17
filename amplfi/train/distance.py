@@ -1,4 +1,5 @@
 """Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
+
 import numpy as np
 import scipy as sp
 
@@ -41,10 +42,7 @@ def x3_prime(z):
 
 def x4_prime(z):
     return (
-        4 * z**3
-        + 12 * z
-        + (3 * z**2 + 5) * H(-z)
-        + (z**3 + 5 * z) * dHdz(-z)
+        4 * z**3 + 12 * z + (3 * z**2 + 5) * H(-z) + (z**3 + 5 * z) * dHdz(-z)
     )
 
 

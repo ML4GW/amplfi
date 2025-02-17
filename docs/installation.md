@@ -1,39 +1,53 @@
 Installation
 ============
 
-`AMPLFI` can be installed with `pip`
+`AMPLFI` can be installed with `pip` from PyPI 
 
 ```console
-pip install amplfi
+$ pip install amplfi
 ```
 
-and directly from source with either pip or poetry
+or directly from source
+
+
+```console
+$ git clone git@git.ligo.org:ml4gw/amplfi.git
+$ cd amplfi
+$ pip install .  
+```
+
+It is highly recommended that you install `AMPLFI` in a virtual environment using tools
+like `conda`, `venv`, `uv`, or `poetry`. `AMPLFI` is managed using `uv`, which is the tool
+we recommend.
 
 ```{eval-rst}
-.. tabs::
-  
-  .. tab:: Pip
-    
-    .. code-block:: console
+  .. tab:: uv
 
-      $ git clone git@git.ligo.org:ml4gw/amplfi.git
-      $ cd amplfi
-      $ pip install .
+      .. code-block:: console
 
-    Supported python versions: 3.9-3.12.
+        $ git clone git@git.ligo.org:ml4gw/amplfi.git
+        $ cd amplfi
+        $ uv sync
 
   .. tab:: Poetry
 
-    .. code-block:: console
+      .. code-block:: console
 
-      $ git clone git@git.ligo.org:ml4gw/amplfi.git
-      $ cd amplfi
-      $ poetry install
+        $ git clone git@git.ligo.org:ml4gw/amplfi.git
+        $ cd amplfi
+        $ poetry install
 
-    Supported python versions: 3.9-3.12.
+  .. tab:: venv
+
+      .. code-block:: console
+
+        $ git clone git@git.ligo.org:ml4gw/amplfi.git
+        $ cd amplfi
+        $ python -m venv ./venv 
+        $ source ./venv/bin/activate 
+
+      Supported python versions: 3.9-3.12.
 ```
-
-It is highly recommended that you install `AMPLFI` in a virtual environment like `conda` or `venv`.
 
 ## Data Generation
 Currently, running the data generation workflow that queries strain data requires utilizing the `AMPLFI` container.

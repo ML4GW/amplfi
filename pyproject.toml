@@ -1,72 +1,84 @@
-[tool.poetry]
+[project]
 name = "amplfi"
 version = "0.3.0"
 description = "Accelerated Multi-messenger PE with Likelihood Free Inference"
 authors = [
-    "Ethan Marx",
-    "Deep Chatterjee"
+    { name = "Ethan Marx" },
+    { name = "Deep Chatterjee" },
+]
+requires-python = ">=3.9,<3.13"
+dependencies = [
+    #lightray = ">=0.2.3"
+    "numpy<2.0.0",
+    "ml4gw>=0.7.1",
+    "lightning>=2.5.0",
+    "h5py>=3.10.0,<4",
+    "ray[default, tune]>=2.38.0,<3",
+    "bilby>=2.2.3,<3",
+    "healpy>=1.16.6,<2",
+    "pyro-ppl>=1.9.0,<2",
+    "jsonargparse[signatures]>=4.27.1,<5",
+    "urllib3>=1.25.4,<1.27",
+    "omegaconf>=2.3.0,<3",
+    "law>=0.1.19",
+    "mldatafind>=0.1.3",
+    "luigi>=3.5.1,<4",
+    "gwpy==3.0.8",
+    "wandb>=0.18.5,<0.19",
+    "torch>=2.5.0",
+    "s3fs>=2024.12.0,<2025",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.9,<3.13"
-numpy = "<2.0.0"
-ml4gw = ">=0.7.1"
-lightning = ">=2.5.0"
-h5py = "^3.10.0"
-ray = {version = "^2.38.0", extras = ["default", "tune"]}
-bilby = "^2.2.3"
-healpy = "^1.16.6"
-pyro-ppl = "^1.9.0"
-jsonargparse = {version = "^4.27.1", extras = ["signatures"]}
-urllib3 = ">=1.25.4,<1.27"
-omegaconf = "^2.3.0"
-#lightray = ">=0.2.3"
-law = ">=0.1.19"
-mldatafind = ">=0.1.3"
-luigi = "^3.5.1"
-gwpy="3.0.8"
-wandb = "^0.18.5"
-torch = ">=2.5.0"
-s3fs = "^2024.12.0"
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.7.0"
-jupyter = "^1.0.0"
-pytest = "^8.0.2"
-conda-lock = "^2.5.7"
-
-
-[tool.poetry.group.docs.dependencies]
-Sphinx = ">5.0"
-sphinx-rtd-theme = "^2.0.0"
-myst-parser = "^2.0.0"
-sphinx-autodoc-typehints = "^2.0.0"
-linkify-it-py = "^2.0.3"
-sphinx-tabs = "^3.4.7"
-
-[tool.poetry.scripts]
+[project.scripts]
 amplfi-init = "amplfi.amplfi_init:main"
 amplfi-flow-cli = "amplfi.train.cli.flow:main"
 amplfi-similarity-cli = "amplfi.train.cli.similarity:main"
 
-[tool.black]
-line-length = 79
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.tox
-  | _build
-  | dist
-  | docs
-)/
-'''
+[dependency-groups]
+dev = [
+    "pre-commit>=3.7.0,<4",
+    "jupyter>=1.0.0,<2",
+    "pytest>=8.0.2,<9",
+    "conda-lock>=2.5.7,<3",
+    "ruff>=0.9.6",
+]
+docs = [
+    "Sphinx>5.0",
+    "sphinx-rtd-theme>=2.0.0,<3",
+    "myst-parser>=2.0.0,<3",
+    "sphinx-autodoc-typehints>=2.0.0,<3",
+    "linkify-it-py>=2.0.3,<3",
+    "sphinx-tabs>=3.4.7,<4",
+]
 
-[tool.isort]
-known_first_party = ["amplfi"]
-multi_line_output = 3
-include_trailing_comma = true
+[tool.uv]
+default-groups = [
+    "dev",
+    "docs",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+
+[tool.ruff]
+line-length = 79
+extend-exclude = ["docs"]
+
+
+[tool.ruff.lint]
+mccabe = {"max-complexity" = 18}
+select = ["B", "C", "E", "F", "W",  "B9"]
+ignore = ["W605", "E203"]  # ignore for consistency with black
+
+# ignore asterisk imports and unused
+# import errors in __init__ files
+per-file-ignores =  {"**/__init__.py" = ["F401", "F403"]}
+
+
+[tool.ruff.lint.isort]
+known-first-party = ["amplfi"]
+# multi-line-output = 3
+# include-trailing-comma = true

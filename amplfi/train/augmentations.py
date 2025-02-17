@@ -25,7 +25,7 @@ class WaveformProjector(torch.nn.Module):
         dec: torch.Tensor,
         psi: torch.Tensor,
         phi: torch.Tensor,
-        **polarizations: torch.Tensor
+        **polarizations: torch.Tensor,
     ) -> torch.Tensor:
         responses = gw.compute_observed_strain(
             dec,

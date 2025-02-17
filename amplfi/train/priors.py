@@ -28,13 +28,14 @@ def sg_prior() -> ParameterSampler:
 
 
 def precessing_to_lalsimulation_parameters(
-    parameters: dict[str, torch.Tensor]
+    parameters: dict[str, torch.Tensor],
 ) -> dict[str, torch.Tensor]:
     """
     Convert precessing spin parameters to lalsimulation parameters
     """
-    chirp_mass, mass_ratio = parameters.pop("chirp_mass"), parameters.pop(
-        "mass_ratio"
+    chirp_mass, mass_ratio = (
+        parameters.pop("chirp_mass"),
+        parameters.pop("mass_ratio"),
     )
     mass_1, mass_2 = chirp_mass_and_mass_ratio_to_components(
         chirp_mass, mass_ratio
@@ -80,13 +81,14 @@ def precessing_to_lalsimulation_parameters(
 
 
 def aligned_to_lalsimulation_parameters(
-    parameters: dict[str, torch.Tensor]
+    parameters: dict[str, torch.Tensor],
 ) -> dict[str, torch.Tensor]:
     """
     Convert precessing spin parameters to lalsimulation parameters
     """
-    chirp_mass, mass_ratio = parameters.pop("chirp_mass"), parameters.pop(
-        "mass_ratio"
+    chirp_mass, mass_ratio = (
+        parameters.pop("chirp_mass"),
+        parameters.pop("mass_ratio"),
     )
     mass_1, mass_2 = chirp_mass_and_mass_ratio_to_components(
         chirp_mass, mass_ratio

@@ -19,7 +19,6 @@ class FlowArchitecture(PyroModule):
         embedding_weights: Optional[Path] = None,
         freeze_embedding: bool = False,
     ):
-
         super().__init__()
         self.num_params = num_params
         self.embedding_net = embedding_net
@@ -36,7 +35,7 @@ class FlowArchitecture(PyroModule):
             checkpoint = torch.load(embedding_weights)
             state_dict = checkpoint["state_dict"]
             state_dict = {
-                k.strip("model.embedding"): v
+                k.removeprefix("model.embedding"): v
                 for k, v in state_dict.items()
                 if k.startswith("model.embedding")
             }

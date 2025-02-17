@@ -56,17 +56,16 @@ class InverseAutoregressiveFlow(FlowArchitecture):
         hidden_features: int = 50,
         num_transforms: int = 5,
         num_blocks: int = 2,
-        activation: torch.nn.modules.activation = torch.nn.Tanh(),
+        activation: torch.nn.modules.activation = torch.nn.Tanh,
         transform_type: Literal["spline", "affine"] = "spline",
         **kwargs,
     ):
-
         super().__init__(*args, **kwargs)
         self.transform_type = transform_type
         self.hidden_features = hidden_features
         self.num_blocks = num_blocks
         self.num_transforms = num_transforms
-        self.activation = activation
+        self.activation = activation()
 
         # register these as buffers so the
         # distributions are moved to the correct device

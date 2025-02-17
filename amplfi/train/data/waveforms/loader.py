@@ -34,7 +34,6 @@ class WaveformLoader(WaveformSampler):
         val_frac: float,
         **kwargs,
     ) -> None:
-
         super().__init__(*args, **kwargs)
         self.val_frac = val_frac
         self.waveform_file = waveform_file
