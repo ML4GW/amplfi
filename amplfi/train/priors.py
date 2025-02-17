@@ -119,6 +119,10 @@ def aligned_to_lalsimulation_parameters(
     return output
 
 
+# TODO: we want validate_args = False at test time
+# but True at train time
+
+
 # priors and parameter transformers for cbc use case
 def aligned_cbc_prior() -> ParameterSampler:
     """
@@ -129,30 +133,37 @@ def aligned_cbc_prior() -> ParameterSampler:
         chirp_mass=Uniform(
             torch.as_tensor(10, dtype=torch.float32),
             torch.as_tensor(100, dtype=torch.float32),
+            validate_args=False,
         ),
         mass_ratio=Uniform(
             torch.as_tensor(0.125, dtype=torch.float32),
             torch.as_tensor(0.999, dtype=torch.float32),
+            validate_args=False,
         ),
         distance=Uniform(
             torch.as_tensor(100, dtype=torch.float32),
             torch.as_tensor(3100, dtype=torch.float32),
+            validate_args=False,
         ),
         inclination=distributions.Sine(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(torch.pi, dtype=torch.float32),
+            validate_args=False,
         ),
         phic=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(2 * torch.pi, dtype=torch.float32),
+            validate_args=False,
         ),
         chi1=Uniform(
             torch.as_tensor(-0.999, dtype=torch.float32),
             torch.as_tensor(0.999, dtype=torch.float32),
+            validate_args=False,
         ),
         chi2=Uniform(
             torch.as_tensor(-0.999, dtype=torch.float32),
             torch.as_tensor(0.999, dtype=torch.float32),
+            validate_args=False,
         ),
     )
 
@@ -167,46 +178,57 @@ def precessing_cbc_prior() -> ParameterSampler:
         chirp_mass=Uniform(
             torch.as_tensor(10, dtype=torch.float32),
             torch.as_tensor(100, dtype=torch.float32),
+            validate_args=False,
         ),
         mass_ratio=Uniform(
             torch.as_tensor(0.125, dtype=torch.float32),
             torch.as_tensor(0.999, dtype=torch.float32),
+            validate_args=False,
         ),
         distance=Uniform(
             torch.as_tensor(100, dtype=torch.float32),
             torch.as_tensor(3100, dtype=torch.float32),
+            validate_args=False,
         ),
         inclination=distributions.Sine(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(torch.pi, dtype=torch.float32),
+            validate_args=False,
         ),
         phic=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(2 * torch.pi, dtype=torch.float32),
+            validate_args=False,
         ),
         a_1=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(0.999, dtype=torch.float32),
+            validate_args=False,
         ),
         a_2=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(0.999, dtype=torch.float32),
+            validate_args=False,
         ),
         tilt_1=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(pi, dtype=torch.float32),
+            validate_args=False,
         ),
         tilt_2=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(pi, dtype=torch.float32),
+            validate_args=False,
         ),
         phi_jl=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(2 * torch.pi, dtype=torch.float32),
+            validate_args=False,
         ),
         phi_12=Uniform(
             torch.as_tensor(0, dtype=torch.float32),
             torch.as_tensor(2 * torch.pi, dtype=torch.float32),
+            validate_args=False,
         ),
     )
 
@@ -215,23 +237,30 @@ def cbc_testing_delta_function_prior() -> ParameterSampler:
     return ParameterSampler(
         chirp_mass=distributions.DeltaFunction(
             torch.as_tensor(55, dtype=torch.float32),
+            validate_args=False,
         ),
         mass_ratio=distributions.DeltaFunction(
             torch.as_tensor(0.9, dtype=torch.float32),
+            validate_args=False,
         ),
         distance=distributions.DeltaFunction(
             torch.as_tensor(1000, dtype=torch.float32),
+            validate_args=False,
         ),
         inclination=distributions.DeltaFunction(
             torch.as_tensor(torch.pi / 6, dtype=torch.float32),
+            validate_args=False,
         ),
         phic=distributions.DeltaFunction(
             torch.as_tensor(torch.pi, dtype=torch.float32),
+            validate_args=False,
         ),
         chi1=distributions.DeltaFunction(
             torch.as_tensor(0, dtype=torch.float32),
+            validate_args=False,
         ),
         chi2=distributions.DeltaFunction(
             torch.as_tensor(0, dtype=torch.float32),
+            validate_args=False,
         ),
     )
