@@ -2,6 +2,7 @@
 Additional Lightning DataModules for testing
 amplfi models across various usecases
 """
+
 import random
 from pathlib import Path
 from typing import Optional
@@ -28,9 +29,6 @@ def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
     gmsts = np.array(gmsts)
     # calculate the relative azimuthal angle in the range [0, 2pi]
     phi = np.remainder(ra - gmsts, 2 * np.pi)
-
-    # convert to range [-pi, pi]
-    phi[phi > np.pi] -= 2 * np.pi
 
     return phi
 
@@ -114,8 +112,6 @@ class StrainTestingDataset(FlowDataset):
 
         start, stop = middle + pre, middle + post
         strain = strain[..., start:stop]
-
-        print(parameters["chirp_mass"][0], parameters["mass_ratio"][0])
         # convert parameters to a tensor
         parameters = [
             torch.Tensor(parameters[k]) for k in self.hparams.inference_params
@@ -206,7 +202,6 @@ class ParameterTestingDataset(FlowDataset):
         waveform_generation_parameters: Optional[list[str]] = None,
         **kwargs,
     ):
-
         super().__init__(*args, **kwargs)
         self.dataset_path = dataset_path
 
@@ -317,7 +312,6 @@ class ParameterTestingDataset(FlowDataset):
 
         with h5py.File(self.dataset_path) as f:
             for parameter in load:
-
                 if parameter == "phi":
                     continue
 
@@ -404,8 +398,10 @@ class ParameterTestingDataset(FlowDataset):
 
         [cross, plus, parameters], [X] = batch
 
-        keys = [k for k in self.hparams.inference_params]
-        parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
+        parameters = {
+            k: parameters[:, i]
+            for i, k in enumerate(self.hparams.inference_params)
+        }
 
         dec, psi, phi = (
             parameters["dec"].float(),
