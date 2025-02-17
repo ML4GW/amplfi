@@ -15,20 +15,23 @@ Now, install `AMPLFI` editably. It is recommended to do so in a virtual environm
 
 ```{eval-rst}
 .. tabs::
+   .. tab:: Pip
+
+      .. code-block:: console
+
+          $ pip install -e .
+
+   .. tab:: uv
+      
+      .. code-block:: console
+
+          $ uv sync
 
    .. tab:: Poetry
 
       .. code-block:: console
 
           $ poetry install
-
-      Supported python versions: 3.9-3.12.
-
-   .. tab:: Pip
-
-      .. code-block:: console
-
-          $ pip install -e .
 
       Supported python versions: 3.9-3.12.
 ```
