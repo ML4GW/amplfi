@@ -30,12 +30,12 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install the project
-        run: uv sync --all-extras --dev
-
-      - name: Run tests
         run: |
             apt-get update
             apt-get install -y build-essential
             apt-get clean
+            uv sync --all-extras --dev
+            
+      - name: Run tests
+        run: |
             uv run pytest tests
-        shell: bash
