@@ -8,7 +8,7 @@ authors = [
 ]
 requires-python = ">=3.9,<3.13"
 dependencies = [
-    #lightray = ">=0.2.3"
+    "lightray>=0.2.4",
     "numpy<2.0.0",
     "ml4gw>=0.7.1",
     "lightning>=2.5.0",

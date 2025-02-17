@@ -182,6 +182,7 @@ dependencies = [
     { name = "jsonargparse", extra = ["signatures"] },
     { name = "law" },
     { name = "lightning" },
+    { name = "lightray" },
     { name = "luigi" },
     { name = "ml4gw" },
     { name = "mldatafind" },
@@ -221,6 +222,7 @@ requires-dist = [
     { name = "jsonargparse", extras = ["signatures"], specifier = ">=4.27.1,<5" },
     { name = "law", specifier = ">=0.1.19" },
     { name = "lightning", specifier = ">=2.5.0" },
+    { name = "lightray", specifier = ">=0.2.4" },
     { name = "luigi", specifier = ">=3.5.1,<4" },
     { name = "ml4gw", specifier = ">=0.7.1" },
     { name = "mldatafind", specifier = ">=0.1.3" },
@@ -2265,6 +2267,24 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d5/26/a449b858a6beaaf779d56775a5c675d636af11e32004e4420506a48eb7f4/lightning_utilities-0.12.0.tar.gz", hash = "sha256:95b5f22a0b69eb27ca0929c6c1d510592a70080e1733a055bf154903c0343b60", size = 29677 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/50/8d/da77ceb92ed674da93959184a2777d08ccbd872559fb52aba16b91686b7e/lightning_utilities-0.12.0-py3-none-any.whl", hash = "sha256:b827f5768607e81ccc7b2ada1f50628168d1cc9f839509c7e87c04b59079e66c", size = 28487 },
+]
+
+[[package]]
+name = "lightray"
+version = "0.2.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jsonargparse", extra = ["signatures"] },
+    { name = "lightning" },
+    { name = "omegaconf" },
+    { name = "pyarrow" },
+    { name = "ray", extra = ["default", "tune"] },
+    { name = "s3fs" },
+    { name = "wandb" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a2/06/e213ba1ffd71da2ea0f0c8b354c90d809273b3f586180441375f18c33fdf/lightray-0.2.4.tar.gz", hash = "sha256:aa90faed38f236552cd688ba624e70c1db1ce3d64f0430ada4307e42c7fd8eb1", size = 144794 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/67/9f/c885e222ec4e50fe9f6e3067ee6cc9f8631e3b642c69db83934423043921/lightray-0.2.4-py3-none-any.whl", hash = "sha256:c0868ee362f967a86cc57b4af9578b362e51ef09c998603d7ff62218130198fe", size = 7206 },
 ]
 
 [[package]]
