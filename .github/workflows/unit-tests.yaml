@@ -33,5 +33,8 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run tests
-        # For example, using `pytest`
-        run: uv run pytest tests
+        run: |
+            apt-get update
+            apt-get install -y build-essential
+            apt-get clean
+            uv run pytest tests
