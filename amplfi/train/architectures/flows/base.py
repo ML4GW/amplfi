@@ -3,7 +3,6 @@ from contextlib import nullcontext
 from pathlib import Path
 from typing import Callable, Optional
 
-
 import torch
 from pyro.distributions import ConditionalTransformedDistribution, transforms
 from pyro.distributions.conditional import ConditionalComposeTransformModule
