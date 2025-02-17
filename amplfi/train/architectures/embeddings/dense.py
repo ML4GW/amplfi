@@ -95,7 +95,6 @@ class BasicBlock(torch.nn.Module):
         self.norm = nn.BatchNorm1d(n_channels)
 
     def forward(self, x: Tensor) -> Tensor:
-
         out = self.layer(x)
         out = self.norm(out)
         out = self.activation(out)

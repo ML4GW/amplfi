@@ -18,7 +18,6 @@ class SimilarityDataset(AmplfiDataset):
         self.augmentor = augmentor
 
     def inject(self, X, cross, plus, parameters):
-
         X, psds = self.psd_estimator(X)
         dec, psi, phi = self.waveform_sampler.sample_extrinsic(X)
 

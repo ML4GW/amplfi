@@ -9,7 +9,6 @@ from amplfi.train.data.datasets import FlowDataset
 
 
 def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
-
     # get the sidereal time at the observation time
     gmsts = []
     for t in gpstimes:

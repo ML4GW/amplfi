@@ -61,12 +61,12 @@ class AmplfiDataSandbox(DataSandbox):
     @classmethod
     def config(cls):
         config = super().config()
-        config[f"singularity_sandbox_{cls.sandbox_type}"][
-            "forward_law"
-        ] = False
-        config[f"singularity_sandbox_{cls.sandbox_type}"][
-            "law_executable"
-        ] = "/env/bin/law"
+        config[f"singularity_sandbox_{cls.sandbox_type}"]["forward_law"] = (
+            False
+        )
+        config[f"singularity_sandbox_{cls.sandbox_type}"]["law_executable"] = (
+            "/env/bin/law"
+        )
         return config
 
 

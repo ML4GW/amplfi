@@ -19,7 +19,6 @@ class ResNet(ResNet1D, Embedding):
         stride_type: Optional[list[Literal["stride", "dilation"]]] = None,
         norm_layer: Optional[NormLayer] = None,
     ):
-
         super().__init__(
             num_ifos,
             layers=layers,

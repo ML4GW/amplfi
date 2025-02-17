@@ -22,7 +22,7 @@ class MultiModal(Embedding):
         width_per_group: int = 64,
         stride_type: Optional[list[Literal["stride", "dilation"]]] = None,
         norm_layer: Optional[NormLayer] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         MultiModal embedding network that embeds both time and frequency data.
@@ -94,9 +94,8 @@ class MultiModalPsd(Embedding):
         width_per_group: int = 64,
         stride_type: Optional[list[Literal["stride", "dilation"]]] = None,
         norm_layer: Optional[NormLayer] = None,
-        **kwargs
+        **kwargs,
     ):
-
         super().__init__()
         self.context_dim = time_context_dim + freq_context_dim
         self.time_domain_resnet = ResNet1D(

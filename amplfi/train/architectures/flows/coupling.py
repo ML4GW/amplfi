@@ -14,7 +14,7 @@ class CouplingFlow(FlowArchitecture):
         hidden_features: int = 512,
         num_transforms: int = 5,
         num_blocks: int = 2,
-        activation: torch.nn.modules.activation = torch.nn.Tanh(),
+        activation: torch.nn.modules.activation = torch.nn.Tanh,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -22,7 +22,7 @@ class CouplingFlow(FlowArchitecture):
         self.hidden_features = hidden_features
         self.num_blocks = num_blocks
         self.num_transforms = num_transforms
-        self.activation = activation
+        self.activation = activation()
 
         # register these as buffers so they are moved to the correct device
         self.register_buffer("mean", torch.zeros(self.num_params))

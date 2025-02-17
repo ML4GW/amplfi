@@ -112,14 +112,14 @@ def covariance_loss(x: Tensor) -> Tensor:
 
     Generalized version of the covariance loss with support for tensors with more than
     two dimensions. Adapted from VICRegL:
-    https://github.com/facebookresearch/VICRegL/blob/803ae4c8cd1649a820f03afb4793763e95317620/main_vicregl.py#L299 # noqa
+    https://github.com/facebookresearch/VICRegL/blob/803ae4c8cd1649a820f03afb4793763e95317620/main_vicregl.py#L299
 
     Args:
         x: Tensor with shape (batch_size, ..., dim).
 
     Returns:
           The computed VICReg covariance loss.
-    """
+    """  # noqa
     x = x - x.mean(dim=0)
     batch_size = x.size(0)
     dim = x.size(-1)

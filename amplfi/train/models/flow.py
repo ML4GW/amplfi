@@ -47,7 +47,6 @@ class FlowModel(AmplfiModel):
         plot_data: bool = False,
         **kwargs,
     ) -> None:
-
         super().__init__(*args, **kwargs)
         self.model = arch
         self.samples_per_event = samples_per_event
@@ -118,7 +117,7 @@ class FlowModel(AmplfiModel):
             param: bilby.core.prior.base.Prior(latex_label=param)
             for param in self.inference_params
         }
-        posterior = dict()
+        posterior = {}
         for idx, k in enumerate(self.inference_params):
             posterior[k] = samples.T[idx].flatten()
         posterior = pd.DataFrame(posterior)

@@ -98,8 +98,9 @@ def download_training_data(bucket: str, data_dir: str):
     """
     data_dir = str(data_dir)
     logging.info(
-        "Downloading data from S3 bucket {} to "
-        "local directory {}".format(bucket, data_dir)
+        "Downloading data from S3 bucket {} to local directory {}".format(
+            bucket, data_dir
+        )
     )
 
     # make a local directory to cache data if it

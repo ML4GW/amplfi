@@ -28,7 +28,7 @@ class ParameterSampler(torch.nn.Module):
     def __init__(
         self,
         conversion_function: Optional[Callable] = None,
-        **parameters: Callable
+        **parameters: Callable,
     ):
         """
         A class for sampling parameters from a prior distribution

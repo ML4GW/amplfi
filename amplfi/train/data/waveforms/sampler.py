@@ -54,7 +54,6 @@ class WaveformSampler(torch.nn.Module):
         parameter_transformer: Optional[ParameterTransformer] = None,
         **kwargs,
     ) -> None:
-
         super().__init__(*args, **kwargs)
         self.parameter_transformer = parameter_transformer or (lambda x: x)
         self.inference_params = inference_params
