@@ -185,7 +185,7 @@ class StrainVisualization(pl.Callback):
 
         # unpack batch
         strain, asds, parameters = batch
-        strain, asds = strain[0], asds[0]
+        strain, asds = strain[0].cpu().numpy(), asds[0].cpu().numpy()
 
         # steal some attributes needed from datamodule
         # TODO: should we link these to the pl_module?

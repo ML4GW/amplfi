@@ -135,6 +135,49 @@ class FlowModel(AmplfiModel):
         self.test_results: list[Result] = []
         self.idx = 0
 
+    def filter_parameters(self, parameters: torch.Tensor):
+        """
+        Filter the descaled parameters to keep only valid samples
+        within their boundaries.
+
+        Args:
+            descaled (torch.Tensor): The descaled parameters tensor.
+
+        Returns:
+            torch.Tensor: The filtered descaled parameters.
+        """
+        net_mask = torch.ones(
+            parameters.shape[0], dtype=bool, device=parameters.device
+        )
+        waveform_sampler = self.trainer.datamodule.waveform_sampler
+        priors = waveform_sampler.parameter_sampler.parameters
+        for i, param in enumerate(self.inference_params):
+            samples = parameters[:, i]
+            if param in ["dec", "phi", "psi"]:
+                prior = getattr(
+                    self.trainer.datamodule.waveform_sampler, param
+                )
+            else:
+                prior = priors[param]
+
+            mask = (prior.log_prob(samples) == float("-inf")).to(
+                samples.device
+            )
+            self._logger.debug(
+                f"Removed {mask.sum()}/{len(mask)} samples for parameter "
+                f"{param} outside of prior range"
+            )
+
+            net_mask &= ~mask
+
+        self._logger.info(
+            f"Removed {(~net_mask).sum()}/{len(net_mask)} total samples "
+            "outside of prior range"
+        )
+        parameters = parameters[net_mask]
+
+        return parameters
+
     def test_step(self, batch, _) -> bilby.result.Result:
         strain, asds, parameters = batch
         context = (strain, asds.clone())
@@ -143,6 +186,7 @@ class FlowModel(AmplfiModel):
             self.hparams.samples_per_event, context=context
         )
         descaled = self.trainer.datamodule.scale(samples, reverse=True)
+        descaled = self.filter_parameters(descaled)
         parameters = self.trainer.datamodule.scale(parameters, reverse=True)
 
         result = self.cast_as_bilby_result(
