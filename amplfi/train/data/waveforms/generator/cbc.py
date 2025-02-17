@@ -63,4 +63,3 @@ class CBCGenerator(WaveformGenerator):
         hc, hp = waveforms.transpose(1, 0)
 
         return hc.float(), hp.float()
-
