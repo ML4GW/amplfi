@@ -155,7 +155,7 @@ address = ray://11.22.10.27:10001
 Now, launch the run!
 
 ```console
-lightray --tune.yaml -- --config cbc.yaml
+lightray --config tune.yaml -- --config cbc.yaml
 ```
 
 ```{eval-rst}
@@ -273,7 +273,7 @@ Finally, launch the hyperparameter tuning using `lightray` as above.
 echo "#### ASSUMING RAY CLUSTER IS UP, CALLING SCRIPT ####"
 apptainer run --bind ${AMPLFI_DATADIR},${AMPLFI_OUTDIR} \
   --nv ${AMPLFI_CONTAINER_ROOT}/amplfi.sif \
-  lightray --tune.yaml --ray_init.configure_logging false -- \
+  lightray --config tune.yaml --ray_init.configure_logging false -- \
   --config cbc.yaml
 ```
 We have to set `configure_logging=False` in `ray.init` to since by default the logging

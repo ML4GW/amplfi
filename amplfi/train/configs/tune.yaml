@@ -27,7 +27,7 @@ run_config:
     class_path: ray.train.CheckpointConfig
     init_args:
       num_to_keep: 5
-      checkpoint_score_attribute: "valid_loss_epoch"
+      checkpoint_score_attribute: "valid_loss"
       checkpoint_score_order: "min"
   verbose: null
 
@@ -41,7 +41,11 @@ ray_init:
   
 # tune.Tune.param_space
 param_space:
-  model.learning_rate: tune.loguniform(1e-3, 4)
+  model.learning_rate: tune.loguniform(1e-5, 1e-3)
+  model.weight_decay: tune.loguniform(1e-4, 1e-3)
+  model.arch.embedding_net.time_context_dim: tune.choice([12, 18, 24, 30])
+  model.arch.embedding_net.freq_context_dim: tune.choice([16, 32, 64, 128])
+  data.batch_size: tune.choice([600, 800])
 
 # ray.tune.TuneCallback
 tune_callback:
