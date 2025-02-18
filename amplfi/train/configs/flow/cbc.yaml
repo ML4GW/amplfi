@@ -34,7 +34,7 @@ model:
     nside: 32
     min_samples_per_pix: 15
     samples_per_event: 10000
-    num_corner: 50
+    num_plot: 50
     arch:
       class_path: amplfi.train.architectures.flows.MaskedAutoregressiveFlow
       init_args:
@@ -77,7 +77,7 @@ data:
     min_valid_duration: 10000.0
     num_files_per_batch: 10
     waveform_sampler: 
-      class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
+      class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
       init_args:
         jitter: 0.1
         num_fit_params: 100000
@@ -103,7 +103,5 @@ data:
         num_test_waveforms: 200
         approximant: ml4gw.waveforms.IMRPhenomD
         f_min: 20
-        f_max: 1024
-        ringdown_duration: 1.0
-        waveform_arguments:
-          f_ref: 40
+        f_ref: 40
+        right_pad: 0.5
