@@ -180,11 +180,11 @@ class StrainVisualization(pl.Callback):
         # test_step returns bilby result object
         result = outputs
 
-        if dataloader_idx >= self.num_plot:
+        if batch_idx >= self.num_plot:
             return
 
         # unpack batch
-        strain, asds, parameters = batch
+        strain, asds, _ = batch
         strain, asds = strain[0].cpu().numpy(), asds[0].cpu().numpy()
 
         # steal some attributes needed from datamodule
@@ -194,14 +194,10 @@ class StrainVisualization(pl.Callback):
         ifos = trainer.datamodule.hparams.ifos
 
         # filenames for various plots
-        whitened_td_strain_fname = (
-            self.outdir / f"{dataloader_idx}_whitened_td.png"
-        )
-        whitened_fd_strain_fname = (
-            self.outdir / f"{dataloader_idx}_whitened_fd.png"
-        )
-        qscan_fname = self.outdir / f"{dataloader_idx}_qscan.png"
-        asd_fname = self.outdir / f"{dataloader_idx}_asd.png"
+        whitened_td_strain_fname = self.outdir / f"{batch_idx}_whitened_td.png"
+        whitened_fd_strain_fname = self.outdir / f"{batch_idx}_whitened_fd.png"
+        qscan_fname = self.outdir / f"{batch_idx}_qscan.png"
+        asd_fname = self.outdir / f"{batch_idx}_asd.png"
 
         # whitened time domain strain
         plt.figure()
