@@ -5,6 +5,7 @@ trainer:
   strategy: auto
   devices: auto
   profiler: "simple"
+  enable_progress_bar: true
   logger:
     - class_path: lightning.pytorch.loggers.WandbLogger
       init_args:
