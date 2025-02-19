@@ -15,6 +15,9 @@ from fsspec.exceptions import FSTimeoutError
 # s3 retry configuration
 retry_config = {"retries": {"total_max_attempts": 10, "mode": "adaptive"}}
 
+# suppress botocore logs
+logging.getLogger("botocore").setLevel(logging.WARNING)
+
 
 def split_data_dir(data_dir: Union[str, Path]) -> Tuple[Optional[str], str]:
     """
