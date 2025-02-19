@@ -194,7 +194,7 @@ class AmplfiDataset(pl.LightningDataModule):
     @property
     def num_workers(self):
         local_world_size = len(self.trainer.device_ids)
-        return min(6, int(os.cpu_count() / local_world_size))
+        return min(12, int(os.cpu_count() / local_world_size))
 
     @property
     def val_batch_size(self):
