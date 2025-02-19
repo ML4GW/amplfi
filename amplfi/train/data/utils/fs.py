@@ -66,11 +66,11 @@ def _download(
     """
 
     lockfile = target + ".lock"
-    logging.info(f"Downloading {source} to {target}")
+    logging.debug(f"Downloading {source} to {target}")
     for i in range(num_retries):
         with FileLock(lockfile):
             if os.path.exists(target):
-                logging.info(
+                logging.debug(
                     f"Object {source} already downloaded by another process"
                 )
                 return
@@ -78,7 +78,7 @@ def _download(
                 s3.get(source, target)
                 break
             except (ResponseStreamingError, FSTimeoutError, ClientError):
-                logging.info(
+                logging.debug(
                     "Download attempt {} for object {} "
                     "was interrupted, retrying".format(i + 1, source)
                 )
