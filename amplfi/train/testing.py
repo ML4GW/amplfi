@@ -3,15 +3,13 @@ from pathlib import Path
 import bilby
 import healpy as hp
 import matplotlib.pyplot as plt
+import ml4gw.utils.healpix as mlhp
 import numpy as np
 from astropy import io, table
 from astropy import units as u
+from ml4gw.constants import PI
 
 from . import distance
-
-
-def nest2uniq(nside, ipix):
-    return 4 * nside * nside + ipix
 
 
 def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
@@ -25,10 +23,10 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
         nside: nside parameter for HEALPix
         min_samples_per_pix: minimum # samples per pixel for distance ansatz
     """
-    theta = np.pi / 2 - dec
+    theta = PI / 2 - dec
     # mask out non physical samples;
-    mask = (ra > 0) * (ra < 2 * np.pi)
-    mask &= (theta > 0) * (theta < np.pi)
+    mask = (ra > 0) * (ra < 2 * PI)
+    mask &= (theta > 0) * (theta < PI)
 
     ra = ra[mask]
     dec = dec[mask]
@@ -38,7 +36,7 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     num_samples = len(ra)
 
     # calculate number of samples in each pixel
-    NPIX = hp.nside2npix(nside)
+    NPIX = int(mlhp.nside2npix(nside))
     ipix = hp.ang2pix(nside, theta, ra, nest=True)
     uniq, counts = np.unique(ipix, return_counts=True)
 
@@ -47,7 +45,7 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     m = np.zeros(NPIX)
     m[np.in1d(range(NPIX), uniq)] = counts
     post = m / num_samples
-    post /= hp.nside2pixarea(nside)
+    post /= mlhp.nside2pixarea(nside)
     post /= u.sr
 
     # compute distance ansatz for pixels containing
@@ -73,7 +71,7 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     norm = np.zeros(NPIX)
     norm[np.in1d(range(NPIX), good_ipix)] = np.array(dist_norm)
     norm /= u.Mpc**2
-    uniq_ipix = nest2uniq(nside, np.arange(NPIX))
+    uniq_ipix = mlhp.nest2uniq(nside, np.arange(NPIX))
 
     # convert to astropy table
     t = table.Table(
@@ -104,7 +102,7 @@ class Result(bilby.result.Result):
 
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
-        theta_inj = np.pi / 2 - dec_inj
+        theta_inj = PI / 2 - dec_inj
         true_ipix = hp.ang2pix(nside, theta_inj, ra_inj, nest=True)
 
         sorted_idxs = np.argsort(healpix)[
@@ -131,7 +129,7 @@ class Result(bilby.result.Result):
         healpix = self.fits_table.data["PROBDENSITY"]
         ra_inj = self.injection_parameters["phi"]
         dec_inj = self.injection_parameters["dec"]
-        theta_inj = np.pi / 2 - dec_inj
+        theta_inj = PI / 2 - dec_inj
         plt.close()
         # plot molleweide
         fig = hp.mollview(healpix, nest=True)

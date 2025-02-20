@@ -2,14 +2,22 @@
 
 import numpy as np
 import scipy as sp
+import torch
+from ml4gw.constants import PI
 
 
 def P(x):
-    return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
+    if isinstance(x, torch.Tensor):
+        return torch.exp(-0.5 * x**2) / np.sqrt(2 * PI)
+    else:
+        return np.exp(-0.5 * x**2) / np.sqrt(2 * PI)
 
 
 def Q(x):
-    return sp.special.erfc(x / np.sqrt(2)) / 2
+    if isinstance(x, torch.Tensor):
+        return 0.5 * torch.special.erfc(x / np.sqrt(2))
+    else:
+        return 0.5 * sp.special.erfc(x / np.sqrt(2))
 
 
 def H(x):
