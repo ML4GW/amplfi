@@ -55,11 +55,16 @@ def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
 
 
 def P(x):
-    return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
+    return torch.exp(-0.5 * x**2) / torch.sqrt(
+        torch.tensor(2 * PI, device=x.device)
+    )
 
 
 def Q(x):
-    return sp.special.erfc(x / np.sqrt(2)) / 2
+    return (
+        torch.special.erfc(x / torch.sqrt(torch.tensor(2, device=x.device)))
+        / 2
+    )
 
 
 def H(x):
@@ -120,15 +125,19 @@ def moments_from_samples_impl(d):
         d:
            Distance samples
     """
+    axis = 1
+    if d.dim() == 1:
+        axis = 0
+
     d_2 = d**2
-    rho = d_2.sum()
+    rho = d_2.sum(axis=axis)
     d_3 = d**3
-    d_3 = d_3.sum()
+    d_3 = d_3.sum(axis=axis)
     d_4 = d**4
-    d_4 = d_4.sum()
+    d_4 = d_4.sum(axis=axis)
 
     m = d_3 / rho
-    s = np.sqrt(d_4 / rho - m**2)
+    s = torch.sqrt(d_4 / rho - m**2)
     return rho, m, s
 
 
@@ -144,16 +153,13 @@ def ansatz_impl(s, m, maxiter=10):
             Conditional distance mean per pixel
     """
     z0 = m / s
-    sol = sp.optimize.root_scalar(
-        f, args=(s, m), fprime=fprime, x0=z0, maxiter=maxiter
+    sol = root_scalar(f, z0, args=(s, m), fprime=fprime, maxiter=maxiter)
+
+    z_hat = sol["roots"]
+    dist_sigma = torch.where(sol["converged"], m * x2(z_hat) / x3(z_hat), 1)
+    dist_mu = torch.where(sol["converged"], dist_sigma * z_hat, float("inf"))
+    dist_norm = torch.where(
+        sol["converged"], 1 / (Q(-z_hat) * dist_sigma**2 * x2(z_hat)), 0
     )
-    if not sol.converged:
-        dist_mu = float("inf")
-        dist_sigma = 1
-        dist_norm = 0
-    else:
-        z_hat = sol.root
-        dist_sigma = m * x2(z_hat) / x3(z_hat)
-        dist_mu = dist_sigma * z_hat
-        dist_norm = 1 / (Q(-z_hat) * dist_sigma**2 * x2(z_hat))
+
     return dist_mu, dist_sigma, dist_norm
