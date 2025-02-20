@@ -1,7 +1,57 @@
 """Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
 
-import numpy as np
-import scipy as sp
+import torch
+from ml4gw.constants import PI
+
+
+def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
+    """
+    Find a root of a scalar function.
+
+    Args:
+        f (callable): The function whose root is to be found.
+        x0 (float): Initial guess.
+        args (tuple, optional): Extra arguments passed to the objective
+        function `f` and its derivative(s).
+        fprime (callable, optional): The derivative of the function.
+        xtol (float, optional): The tolerance for the root.
+        maxiter (int, optional): The maximum number of iterations.
+
+    Returns:
+        dict: A dictionary containing the root, and whether the optimization
+        was successful.
+    """
+    res = {
+        "converged": torch.zeros_like(x0, device=x0.device, dtype=torch.bool),
+        "roots": torch.nan,
+    }
+    for _ in range(maxiter):
+        fx = f(x0, *args)
+        if fprime is not None:
+            fpx = fprime(x0, *args)
+        else:
+            fpx = (f(x0 + xtol, *args) - f(x0 - xtol, *args)) / (2 * xtol)
+        fpx_cond = torch.abs(fpx) < torch.finfo(torch.float).eps
+        res["roots"] = torch.where(
+            fpx_cond & ~res["converged"], x0, res["roots"]
+        )
+        res["converged"] = torch.where(
+            fpx_cond & ~res["converged"], True, res["converged"]
+        )
+        if torch.all(fpx_cond):
+            return res
+        x1 = x0 - fx / fpx
+        xtol_cond = torch.abs(x1 - x0) < xtol
+        res["roots"] = torch.where(
+            xtol_cond & ~res["converged"], x1, res["roots"]
+        )
+        res["converged"] = torch.where(
+            xtol_cond & ~res["converged"], True, res["converged"]
+        )
+        if torch.all(xtol_cond):
+            return res
+        x0 = x1
+    return res
 
 
 def P(x):
