@@ -62,6 +62,12 @@ class AmplfiDataset(pl.LightningDataModule):
             Defaults to `kernel_length`
         min_valid_duration:
             Minimum number of seconds of validation background data
+        num_files_per_batch:
+            Number of strain hdf5 files to use to construct
+            each batch. Can lead to dataloading performance increases.
+        max_num_workers:
+            Maximum number of workers to assign to each
+            training dataloader.
 
     """
 
@@ -81,12 +87,14 @@ class AmplfiDataset(pl.LightningDataModule):
         fftlength: Optional[int] = None,
         min_valid_duration: float = 10000,
         num_files_per_batch: Optional[int] = None,
+        max_num_workers: int = 6,
         verbose: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["waveform_sampler"])
         self.init_logging(verbose)
         self.waveform_sampler = waveform_sampler
+        self.max_num_workers = max_num_workers
 
         # generate our local node data directory
         # if our specified data source is remote
@@ -194,7 +202,9 @@ class AmplfiDataset(pl.LightningDataModule):
     @property
     def num_workers(self):
         local_world_size = len(self.trainer.device_ids)
-        return min(6, int(os.cpu_count() / local_world_size))
+        return min(
+            self.max_num_workers, int(os.cpu_count() / local_world_size)
+        )
 
     @property
     def val_batch_size(self):
