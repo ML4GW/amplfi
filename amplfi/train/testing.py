@@ -27,7 +27,8 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
     """
     theta = np.pi / 2 - dec
     # mask out non physical samples;
-    mask = (ra > 0) * (ra < 2 * np.pi)
+    # mask = (ra > 0) * (ra < 2 * np.pi)
+    mask = (ra > -np.pi) * (ra < np.pi)
     mask &= (theta > 0) * (theta < np.pi)
 
     ra = ra[mask]
@@ -128,16 +129,22 @@ class Result(bilby.result.Result):
     def plot_mollview(self, outpath: Path = None):
         if not hasattr(self, "fits_table"):
             raise RuntimeError("Call calculate_skymap before plotting")
+
         healpix = self.fits_table.data["PROBDENSITY"]
-        ra_inj = self.injection_parameters["phi"]
-        dec_inj = self.injection_parameters["dec"]
-        theta_inj = np.pi / 2 - dec_inj
-        plt.close()
+
         # plot molleweide
+        plt.close()
         fig = hp.mollview(healpix, nest=True)
-        hp.visufunc.projscatter(
-            theta_inj, ra_inj, marker="x", color="red", s=150
-        )
+
+        # plot true values if available
+        if self.injection_parameters is not None:
+            ra_inj = self.injection_parameters["phi"]
+            dec_inj = self.injection_parameters["dec"]
+            theta_inj = np.pi / 2 - dec_inj
+
+            hp.visufunc.projscatter(
+                theta_inj, ra_inj, marker="x", color="red", s=150
+            )
 
         plt.savefig(outpath)
 

@@ -13,6 +13,9 @@ from ...augmentations import PsdEstimator, WaveformProjector
 from ..utils import fs as fs_utils
 from ..utils.utils import ZippedDataset
 from ..waveforms.sampler import WaveformSampler
+import numpy as np
+from pathlib import Path
+import random
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
@@ -279,10 +282,16 @@ class AmplfiDataset(pl.LightningDataModule):
 
         # build standard scaler object and fit to parameters;
         # waveform_sampler subclasses will decide how to generate
-        # parameters to fit the scaler
-        self._logger.info("Fitting standard scaler to parameters")
-        scaler = ChannelWiseScaler(self.num_params)
-        self.scaler = self.waveform_sampler.fit_scaler(scaler)
+        # parameters to fit the scaler.
+        # Only fit the scaler during training.
+        # During testing, use pre-fit parameters
+        if stage in ["predict", "test"]:
+            self._logger.info("Using pre-fit standard scaler")
+            self.scaler = self.trainer.model.scaler
+        else:
+            self._logger.info("Fitting standard scaler to parameters")
+            scaler = ChannelWiseScaler(self.num_params)
+            self.scaler = self.waveform_sampler.fit_scaler(scaler)
 
         self.projector = WaveformProjector(
             self.hparams.ifos, self.hparams.sample_rate
@@ -534,3 +543,81 @@ class AmplfiDataset(pl.LightningDataModule):
         after the data is transferred to the local device
         """
         raise NotImplementedError
+
+    def background_from_gpstimes(
+        self, gpstimes: np.ndarray, fnames: List[Path]
+    ) -> torch.Tensor:
+        """
+        Construct a Tensor of background segments corresponding
+        to requested `gpstimes` where `gpstimes` specifies
+        the desired location of the coalescence time
+        """
+
+        # load in background segments corresponding to gpstimes
+        background = []
+        segments = [
+            tuple(map(float, f.name.split(".")[0].split("-")[1:]))
+            for f in self.fnames
+        ]
+
+        def find_file(time: float) -> Optional[Path]:
+            """
+            Find file that contains `time`
+            """
+            for i, (start, length) in enumerate(segments):
+                in_segment = time > start + self.sample_length
+                in_segment &= time < (start + length - self.sample_length)
+                if in_segment:
+                    return self.test_fnames[i], start
+            else:
+                return None, None
+
+        # calculate seconds of data to query
+        # before and after coalescence time
+        post = self.waveform_sampler.right_pad + self.hparams.fduration / 2
+        pre = (
+            post
+            - self.hparams.kernel_length
+            - (self.hparams.fduration / 2)
+            - self.hparams.psd_length
+        )
+
+        # convert to number of indices
+        post = int(post * self.hparams.sample_rate)
+        pre = int(pre * self.hparams.sample_rate)
+
+        background = []
+        for time in gpstimes:
+            time = time.item()
+            strain = []
+
+            # find file for this gpstime
+            file, start = find_file(time)
+
+            # if none exists, use random segment
+            if file is None:
+                self._logger.info(
+                    "No segment in testing directory containing "
+                    f"{time}. Using random segment"
+                )
+                file = random.choice(self.test_fnames)
+                start, length = list(
+                    map(float, file.name.split(".")[0].split("-")[1:])
+                )
+                time = start + random.randint(
+                    self.sample_length,
+                    length - self.sample_length,
+                )
+
+            # convert from time to index in file
+            middle_idx = int((time - start) * self.hparams.sample_rate)
+            start_idx = middle_idx + pre
+            end_idx = middle_idx + post
+
+            with h5py.File(file) as f:
+                for ifo in self.hparams.ifos:
+                    strain.append(torch.tensor(f[ifo][start_idx:end_idx]))
+                strain = torch.stack(strain, dim=0)
+                background.append(strain)
+        background = torch.stack(background, dim=0)
+        return background
