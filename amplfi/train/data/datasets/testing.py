@@ -29,9 +29,6 @@ def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
     # calculate the relative azimuthal angle in the range [0, 2pi]
     phi = np.remainder(ra - gmsts, 2 * np.pi)
 
-    # restrict to range [-pi, pi]
-    phi = np.where(phi > np.pi, phi - 2 * np.pi, phi)
-
     return phi
 
 
