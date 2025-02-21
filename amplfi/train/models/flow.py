@@ -145,6 +145,7 @@ class FlowModel(AmplfiModel):
         skymap_filename = self.test_outdir / f"{gpstime.item()}_mollview.png"
         corner_filename = self.test_outdir / f"{gpstime.item()}_corner.png"
         fits_filename = self.test_outdir / f"{gpstime.item()}.fits"
+        result_filename = self.test_outdir / f"{gpstime.item()}_result.hdf5"
         result.plot_corner(
             save=True,
             filename=corner_filename,
@@ -154,6 +155,7 @@ class FlowModel(AmplfiModel):
             outpath=skymap_filename,
         )
         result.fits_table.writeto(fits_filename, overwrite=True)
+        result.save_to_file(result_filename, extension="hdf5")
         return result
 
     def on_test_epoch_start(self):
