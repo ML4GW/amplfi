@@ -3,9 +3,8 @@ Additional Lightning DataModules for testing
 amplfi models across various usecases
 """
 
-import random
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import h5py
 import numpy as np
@@ -223,80 +222,6 @@ class ParameterTestingDataset(FlowDataset):
         self.convert = waveform_generation_parameters is None
         self.i = 0
 
-    def background_from_gpstimes(self, gpstimes: torch.Tensor) -> torch.Tensor:
-        """
-        Find background segments corresponding to gpstimes
-        """
-
-        # load in background segments corresponding to gpstimes
-        background = []
-        segments = [
-            tuple(map(float, f.name.split(".")[0].split("-")[1:]))
-            for f in self.test_fnames
-        ]
-
-        def find_file(time: float) -> Optional[Path]:
-            """
-            Find file that contains `time`
-            """
-            for i, (start, length) in enumerate(segments):
-                in_segment = time > start + self.sample_length
-                in_segment &= time < (start + length - self.sample_length)
-                if in_segment:
-                    return self.test_fnames[i], start
-            else:
-                return None, None
-
-        # calculate seconds of data to query
-        # before and after coalescence time
-        post = self.waveform_sampler.right_pad + self.hparams.fduration / 2
-        pre = (
-            post
-            - self.hparams.kernel_length
-            - (self.hparams.fduration / 2)
-            - self.hparams.psd_length
-        )
-
-        # convert to number of indices
-        post = int(post * self.hparams.sample_rate)
-        pre = int(pre * self.hparams.sample_rate)
-
-        background = []
-        for time in gpstimes:
-            time = time.item()
-            strain = []
-
-            # find file for this gpstime
-            file, start = find_file(time)
-
-            # if none exists, use random segment
-            if file is None:
-                self._logger.info(
-                    "No segment in testing directory containing "
-                    f"{time}. Using random segment"
-                )
-                file = random.choice(self.test_fnames)
-                start, length = list(
-                    map(float, file.name.split(".")[0].split("-")[1:])
-                )
-                time = start + random.randint(
-                    self.sample_length,
-                    length - self.sample_length,
-                )
-
-            # convert from time to index in file
-            middle_idx = int((time - start) * self.hparams.sample_rate)
-            start_idx = middle_idx + pre
-            end_idx = middle_idx + post
-
-            with h5py.File(file) as f:
-                for ifo in self.hparams.ifos:
-                    strain.append(torch.tensor(f[ifo][start_idx:end_idx]))
-                strain = torch.stack(strain, dim=0)
-                background.append(strain)
-        background = torch.stack(background, dim=0)
-        return background
-
     def setup(self, stage: str):
         world_size, rank = self.get_world_size_and_rank()
         self._logger = self.get_logger(world_size, rank)
@@ -352,7 +277,9 @@ class ParameterTestingDataset(FlowDataset):
 
         self.waveforms = torch.stack([cross, plus], dim=0)
         self.parameters = torch.column_stack(params)
-        self.background = self.background_from_gpstimes(parameters["gpstime"])
+        self.background = self.background_from_gpstimes(
+            parameters["gpstime"], self.test_fnames
+        )
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
@@ -443,3 +370,98 @@ class ParameterTestingDataset(FlowDataset):
         asds = torch.sqrt(psds)
 
         return X, asds, parameters
+
+
+class RawStrainTestingDataset(FlowDataset):
+    """
+    Testing dataset for analyzing raw strain without injections
+    from a given set of gpstimes.
+
+    Useful for testing on real events. This dataset should only be
+    used with the `predict` stage.
+
+    Subclass of `amplfi.train.data.datasets.FlowDataset` and
+    thus `amplfi.train.data.datasets.BaseDataset`. See those classes
+    for additional arguments and keyword arguments.
+
+    Args:
+        gpstimes:
+            A float, numpy array or path to an hdf5 file containing
+            the gps times of the events to analyze. If a path is
+            passed, the gps times should be stored in a dataset
+            named `gpstimes`
+    """
+
+    def __init__(
+        self, *args, gpstimes: Union[float, np.ndarray, Path], **kwargs
+    ):
+        self.gpstimes = self.parse_gps_times(gpstimes)
+        super().__init__(*args, **kwargs)
+
+    def parse_gps_times(self, gpstimes: Union[float, np.ndarray, Path]):
+        if isinstance(gpstimes, (float, int)):
+            gpstimes = np.array([gpstimes])
+        elif isinstance(gpstimes, Path):
+            with h5py.File(gpstimes, "r") as f:
+                gpstimes = f["gpstimes"][:]
+
+        return gpstimes
+
+    def setup(self, stage: str):
+        world_size, rank = self.get_world_size_and_rank()
+        self._logger = self.get_logger(world_size, rank)
+        if stage != "predict":
+            raise ValueError(
+                "RealEventDataset should only be used with `predict` stage"
+            )
+
+        self.background = self.background_from_gpstimes(
+            self.gpstimes, self.test_fnames
+        )
+
+        # once we've generated validation/testing waveforms on cpu,
+        # build data augmentation modules
+        # and transfer them to appropiate device
+        self.build_transforms(stage)
+        self.transforms_to_device()
+
+    def predict_dataloader(self) -> torch.utils.data.DataLoader:
+        dataset = torch.utils.data.TensorDataset(
+            self.background, self.gpstimes
+        )
+        dataloader = torch.utils.data.DataLoader(
+            dataset,
+            pin_memory=False,
+            num_workers=10,
+            shuffle=False,
+            batch_size=1,
+        )
+        return dataloader
+
+    def on_after_batch_transfer(self, batch, _):
+        """
+        Override of the on_after_batch_transfer hook
+        defined in `BaseDataset`.
+
+        When we're analyzing
+        real events, we don't need to do any injections
+        """
+
+        [X], gpstimes = batch
+
+        X, psds = self.psd_estimator(X)
+        X = self.whitener(X, psds)
+        psds = psds[None]
+
+        # calculate asds and highpass
+        freqs = torch.fft.rfftfreq(X.shape[-1], d=1 / self.hparams.sample_rate)
+        num_freqs = len(freqs)
+        psds = torch.nn.functional.interpolate(
+            psds, size=(num_freqs,), mode="linear"
+        )
+
+        mask = freqs > self.hparams.highpass
+        psds = psds[:, :, mask]
+        asds = torch.sqrt(psds)
+
+        return X, asds, gpstimes

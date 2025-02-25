@@ -222,17 +222,19 @@ class StrainVisualization(pl.Callback):
             spec = ts.q_transform(
                 logf=True,
                 whiten=False,
-                frange=(25, 200),
+                frange=(25, 500),
                 qrange=(4, 108),
-                outseg=(3.35, 3.6),
+                # outseg=(3, 3.7),
             )
             qscans.append(spec)
 
-        chirp_mass, mass_ratio = (
-            result.injection_parameters["chirp_mass"],
-            result.injection_parameters["mass_ratio"],
-        )
-        title = f"chirp_mass: {chirp_mass:2f}, mass_ratio: {mass_ratio:2f}"
+        title = ""
+        if result.injection_parameters is not None:
+            chirp_mass, mass_ratio = (
+                result.injection_parameters["chirp_mass"],
+                result.injection_parameters["mass_ratio"],
+            )
+            title = f"chirp_mass: {chirp_mass:2f}, mass_ratio: {mass_ratio:2f}"
         plot = Plot(
             *qscans,
             figsize=(18, 5),
@@ -293,3 +295,10 @@ class StrainVisualization(pl.Callback):
 
         plt.savefig(whitened_fd_strain_fname)
         plt.close()
+
+    def on_predict_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        return self.on_test_batch_end(
+            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        )

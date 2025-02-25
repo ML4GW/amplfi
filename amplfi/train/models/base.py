@@ -114,3 +114,12 @@ class AmplfiModel(pl.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"},
         }
+
+    def scale(self, parameters, reverse: bool = False):
+        """
+        Apply standard scaling to transformed parameters
+        """
+        parameters = parameters.transpose(1, 0)
+        scaled = self.scaler(parameters, reverse=reverse)
+        scaled = scaled.transpose(1, 0)
+        return scaled
