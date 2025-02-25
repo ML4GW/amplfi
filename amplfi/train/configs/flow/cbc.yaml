@@ -31,7 +31,7 @@ trainer:
 model:
   class_path: amplfi.train.models.flow.FlowModel
   init_args:
-    outdir: ${oc.env:AMPLFI_OUTDIR}
+    train_outdir: ${oc.env:AMPLFI_OUTDIR}
     nside: 32
     min_samples_per_pix: 15
     samples_per_event: 10000
@@ -83,11 +83,9 @@ data:
         jitter: 0.1
         num_fit_params: 100000
         parameter_sampler: 
-          class_path: amplfi.train.priors.cbc_prior
+          class_path: amplfi.train.priors.aligned_cbc_prior
         dec: 
           class_path: ml4gw.distributions.Cosine
-          init_arg:
-            validate_args: false
         psi: 
           class_path: torch.distributions.Uniform
           init_args:
