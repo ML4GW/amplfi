@@ -216,7 +216,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "bilby", specifier = ">=2.2.3,<3" },
-    { name = "gwpy", specifier = "==3.0.8" },
+    { name = "gwpy", specifier = ">=3.0.12" },
     { name = "h5py", specifier = ">=3.10.0,<4" },
     { name = "healpy", specifier = ">=1.16.6,<2" },
     { name = "jsonargparse", extras = ["signatures"], specifier = ">=4.27.1,<5" },
@@ -1443,7 +1443,7 @@ wheels = [
 
 [[package]]
 name = "gwpy"
-version = "3.0.8"
+version = "3.0.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "astropy" },
@@ -1452,18 +1452,19 @@ dependencies = [
     { name = "gwdatafind" },
     { name = "gwosc" },
     { name = "h5py" },
-    { name = "ligo-segments" },
+    { name = "igwn-segments" },
     { name = "ligotimegps" },
     { name = "matplotlib" },
     { name = "numpy" },
+    { name = "packaging" },
     { name = "python-dateutil" },
     { name = "requests" },
     { name = "scipy" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/70/e0410474e359c952695c936d63590d1d8d30bb9ad1610de106c7892fd99f/gwpy-3.0.8.tar.gz", hash = "sha256:3566f7bb7dc193a02deb252afccd776761016984a92c41154acc92bc9e9af173", size = 1535795 }
+sdist = { url = "https://files.pythonhosted.org/packages/a6/94/b2ead3b71b2a8a20ea463a8df1cb4e0e636cdd5a7018834a9389cb111399/gwpy-3.0.12.tar.gz", hash = "sha256:9c99c6cf62142911cb5f64c1219770deaeb5129e7d78cfd7c0537838d0432231", size = 1539703 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/c4/3098567a065c5b383401c8413e4e5676c82860b470845309280320040743/gwpy-3.0.8-py3-none-any.whl", hash = "sha256:852fc95c4450d91c767963da4f830dbefe28b7ead3cf90e15c4aca88e7fff8a3", size = 1392763 },
+    { url = "https://files.pythonhosted.org/packages/ec/39/4f373ed9eb4e2464c91873ea242f17c4f286d0ee2e94cf9a545e82f0390b/gwpy-3.0.12-py3-none-any.whl", hash = "sha256:ace40fbb03d3cccc7dc806e6545725701dfdf6bab7dbd60ab9e346c44a3baef8", size = 1394829 },
 ]
 
 [[package]]
