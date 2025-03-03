@@ -1,15 +1,70 @@
 """Auxiliary functions for distance ansatz see:10.3847/2041-8205/829/1/L15"""
 
-import numpy as np
-import scipy as sp
+import torch
+from ml4gw.constants import PI
+
+
+def root_scalar(f, x0, args=(), fprime=None, maxiter=100, xtol=1e-6):
+    """
+    Find a root of a scalar function.
+
+    Args:
+        f (callable): The function whose root is to be found.
+        x0 (float): Initial guess.
+        args (tuple, optional): Extra arguments passed to the objective
+        function `f` and its derivative(s).
+        fprime (callable, optional): The derivative of the function.
+        xtol (float, optional): The tolerance for the root.
+        maxiter (int, optional): The maximum number of iterations.
+
+    Returns:
+        dict: A dictionary containing the root, and whether the optimization
+        was successful.
+    """
+    res = {
+        "converged": torch.zeros_like(x0, device=x0.device, dtype=torch.bool),
+        "roots": torch.nan,
+    }
+    for _ in range(maxiter):
+        fx = f(x0, *args)
+        if fprime is not None:
+            fpx = fprime(x0, *args)
+        else:
+            fpx = (f(x0 + xtol, *args) - f(x0 - xtol, *args)) / (2 * xtol)
+        fpx_cond = torch.abs(fpx) < torch.finfo(torch.float).eps
+        res["roots"] = torch.where(
+            fpx_cond & ~res["converged"], x0, res["roots"]
+        )
+        res["converged"] = torch.where(
+            fpx_cond & ~res["converged"], True, res["converged"]
+        )
+        if torch.all(fpx_cond):
+            return res
+        x1 = x0 - fx / fpx
+        xtol_cond = torch.abs(x1 - x0) < xtol
+        res["roots"] = torch.where(
+            xtol_cond & ~res["converged"], x1, res["roots"]
+        )
+        res["converged"] = torch.where(
+            xtol_cond & ~res["converged"], True, res["converged"]
+        )
+        if torch.all(xtol_cond):
+            return res
+        x0 = x1
+    return res
 
 
 def P(x):
-    return np.exp(-0.5 * x**2) / np.sqrt(2 * np.pi)
+    return torch.exp(-0.5 * x**2) / torch.sqrt(
+        torch.tensor(2 * PI, device=x.device)
+    )
 
 
 def Q(x):
-    return sp.special.erfc(x / np.sqrt(2)) / 2
+    return (
+        torch.special.erfc(x / torch.sqrt(torch.tensor(2, device=x.device)))
+        / 2
+    )
 
 
 def H(x):
@@ -70,15 +125,19 @@ def moments_from_samples_impl(d):
         d:
            Distance samples
     """
+    axis = 1
+    if d.dim() == 1:
+        axis = 0
+
     d_2 = d**2
-    rho = d_2.sum()
+    rho = d_2.sum(axis=axis)
     d_3 = d**3
-    d_3 = d_3.sum()
+    d_3 = d_3.sum(axis=axis)
     d_4 = d**4
-    d_4 = d_4.sum()
+    d_4 = d_4.sum(axis=axis)
 
     m = d_3 / rho
-    s = np.sqrt(d_4 / rho - m**2)
+    s = torch.sqrt(d_4 / rho - m**2)
     return rho, m, s
 
 
@@ -94,16 +153,13 @@ def ansatz_impl(s, m, maxiter=10):
             Conditional distance mean per pixel
     """
     z0 = m / s
-    sol = sp.optimize.root_scalar(
-        f, args=(s, m), fprime=fprime, x0=z0, maxiter=maxiter
+    sol = root_scalar(f, z0, args=(s, m), fprime=fprime, maxiter=maxiter)
+
+    z_hat = sol["roots"]
+    dist_sigma = torch.where(sol["converged"], m * x2(z_hat) / x3(z_hat), 1)
+    dist_mu = torch.where(sol["converged"], dist_sigma * z_hat, float("inf"))
+    dist_norm = torch.where(
+        sol["converged"], 1 / (Q(-z_hat) * dist_sigma**2 * x2(z_hat)), 0
     )
-    if not sol.converged:
-        dist_mu = float("inf")
-        dist_sigma = 1
-        dist_norm = 0
-    else:
-        z_hat = sol.root
-        dist_sigma = m * x2(z_hat) / x3(z_hat)
-        dist_mu = dist_sigma * z_hat
-        dist_norm = 1 / (Q(-z_hat) * dist_sigma**2 * x2(z_hat))
+
     return dist_mu, dist_sigma, dist_norm
