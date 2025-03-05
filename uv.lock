@@ -202,7 +202,7 @@ requires-dist = [
     { name = "law", specifier = ">=0.1.19" },
     { name = "lightning", specifier = ">=2.5.0" },
     { name = "lightray", specifier = ">=0.2.4" },
-    { name = "ligo-skymap", specifier = ">=2.2.0" },
+    { name = "ligo-skymap", specifier = ">=2.2.2" },
     { name = "luigi", specifier = ">=3.5.1,<4" },
     { name = "ml4gw", specifier = ">=0.7.1" },
     { name = "mldatafind", specifier = ">=0.1.3" },
