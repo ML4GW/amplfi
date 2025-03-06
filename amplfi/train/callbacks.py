@@ -183,6 +183,9 @@ class StrainVisualization(pl.Callback):
         if batch_idx >= self.num_plot:
             return
 
+        outdir = self.outdir / f"event_{batch_idx}"
+        outdir.mkdir(exist_ok=True)
+
         # unpack batch
         strain, asds, _ = batch
         strain, asds = strain[0].cpu().numpy(), asds[0].cpu().numpy()
@@ -194,10 +197,10 @@ class StrainVisualization(pl.Callback):
         ifos = trainer.datamodule.hparams.ifos
 
         # filenames for various plots
-        whitened_td_strain_fname = self.outdir / f"{batch_idx}_whitened_td.png"
-        whitened_fd_strain_fname = self.outdir / f"{batch_idx}_whitened_fd.png"
-        qscan_fname = self.outdir / f"{batch_idx}_qscan.png"
-        asd_fname = self.outdir / f"{batch_idx}_asd.png"
+        whitened_td_strain_fname = outdir / "whitened_td.png"
+        whitened_fd_strain_fname = outdir / "whitened_fd.png"
+        qscan_fname = outdir / "qscan.png"
+        asd_fname = outdir / "asd.png"
 
         # whitened time domain strain
         plt.figure()

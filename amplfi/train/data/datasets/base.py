@@ -557,7 +557,7 @@ class AmplfiDataset(pl.LightningDataModule):
         background = []
         segments = [
             tuple(map(float, f.name.split(".")[0].split("-")[1:]))
-            for f in self.fnames
+            for f in fnames
         ]
 
         def find_file(time: float) -> Optional[Path]:
