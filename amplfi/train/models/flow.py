@@ -92,7 +92,7 @@ class FlowModel(AmplfiModel):
         )
         return loss
 
-    def test_step(self, batch, _) -> bilby.result.Result:
+    def test_step(self, batch, batch_idx) -> bilby.result.Result:
         strain, asds, parameters = batch
         context = (strain, asds)
 
@@ -107,14 +107,24 @@ class FlowModel(AmplfiModel):
             descaled.cpu().numpy(),
             parameters.cpu().numpy()[0],
         )
+
+        test_outdir = self.test_outdir / f"injection_{batch_idx}"
+        test_outdir.mkdir(parents=True, exist_ok=True)
+
         result.calculate_skymap(self.nside, self.min_samples_per_pix)
+        mask = result.posterior["dec"] >= -np.pi / 2
+        mask &= result.posterior["dec"] <= np.pi / 2
+        result.posterior = result.posterior[mask]
+        result.posterior["ra"] = result.posterior["phi"]
+
+        result.save_posterior_samples(test_outdir / "posterior_samples.dat")
         self.test_results.append(result)
 
         # plot corner and skymap for a subset of the test results
-        if self.idx < self.num_plot:
-            skymap_filename = self.test_outdir / f"{self.idx}_mollview.png"
-            corner_filename = self.test_outdir / f"{self.idx}_corner.png"
-            fits_filename = self.test_outdir / f"{self.idx}.fits"
+        if batch_idx < self.num_plot:
+            skymap_filename = test_outdir / "mollview.png"
+            corner_filename = test_outdir / "corner.png"
+            fits_filename = test_outdir / "amplfi.skymap.fits"
             result.plot_corner(
                 save=True,
                 filename=corner_filename,
@@ -124,11 +134,10 @@ class FlowModel(AmplfiModel):
                 outpath=skymap_filename,
             )
             result.fits_table.writeto(fits_filename, overwrite=True)
-        self.idx += 1
 
         return result
 
-    def predict_step(self, batch, _):
+    def predict_step(self, batch, batch_idx, _):
         strain, asds, gpstime = batch
         context = (strain, asds)
 
@@ -141,11 +150,15 @@ class FlowModel(AmplfiModel):
             descaled.cpu().numpy(),
             None,
         )
+
+        test_outdir = self.test_outdir / f"{batch_idx}"
+        test_outdir.mkdir(parents=True, exist_ok=True)
+
         result.calculate_skymap(self.nside, self.min_samples_per_pix)
-        skymap_filename = self.test_outdir / f"{gpstime.item()}_mollview.png"
-        corner_filename = self.test_outdir / f"{gpstime.item()}_corner.png"
-        fits_filename = self.test_outdir / f"{gpstime.item()}.fits"
-        result_filename = self.test_outdir / f"{gpstime.item()}_result.hdf5"
+        skymap_filename = test_outdir / f"{gpstime.item()}_mollview.png"
+        corner_filename = test_outdir / f"{gpstime.item()}_corner.png"
+        fits_filename = test_outdir / f"{gpstime.item()}.fits"
+        result_filename = test_outdir / f"{gpstime.item()}_result.hdf5"
         result.plot_corner(
             save=True,
             filename=corner_filename,
@@ -160,7 +173,6 @@ class FlowModel(AmplfiModel):
 
     def on_test_epoch_start(self):
         self.test_results: list[Result] = []
-        self.idx = 0
 
     def on_test_epoch_end(self):
         # pp plot
@@ -223,7 +235,10 @@ class FlowModel(AmplfiModel):
         """
 
         injection_parameters = (
-            {k: float(v) for k, v in zip(self.inference_params, truth)}
+            {
+                k: float(v)
+                for k, v in zip(self.inference_params, truth, strict=False)
+            }
             if truth is not None
             else None
         )
