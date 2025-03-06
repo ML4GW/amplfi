@@ -108,7 +108,7 @@ class FlowModel(AmplfiModel):
             parameters.cpu().numpy()[0],
         )
 
-        test_outdir = self.test_outdir / f"injection_{batch_idx}"
+        test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
 
         result.calculate_skymap(self.nside, self.min_samples_per_pix)
@@ -120,20 +120,19 @@ class FlowModel(AmplfiModel):
         result.save_posterior_samples(test_outdir / "posterior_samples.dat")
         self.test_results.append(result)
 
-        # plot corner and skymap for a subset of the test results
-        if batch_idx < self.num_plot:
-            skymap_filename = test_outdir / "mollview.png"
-            corner_filename = test_outdir / "corner.png"
-            fits_filename = test_outdir / "amplfi.skymap.fits"
-            result.plot_corner(
-                save=True,
-                filename=corner_filename,
-                levels=(0.5, 0.9),
-            )
-            result.plot_mollview(
-                outpath=skymap_filename,
-            )
-            result.fits_table.writeto(fits_filename, overwrite=True)
+        # plot corner and skymap
+        skymap_filename = test_outdir / "mollview.png"
+        corner_filename = test_outdir / "corner.png"
+        fits_filename = test_outdir / "amplfi.skymap.fits"
+        result.plot_corner(
+            save=True,
+            filename=corner_filename,
+            levels=(0.5, 0.9),
+        )
+        result.plot_mollview(
+            outpath=skymap_filename,
+        )
+        result.fits_table.writeto(fits_filename, overwrite=True)
 
         return result
 
@@ -151,7 +150,7 @@ class FlowModel(AmplfiModel):
             None,
         )
 
-        test_outdir = self.test_outdir / f"{batch_idx}"
+        test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
 
         result.calculate_skymap(self.nside, self.min_samples_per_pix)
