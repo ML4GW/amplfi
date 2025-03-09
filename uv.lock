@@ -204,7 +204,7 @@ requires-dist = [
     { name = "lightray", specifier = ">=0.2.4" },
     { name = "ligo-skymap", specifier = ">=2.2.2" },
     { name = "luigi", specifier = ">=3.5.1,<4" },
-    { name = "ml4gw", specifier = ">=0.7.1" },
+    { name = "ml4gw", git = "https://github.com/ML4GW/ml4gw.git" },
     { name = "mldatafind", specifier = ">=0.1.3" },
     { name = "numpy", specifier = "<2.0.0" },
     { name = "omegaconf", specifier = ">=2.3.0,<3" },
@@ -2504,17 +2504,13 @@ wheels = [
 [[package]]
 name = "ml4gw"
 version = "0.7.3"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/ML4GW/ml4gw.git#6b4f377a8f5ca91454e20a41e66294319f458fb0" }
 dependencies = [
     { name = "jaxtyping" },
     { name = "numpy" },
     { name = "scipy" },
     { name = "torch" },
     { name = "torchaudio" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/3a/56/6e2b2fe1daad55126e553ac3497d221bac2590d02526e1762722a4893357/ml4gw-0.7.3.tar.gz", hash = "sha256:97d215e1b555026e23894fa2a574db92b1dc477775a4887ba7e62e12ca409614", size = 101176 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7f/86/6ef9a9c6b258dff96fb8cbd6d809845ec249c31defce5f3459a4482695ae/ml4gw-0.7.3-py3-none-any.whl", hash = "sha256:8a0ebf42624a7e185e5a17e7c57aa17a410ad5ebaee7105eddb240ab2265ad63", size = 123234 },
 ]
 
 [[package]]
