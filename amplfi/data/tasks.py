@@ -71,9 +71,10 @@ class LigoSkymap(
         "Each sub directory should contain "
         "a posterior_samples.dat file."
     )
-    ligo_skymap_args = luigi.ListParameter(
+    ligo_skymap_args = luigi.OptionalListParameter(
         description="Additional command line style arguments"
-        "to pass to ligo-skymap-from-samples."
+        "to pass to ligo-skymap-from-samples.",
+        default="",
     )
     dev = luigi.BoolParameter(
         default=False, description="Run the task in development mode."
@@ -86,26 +87,31 @@ class LigoSkymap(
         return env
 
     def create_branch_map(self):
-        branch_map = {}
-        for i, event_dir in enumerate(self.data_dir.iterdir()):
-            branch_map[i] = event_dir / "posterior_samples.dat"
+        branch_map, i = {}, 0
+        for event_dir in self.data_dir.iterdir():
+            if event_dir.is_dir():
+                branch_map[i] = event_dir / "posterior_samples.dat"
+                i += 1
         return branch_map
 
     def output(self):
         event_dir = self.branch_data.parent
-        return law.LocalFileTarget(event_dir / "skymap.fits")
+        return law.LocalFileTarget(event_dir / "skymap.flattened.fits")
 
     def run(self):
-        from ligo.skymap.tool import ligo_skymap_from_samples
+        from ligo.skymap.tool import (
+            ligo_skymap_from_samples,
+        )
 
         args = [
             str(self.branch_data),
             "-j",
             str(self.request_cpus),
-            "--maxpts",
-            "10000",
             "-o",
             str(self.branch_data.parent),
         ]
-        args.extend(self.ligo_skymap_args)
+        if self.ligo_skymap_args:
+            args.extend(self.ligo_skymap_args)
+
+        # call ligo-skymap-from-samples
         ligo_skymap_from_samples.main(args)
