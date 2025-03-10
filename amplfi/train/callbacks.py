@@ -307,7 +307,7 @@ class StrainVisualization(pl.Callback):
         )
 
 
-class SavePosteriors(pl.Callback):
+class SavePosterior(pl.Callback):
     """
     Lightning Callback for bilby result objects and
     posterior data to disk
