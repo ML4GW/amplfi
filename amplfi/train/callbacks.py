@@ -327,9 +327,6 @@ class SavePosteriors(pl.Callback):
         # test_step returns bilby result object
         result = outputs
 
-        if batch_idx >= self.num_plot:
-            return
-
         outdir = self.outdir / f"event_{batch_idx}"
         outdir.mkdir(exist_ok=True)
 
