@@ -305,3 +305,40 @@ class StrainVisualization(pl.Callback):
         return self.on_test_batch_end(
             trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
         )
+
+
+class SavePosterior(pl.Callback):
+    """
+    Lightning Callback for bilby result objects and
+    posterior data to disk
+    """
+
+    def __init__(self, outdir: Path):
+        self.outdir = outdir
+
+    def on_test_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ) -> None:
+        """
+        Called at the end of each test step.
+        `outputs` consists of objects returned by `pl_module.test_step`.
+        """
+
+        # test_step returns bilby result object
+        result = outputs
+
+        outdir = self.outdir / f"event_{batch_idx}"
+        outdir.mkdir(exist_ok=True)
+
+        # save posterior samples for ease of use with
+        # ligo skymap and save full result to have
+        # access to the true injection parameters
+        result.save_posterior_samples(outdir / "posterior_samples.dat")
+        result.save_to_file(outdir / "result.hdf5", extension="hdf5")
+
+    def on_predict_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        return self.on_test_batch_end(
+            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        )

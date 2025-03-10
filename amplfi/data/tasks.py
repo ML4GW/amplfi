@@ -96,7 +96,7 @@ class LigoSkymap(
 
     def output(self):
         event_dir = self.branch_data.parent
-        return law.LocalFileTarget(event_dir / "skymap.flattened.fits")
+        return law.LocalFileTarget(event_dir / "skymap.fits")
 
     def run(self):
         from ligo.skymap.tool import (

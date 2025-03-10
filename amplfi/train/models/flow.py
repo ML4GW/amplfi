@@ -116,11 +116,6 @@ class FlowModel(AmplfiModel):
         # add ra column for use with ligo-skymap-from-samples
         result.posterior["ra"] = result.posterior["phi"]
 
-        # save posterior samples for ease of use with
-        # ligo skymap and save full result to have
-        # access to the true injection parameters
-        result.save_posterior_samples(test_outdir / "posterior_samples.dat")
-        result.save_to_file(test_outdir / "result.hdf5", extension="hdf5")
         self.test_results.append(result)
 
         # plot corner and skymap
