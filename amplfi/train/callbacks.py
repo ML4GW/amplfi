@@ -344,6 +344,7 @@ class SavePosterior(pl.Callback):
             trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
         )
 
+
 class GradientTracker(pl.Callback):
     def __init__(self, norm_type: int = 2):
         self.norm_type = norm_type
