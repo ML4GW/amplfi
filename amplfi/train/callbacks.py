@@ -12,6 +12,7 @@ from gwpy.plot import Plot
 from gwpy.timeseries import TimeSeries
 from lightning.pytorch.cli import SaveConfigCallback
 from lightning.pytorch.loggers import WandbLogger
+from lightning.pytorch.utilities import grad_norm
 
 
 class SaveConfigCallback(SaveConfigCallback):
@@ -342,3 +343,13 @@ class SavePosterior(pl.Callback):
         return self.on_test_batch_end(
             trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
         )
+
+
+class GradientTracker(pl.Callback):
+    def __init__(self, norm_type: int = 2):
+        self.norm_type = norm_type
+
+    def on_before_optimizer_step(self, trainer, pl_module, optimizer):
+        norms = grad_norm(pl_module, norm_type=self.norm_type)
+        total_norm = norms[f"grad_{float(self.norm_type)}_norm_total"]
+        self.log(f"grad_norm_{self.norm_type}", total_norm)
