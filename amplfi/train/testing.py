@@ -93,7 +93,7 @@ def get_sky_projection(ra, dec, dist, nside=32, min_samples_per_pix=15):
             ),
         ]
     )
-    return fits_table
+    return fits_table, m
 
 
 class Result(bilby.result.Result):
@@ -152,7 +152,7 @@ class Result(bilby.result.Result):
     def calculate_skymap(self, nside, min_samples_per_pix):
         """Calculate the 3D skymap. This involves the probability
         per pixel along with DISTMU, DISTSIGMA, DISTNORM parameters"""
-        fits_table = get_sky_projection(
+        fits_table, mollview_map = get_sky_projection(
             self.posterior["phi"],
             self.posterior["dec"],
             self.posterior["distance"],
@@ -160,3 +160,4 @@ class Result(bilby.result.Result):
             min_samples_per_pix=min_samples_per_pix,
         )
         self.fits_table = fits_table
+        self.mollview_map = mollview_map
