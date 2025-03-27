@@ -36,13 +36,13 @@ model:
     min_samples_per_pix: 15
     samples_per_event: 10000
     num_plot: 50
+    plot_data: false
     arch:
-      class_path: amplfi.train.architectures.flows.MaskedAutoregressiveFlow
+      class_path: amplfi.train.architectures.NSF
       init_args:
-        transform_type: "spline"
-        hidden_features: 128
-        num_transforms: 80
-        num_blocks: 6
+        hidden_features: [512, 512, 512]
+        num_transforms: 20
+        randperm: true
         # uncomment below to load 
         # in pre-trained embedding weights
         # embedding_weights: "path/to/embedding/weights"
@@ -83,7 +83,7 @@ data:
         jitter: 0.1
         num_fit_params: 100000
         parameter_sampler: 
-          class_path: amplfi.train.priors.aligned_cbc_prior
+          class_path: amplfi.train.priors.precessing_cbc_prior
         dec: 
           class_path: ml4gw.distributions.Cosine
         psi: 
@@ -100,7 +100,7 @@ data:
             validate_args: false
         num_val_waveforms: 10000
         num_test_waveforms: 200
-        approximant: ml4gw.waveforms.IMRPhenomD
+        approximant: ml4gw.waveforms.IMRPhenomPv2
         f_min: 20
         f_ref: 40
         right_pad: 0.5

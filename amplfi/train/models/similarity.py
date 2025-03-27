@@ -1,4 +1,4 @@
-from ..architectures.similarity import SimilarityEmbedding
+from ..architectures.embeddings.similarity import SimilarityEmbedding
 from ..callbacks import SaveAugmentedSimilarityBatch
 from ..losses import VICRegLoss
 from .base import AmplfiModel
