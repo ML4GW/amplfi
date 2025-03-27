@@ -97,7 +97,7 @@ class NSF(FlowArchitecture):
         self,
         *args,
         transforms: int,
-        hidden_features: Sequence[int],
+        hidden_features: Optional[Sequence[int]] = (64, 64),
         passes: Optional[int] = None,
         bins: Optional[int] = 8,
         randperm: Optional[bool] = False,
