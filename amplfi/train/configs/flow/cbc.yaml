@@ -41,7 +41,7 @@ model:
       class_path: amplfi.train.architectures.NSF
       init_args:
         hidden_features: [512, 512, 512]
-        num_transforms: 20
+        transforms: 20
         randperm: true
         # uncomment below to load 
         # in pre-trained embedding weights
@@ -60,7 +60,7 @@ model:
                 groups: 8
     patience: 40
     learning_rate: 0.00071444
-    weight_decay: 0.0
+    weight_decay: 0.00042
 data:
   class_path: amplfi.train.data.datasets.FlowDataset
   init_args:
