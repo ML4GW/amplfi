@@ -6,7 +6,7 @@ import torch
 
 from ..architectures.flows import FlowArchitecture
 from ..callbacks import StrainVisualization
-from ..testing import Result
+from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
 
@@ -92,7 +92,7 @@ class FlowModel(AmplfiModel):
         )
         return loss
 
-    def test_step(self, batch, batch_idx) -> bilby.result.Result:
+    def test_step(self, batch, batch_idx) -> AmplfiResult:
         strain, asds, parameters = batch
         context = (strain, asds)
 
@@ -170,7 +170,7 @@ class FlowModel(AmplfiModel):
         return result
 
     def on_test_epoch_start(self):
-        self.test_results: list[Result] = []
+        self.test_results: list[AmplfiResult] = []
 
     def on_test_epoch_end(self):
         # pp plot
@@ -222,7 +222,7 @@ class FlowModel(AmplfiModel):
         self,
         samples: np.ndarray,
         truth: Optional[np.ndarray] = None,
-    ):
+    ) -> AmplfiResult:
         """Cast posterior samples as Bilby Result object
         for ease of producing corner and pp plots
 
@@ -252,7 +252,7 @@ class FlowModel(AmplfiModel):
             posterior[k] = samples.T[idx].flatten()
         posterior = pd.DataFrame(posterior)
 
-        r = Result(
+        r = AmplfiResult(
             label="PEModel",
             injection_parameters=injection_parameters,
             posterior=posterior,
