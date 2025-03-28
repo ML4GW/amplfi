@@ -4,8 +4,10 @@ from typing import Optional
 from pathlib import Path
 import healpy as hp
 from astropy.table import Table
+from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
 import numpy as np
+from ligo.skymap.postprocess import crossmatch
 
 
 class AmplfiResult(bilby.result.Result):
@@ -13,6 +15,29 @@ class AmplfiResult(bilby.result.Result):
     A subclass of `bilby.result.Result` with additional
     convenience methods for generating AMPLFI skymaps
     """
+
+    def to_crossmatch_result(
+        self,
+        nside: int,
+        min_samples_per_pix: int = 15,
+        use_distance: bool = True,
+        **crossmatch_kwargs,
+    ) -> crossmatch.CrossmatchResult:
+        """
+        Calculate a `ligo.skymap.postprocess.crossmatch.CrossmatchResult`
+        based on sky localization and distance posterior samples
+        """
+        skymap = self.to_skymap(
+            nside=nside,
+            min_samples_per_pix=min_samples_per_pix,
+            use_distance=use_distance,
+        )
+        coordinates = SkyCoord(
+            self.injection_parameters["phi"],
+            self.injection_parameters["dec"],
+            unit="rad",
+        )
+        return crossmatch(skymap, coordinates, **crossmatch_kwargs)
 
     def to_skymap(
         self,

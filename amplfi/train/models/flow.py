@@ -1,4 +1,5 @@
 import bilby
+from typing import TYPE_CHECKING
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -9,6 +10,9 @@ from ..callbacks import StrainVisualization
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
+
+if TYPE_CHECKING:
+    from ligo.skymap.postprocess.crossmatch import CrossmatchResult
 
 Tensor = torch.Tensor
 
@@ -112,17 +116,24 @@ class FlowModel(AmplfiModel):
         test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
 
-        result.calculate_skymap(self.nside, self.min_samples_per_pix)
-
         # add ra column for use with ligo-skymap-from-samples
         result.posterior["ra"] = result.posterior["phi"]
 
+        # calculate skymap staistics via ligo.skymap.postprocess.crossmatch
+        crossmatch_result = result.to_crossmatch_result(
+            nside=self.nside,
+            min_samples_per_pix=self.min_samples_per_pix,
+            use_distance=True,
+            contours=[0.5, 0.9],
+        )
+
+        self.crossmatch_results.append(crossmatch_result)
         self.test_results.append(result)
 
         # plot corner and skymap
         skymap_filename = test_outdir / "mollview.png"
         corner_filename = test_outdir / "corner.png"
-        fits_filename = test_outdir / "amplfi.skymap.fits"
+        # fits_filename = test_outdir / "amplfi.skymap.fits"
         result.plot_corner(
             save=True,
             filename=corner_filename,
@@ -131,7 +142,6 @@ class FlowModel(AmplfiModel):
         result.plot_mollview(
             outpath=skymap_filename,
         )
-        result.fits_table.writeto(fits_filename, overwrite=True)
 
         return result
 
@@ -152,10 +162,9 @@ class FlowModel(AmplfiModel):
         test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
 
-        result.calculate_skymap(self.nside, self.min_samples_per_pix)
         skymap_filename = test_outdir / f"{gpstime.item()}_mollview.png"
         corner_filename = test_outdir / f"{gpstime.item()}_corner.png"
-        fits_filename = test_outdir / f"{gpstime.item()}.fits"
+        # fits_filename = test_outdir / f"{gpstime.item()}.fits"
         result_filename = test_outdir / f"{gpstime.item()}_result.hdf5"
         result.plot_corner(
             save=True,
@@ -165,12 +174,12 @@ class FlowModel(AmplfiModel):
         result.plot_mollview(
             outpath=skymap_filename,
         )
-        result.fits_table.writeto(fits_filename, overwrite=True)
         result.save_to_file(result_filename, extension="hdf5")
         return result
 
     def on_test_epoch_start(self):
         self.test_results: list[AmplfiResult] = []
+        self.crossmatch_results: list["CrossmatchResult"] = []
 
     def on_test_epoch_end(self):
         # pp plot
@@ -182,18 +191,33 @@ class FlowModel(AmplfiModel):
         )
 
         # searched area cum hist
-        searched_areas = []
-        fifty_percent_areas = []
-        ninety_percent_areas = []
-        for result in self.test_results:
-            searched_area, fifty, ninety = result.calculate_searched_area(
-                self.nside
-            )
-            searched_areas.append(searched_area)
-            fifty_percent_areas.append(fifty)
-            ninety_percent_areas.append(ninety)
+        searched_areas = [
+            result.searched_area for result in self.crossmatch_results
+        ]
+        searched_volumes = [
+            result.searched_volume for result in self.crossmatch_results
+        ]
+        fifty_percent_areas = [
+            result.contour_dists[0] for result in self.crossmatch_results
+        ]
+        ninety_percent_areas = [
+            result.contour_dists[1] for result in self.crossmatch_results
+        ]
+
         searched_areas = np.sort(searched_areas)
+        searched_volumes = np.sort(searched_volumes)
         counts = np.arange(1, len(searched_areas) + 1) / len(searched_areas)
+
+        plt.figure(figsize=(10, 6))
+        plt.step(searched_volumes, counts, where="post")
+        plt.xscale("log")
+        plt.xlabel("Searched Volume (Mpc^3)")
+        plt.ylabel("Cumulative Probability")
+        plt.title("Searched Volume Cumulative Distribution Function")
+        plt.grid()
+        plt.axhline(0.5, color="grey", linestyle="--")
+        plt.savefig(self.test_outdir / "searched_volume.png")
+        np.save(self.test_outdir / "searched_volume.npy", searched_volumes)
 
         plt.figure(figsize=(10, 6))
         plt.step(searched_areas, counts, where="post")
