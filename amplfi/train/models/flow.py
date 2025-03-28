@@ -1,18 +1,22 @@
 import bilby
 from typing import TYPE_CHECKING
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
 
 from ..architectures.flows import FlowArchitecture
-from ..callbacks import StrainVisualization
+from ..callbacks import (
+    StrainVisualization,
+    SavePosterior,
+    CrossMatchStatistics,
+    ProbProbPlot,
+)
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
 
 if TYPE_CHECKING:
-    from ligo.skymap.postprocess.crossmatch import CrossmatchResult
+    pass
 
 Tensor = torch.Tensor
 
@@ -39,6 +43,12 @@ class FlowModel(AmplfiModel):
         plot_data:
             If `True`, plot strain visualization for `num_plot`
             of the testing set events
+        save_posterior:
+            If `True`, save bilby Result objects and posterior samples
+        cross_match:
+            If `True`, run ligo.skymap.postprocess.crossmatch
+            on result objects at the end of testing epoch
+            and produce searched area and volume cdfs
     """
 
     def __init__(
@@ -50,6 +60,8 @@ class FlowModel(AmplfiModel):
         min_samples_per_pix: int = 15,
         num_plot: int = 10,
         plot_data: bool = False,
+        save_posterior: bool = False,
+        cross_match: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -59,6 +71,8 @@ class FlowModel(AmplfiModel):
         self.nside = nside
         self.min_samples_per_pix = min_samples_per_pix
         self.plot_data = plot_data
+        self.save_posterior = save_posterior
+        self.cross_match = cross_match
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
@@ -119,15 +133,6 @@ class FlowModel(AmplfiModel):
         # add ra column for use with ligo-skymap-from-samples
         result.posterior["ra"] = result.posterior["phi"]
 
-        # calculate skymap staistics via ligo.skymap.postprocess.crossmatch
-        crossmatch_result = result.to_crossmatch_result(
-            nside=self.nside,
-            min_samples_per_pix=self.min_samples_per_pix,
-            use_distance=True,
-            contours=[0.5, 0.9],
-        )
-
-        self.crossmatch_results.append(crossmatch_result)
         self.test_results.append(result)
 
         # plot corner and skymap
@@ -165,7 +170,7 @@ class FlowModel(AmplfiModel):
         skymap_filename = test_outdir / f"{gpstime.item()}_mollview.png"
         corner_filename = test_outdir / f"{gpstime.item()}_corner.png"
         # fits_filename = test_outdir / f"{gpstime.item()}.fits"
-        result_filename = test_outdir / f"{gpstime.item()}_result.hdf5"
+
         result.plot_corner(
             save=True,
             filename=corner_filename,
@@ -174,73 +179,11 @@ class FlowModel(AmplfiModel):
         result.plot_mollview(
             outpath=skymap_filename,
         )
-        result.save_to_file(result_filename, extension="hdf5")
+
         return result
 
     def on_test_epoch_start(self):
         self.test_results: list[AmplfiResult] = []
-        self.crossmatch_results: list["CrossmatchResult"] = []
-
-    def on_test_epoch_end(self):
-        # pp plot
-        bilby.result.make_pp_plot(
-            self.test_results,
-            save=True,
-            filename=self.test_outdir / "pp-plot.png",
-            keys=self.inference_params,
-        )
-
-        # searched area cum hist
-        searched_areas = [
-            result.searched_area for result in self.crossmatch_results
-        ]
-        searched_volumes = [
-            result.searched_vol for result in self.crossmatch_results
-        ]
-        fifty_percent_areas = [
-            result.contour_dists[0] for result in self.crossmatch_results
-        ]
-        ninety_percent_areas = [
-            result.contour_dists[1] for result in self.crossmatch_results
-        ]
-
-        searched_areas = np.sort(searched_areas)
-        searched_volumes = np.sort(searched_volumes)
-        counts = np.arange(1, len(searched_areas) + 1) / len(searched_areas)
-
-        plt.figure(figsize=(10, 6))
-        plt.step(searched_volumes, counts, where="post")
-        plt.xscale("log")
-        plt.xlabel("Searched Volume (Mpc^3)")
-        plt.ylabel("Cumulative Probability")
-        plt.title("Searched Volume Cumulative Distribution Function")
-        plt.grid()
-        plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(self.test_outdir / "searched_volume.png")
-        np.save(self.test_outdir / "searched_volume.npy", searched_volumes)
-
-        plt.figure(figsize=(10, 6))
-        plt.step(searched_areas, counts, where="post")
-        plt.xscale("log")
-        plt.xlabel("Searched Area (deg^2)")
-        plt.ylabel("Cumulative Probability")
-        plt.title("Searched Area Cumulative Distribution Function")
-        plt.grid()
-        plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(self.test_outdir / "searched_area.png")
-        np.save(self.test_outdir / "searched_area.npy", searched_areas)
-
-        plt.close()
-        plt.figure(figsize=(10, 6))
-        mm, bb, pp = plt.hist(
-            fifty_percent_areas, label="50 percent area", bins=50
-        )
-        _, _, _ = plt.hist(
-            ninety_percent_areas, label="90 percent area", bins=bb
-        )
-        plt.xlabel("Sq. deg.")
-        plt.legend()
-        plt.savefig(self.test_outdir / "fifty_ninety_areas.png")
 
     def cast_as_bilby_result(
         self,
@@ -329,9 +272,16 @@ class FlowModel(AmplfiModel):
         return parameters
 
     def configure_callbacks(self):
-        callbacks = []
+        callbacks = [ProbProbPlot()]
         if self.plot_data:
             callbacks.append(
                 StrainVisualization(self.test_outdir, self.num_plot)
             )
+
+        if self.save_posterior:
+            callbacks.append(SavePosterior(self.test_outdir))
+
+        if self.cross_match:
+            callbacks.append(CrossMatchStatistics())
+
         return callbacks
