@@ -3,11 +3,12 @@ from . import skymap
 from typing import Optional
 from pathlib import Path
 import healpy as hp
+from astropy import units as u
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
 import numpy as np
-from ligo.skymap.postprocess import crossmatch
+from ligo.skymap.postprocess.crossmatch import crossmatch, CrossmatchResult
 
 
 class AmplfiResult(bilby.result.Result):
@@ -22,7 +23,7 @@ class AmplfiResult(bilby.result.Result):
         min_samples_per_pix: int = 15,
         use_distance: bool = True,
         **crossmatch_kwargs,
-    ) -> crossmatch.CrossmatchResult:
+    ) -> CrossmatchResult:
         """
         Calculate a `ligo.skymap.postprocess.crossmatch.CrossmatchResult`
         based on sky localization and distance posterior samples
@@ -32,10 +33,11 @@ class AmplfiResult(bilby.result.Result):
             min_samples_per_pix=min_samples_per_pix,
             use_distance=use_distance,
         )
+
         coordinates = SkyCoord(
-            self.injection_parameters["phi"],
-            self.injection_parameters["dec"],
-            unit="rad",
+            self.injection_parameters["phi"] * u.rad,
+            self.injection_parameters["dec"] * u.rad,
+            distance=self.injection_parameters["distance"] * u.Mpc,
         )
         return crossmatch(skymap, coordinates, **crossmatch_kwargs)
 

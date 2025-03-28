@@ -76,9 +76,9 @@ def histogram_skymap(
     )
 
     # defaults for distance parameters
-    mu = np.ones(npix) * np.inf * u.Mpc
-    sigma = np.ones(npix) * u.Mpc
-    norm = np.zeros(npix) / u.Mpc**2
+    mu = np.ones(npix) * np.inf
+    sigma = np.ones(npix)
+    norm = np.zeros(npix)
 
     if dist is not None:
         # compute distance ansatz for pixels containing
@@ -98,6 +98,10 @@ def histogram_skymap(
         mu[np.in1d(range(npix), good_ipix)] = np.array(dist_mu)
         sigma[np.in1d(range(npix), good_ipix)] = np.array(dist_sigma)
         norm[np.in1d(range(npix), good_ipix)] = np.array(dist_norm)
+
+    mu *= u.Mpc
+    sigma *= u.Mpc
+    norm /= u.Mpc**2
 
     # add distance parameters to table
     table.add_columns(

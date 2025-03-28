@@ -195,7 +195,7 @@ class FlowModel(AmplfiModel):
             result.searched_area for result in self.crossmatch_results
         ]
         searched_volumes = [
-            result.searched_volume for result in self.crossmatch_results
+            result.searched_vol for result in self.crossmatch_results
         ]
         fifty_percent_areas = [
             result.contour_dists[0] for result in self.crossmatch_results
