@@ -99,6 +99,7 @@ class FlowModel(AmplfiModel):
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
         )
+        samples = samples.squeeze(1)
         descaled = self.scale(samples, reverse=True)
         descaled = self.filter_parameters(descaled)
         parameters = self.scale(parameters, reverse=True)

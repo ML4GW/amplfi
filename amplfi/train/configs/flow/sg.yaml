@@ -35,11 +35,11 @@ model:
     samples_per_event: 10000
     num_corner: 50
     arch:
-      class_path: amplfi.train.architectures.flows.InverseAutoregressiveFlow
+      class_path: amplfi.train.architectures.NSF
       init_args:
-        hidden_features: 150
-        num_transforms: 80
-        num_blocks: 6
+        hidden_features: [512, 512, 512]
+        transforms: 20
+        randperm: true
         # uncomment below to load 
         # in pre-trained embedding weights
         # embedding_weights: "path/to/embedding/weights"

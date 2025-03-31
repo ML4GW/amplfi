@@ -16,7 +16,6 @@ dependencies = [
     "ray[default, tune]>=2.38.0,<3",
     "bilby>=2.2.3,<3",
     "healpy>=1.16.6,<2",
-    "pyro-ppl>=1.9.0,<2",
     "jsonargparse[signatures]>=4.27.1,<5",
     "urllib3>=1.25.4,<1.27",
     "omegaconf>=2.3.0,<3",
@@ -28,6 +27,7 @@ dependencies = [
     "torch>=2.5.0",
     "s3fs>=2024.12.0,<2025",
     "ligo-skymap>=2.2.2",
+    "zuko>=1.4.0",
 ]
 
 [project.scripts]

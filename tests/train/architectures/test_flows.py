@@ -2,11 +2,7 @@ import pytest
 import torch
 
 from amplfi.train.architectures.embeddings import ResNet
-from amplfi.train.architectures.flows import (
-    CouplingFlow,
-    InverseAutoregressiveFlow,
-    MaskedAutoregressiveFlow,
-)
+from amplfi.train.architectures.flows import NSF
 
 
 @pytest.fixture(params=[2, 10])
@@ -42,12 +38,13 @@ def test_coupling_flow(
 
     embedding = ResNet(n_ifos, layers=[1, 1], context_dim=context_dim)
 
-    coupling_flow = CouplingFlow(
+    flow = NSF(
         param_dim,
         embedding,
-        num_transforms=num_transforms,
+        passes=2,
+        transforms=num_transforms,
     )
-    log_likelihoods = coupling_flow.log_prob(data, context=strain)
+    log_likelihoods = flow.log_prob(data, context=strain)
 
     assert log_likelihoods.shape == (len(data),)
 
@@ -60,18 +57,10 @@ def test_autoregressive_flow(
 
     embedding = ResNet(n_ifos, layers=[1, 1], context_dim=context_dim)
 
-    iaf = InverseAutoregressiveFlow(
+    flow = NSF(
         param_dim,
         embedding,
-        num_transforms=num_transforms,
+        transforms=num_transforms,
     )
-    log_likelihoods = iaf.log_prob(data, context=strain)
-    assert log_likelihoods.shape == (len(data),)
-
-    maf = MaskedAutoregressiveFlow(
-        param_dim,
-        embedding,
-        num_transforms=num_transforms,
-    )
-    log_likelihoods = maf.log_prob(data, context=strain)
+    log_likelihoods = flow.log_prob(data, context=strain)
     assert log_likelihoods.shape == (len(data),)
