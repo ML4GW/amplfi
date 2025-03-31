@@ -110,6 +110,7 @@ class AmplfiModel(pl.LightningModule):
             patience=self.scheduler_patience,
             factor=self.scheduler_factor,
         )
+
         return {
             "optimizer": optimizer,
             "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"},

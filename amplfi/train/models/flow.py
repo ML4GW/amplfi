@@ -1,14 +1,22 @@
 import bilby
-import matplotlib.pyplot as plt
+from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import torch
 
 from ..architectures.flows import FlowArchitecture
-from ..callbacks import StrainVisualization
-from ..testing import Result
+from ..callbacks import (
+    StrainVisualization,
+    SavePosterior,
+    CrossMatchStatistics,
+    ProbProbPlot,
+)
+from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
+
+if TYPE_CHECKING:
+    pass
 
 Tensor = torch.Tensor
 
@@ -35,6 +43,12 @@ class FlowModel(AmplfiModel):
         plot_data:
             If `True`, plot strain visualization for `num_plot`
             of the testing set events
+        save_posterior:
+            If `True`, save bilby Result objects and posterior samples
+        cross_match:
+            If `True`, run ligo.skymap.postprocess.crossmatch
+            on result objects at the end of testing epoch
+            and produce searched area and volume cdfs
     """
 
     def __init__(
@@ -46,6 +60,8 @@ class FlowModel(AmplfiModel):
         min_samples_per_pix: int = 15,
         num_plot: int = 10,
         plot_data: bool = False,
+        save_posterior: bool = False,
+        cross_match: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -55,6 +71,8 @@ class FlowModel(AmplfiModel):
         self.nside = nside
         self.min_samples_per_pix = min_samples_per_pix
         self.plot_data = plot_data
+        self.save_posterior = save_posterior
+        self.cross_match = cross_match
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
@@ -92,7 +110,7 @@ class FlowModel(AmplfiModel):
         )
         return loss
 
-    def test_step(self, batch, batch_idx) -> bilby.result.Result:
+    def test_step(self, batch, batch_idx) -> AmplfiResult:
         strain, asds, parameters = batch
         context = (strain, asds)
 
@@ -112,8 +130,6 @@ class FlowModel(AmplfiModel):
         test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
 
-        result.calculate_skymap(self.nside, self.min_samples_per_pix)
-
         # add ra column for use with ligo-skymap-from-samples
         result.posterior["ra"] = result.posterior["phi"]
 
@@ -122,7 +138,7 @@ class FlowModel(AmplfiModel):
         # plot corner and skymap
         skymap_filename = test_outdir / "mollview.png"
         corner_filename = test_outdir / "corner.png"
-        fits_filename = test_outdir / "amplfi.skymap.fits"
+        # fits_filename = test_outdir / "amplfi.skymap.fits"
         result.plot_corner(
             save=True,
             filename=corner_filename,
@@ -131,7 +147,6 @@ class FlowModel(AmplfiModel):
         result.plot_mollview(
             outpath=skymap_filename,
         )
-        result.fits_table.writeto(fits_filename, overwrite=True)
 
         return result
 
@@ -152,11 +167,10 @@ class FlowModel(AmplfiModel):
         test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
 
-        result.calculate_skymap(self.nside, self.min_samples_per_pix)
         skymap_filename = test_outdir / f"{gpstime.item()}_mollview.png"
         corner_filename = test_outdir / f"{gpstime.item()}_corner.png"
-        fits_filename = test_outdir / f"{gpstime.item()}.fits"
-        result_filename = test_outdir / f"{gpstime.item()}_result.hdf5"
+        # fits_filename = test_outdir / f"{gpstime.item()}.fits"
+
         result.plot_corner(
             save=True,
             filename=corner_filename,
@@ -165,64 +179,17 @@ class FlowModel(AmplfiModel):
         result.plot_mollview(
             outpath=skymap_filename,
         )
-        result.fits_table.writeto(fits_filename, overwrite=True)
-        result.save_to_file(result_filename, extension="hdf5")
+
         return result
 
     def on_test_epoch_start(self):
-        self.test_results: list[Result] = []
-
-    def on_test_epoch_end(self):
-        # pp plot
-        bilby.result.make_pp_plot(
-            self.test_results,
-            save=True,
-            filename=self.test_outdir / "pp-plot.png",
-            keys=self.inference_params,
-        )
-
-        # searched area cum hist
-        searched_areas = []
-        fifty_percent_areas = []
-        ninety_percent_areas = []
-        for result in self.test_results:
-            searched_area, fifty, ninety = result.calculate_searched_area(
-                self.nside
-            )
-            searched_areas.append(searched_area)
-            fifty_percent_areas.append(fifty)
-            ninety_percent_areas.append(ninety)
-        searched_areas = np.sort(searched_areas)
-        counts = np.arange(1, len(searched_areas) + 1) / len(searched_areas)
-
-        plt.figure(figsize=(10, 6))
-        plt.step(searched_areas, counts, where="post")
-        plt.xscale("log")
-        plt.xlabel("Searched Area (deg^2)")
-        plt.ylabel("Cumulative Probability")
-        plt.title("Searched Area Cumulative Distribution Function")
-        plt.grid()
-        plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(self.test_outdir / "searched_area.png")
-        np.save(self.test_outdir / "searched_area.npy", searched_areas)
-
-        plt.close()
-        plt.figure(figsize=(10, 6))
-        mm, bb, pp = plt.hist(
-            fifty_percent_areas, label="50 percent area", bins=50
-        )
-        _, _, _ = plt.hist(
-            ninety_percent_areas, label="90 percent area", bins=bb
-        )
-        plt.xlabel("Sq. deg.")
-        plt.legend()
-        plt.savefig(self.test_outdir / "fifty_ninety_areas.png")
+        self.test_results: list[AmplfiResult] = []
 
     def cast_as_bilby_result(
         self,
         samples: np.ndarray,
         truth: Optional[np.ndarray] = None,
-    ):
+    ) -> AmplfiResult:
         """Cast posterior samples as Bilby Result object
         for ease of producing corner and pp plots
 
@@ -252,7 +219,7 @@ class FlowModel(AmplfiModel):
             posterior[k] = samples.T[idx].flatten()
         posterior = pd.DataFrame(posterior)
 
-        r = Result(
+        r = AmplfiResult(
             label="PEModel",
             injection_parameters=injection_parameters,
             posterior=posterior,
@@ -305,9 +272,16 @@ class FlowModel(AmplfiModel):
         return parameters
 
     def configure_callbacks(self):
-        callbacks = []
+        callbacks = [ProbProbPlot()]
         if self.plot_data:
             callbacks.append(
                 StrainVisualization(self.test_outdir, self.num_plot)
             )
+
+        if self.save_posterior:
+            callbacks.append(SavePosterior(self.test_outdir))
+
+        if self.cross_match:
+            callbacks.append(CrossMatchStatistics())
+
         return callbacks
