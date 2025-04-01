@@ -272,7 +272,8 @@ class FlowModel(AmplfiModel):
         return parameters
 
     def configure_callbacks(self):
-        callbacks = [ProbProbPlot()]
+        callbacks = super().configure_callbacks()
+        callbacks += [ProbProbPlot()]
         if self.plot_data:
             callbacks.append(
                 StrainVisualization(self.test_outdir, self.num_plot)

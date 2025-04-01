@@ -3,10 +3,10 @@ import math
 import sys
 from pathlib import Path
 from typing import Optional
-
 import lightning.pytorch as pl
 import torch
 from ml4gw.transforms import ChannelWiseScaler
+from amplfi.train.callbacks import SaveWandbUrl
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
@@ -100,16 +100,24 @@ class AmplfiModel(pl.LightningModule):
 
         lr = self.hparams.learning_rate * math.sqrt(world_size)
         optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            self.parameters(),
             lr=lr,
             weight_decay=self.hparams.weight_decay,
         )
 
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            max_lr=lr,
+            pct_start=0.2,
+            total_steps=self.trainer.estimated_stepping_batches,
+        )
+        """
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             patience=self.scheduler_patience,
             factor=self.scheduler_factor,
         )
+        """
 
         return {
             "optimizer": optimizer,
@@ -124,3 +132,7 @@ class AmplfiModel(pl.LightningModule):
         scaled = self.scaler(parameters, reverse=reverse)
         scaled = scaled.transpose(1, 0)
         return scaled
+
+    def configure_callbacks(self):
+        callbacks = [SaveWandbUrl()]
+        return callbacks
