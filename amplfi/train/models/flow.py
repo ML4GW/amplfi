@@ -129,10 +129,6 @@ class FlowModel(AmplfiModel):
 
         test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
-
-        # add ra column for use with ligo-skymap-from-samples
-        result.posterior["ra"] = result.posterior["phi"]
-
         self.test_results.append(result)
 
         # plot corner and skymap
@@ -226,6 +222,8 @@ class FlowModel(AmplfiModel):
             search_parameter_keys=self.inference_params,
             priors=priors,
         )
+        r.posterior["ra"] = r.posterior["phi"]
+        r.injection_parameters["ra"] = r.injection_parameters["phi"]
         return r
 
     def filter_parameters(self, parameters: torch.Tensor):
