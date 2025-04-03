@@ -12,7 +12,7 @@ trainer:
         project: amplfi
         # uncomment and set to name your run
         # name: 
-  max_epochs: 200
+  max_epochs: 800
   check_val_every_n_epoch: 1
   log_every_n_steps: 20
   benchmark: false
@@ -53,9 +53,9 @@ model:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
               init_args:
                 groups: 16
-    patience: 10
     factor: 0.1
     learning_rate: 3.77e-4
+    pct_start: 0.1
     weight_decay: 0.0
 data:
   class_path: amplfi.train.data.datasets.FlowDataset
