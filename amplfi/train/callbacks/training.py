@@ -163,3 +163,19 @@ class GradientTracker(pl.Callback):
         norms = grad_norm(pl_module, norm_type=self.norm_type)
         total_norm = norms[f"grad_{float(self.norm_type)}_norm_total"]
         self.log(f"grad_norm_{self.norm_type}", total_norm)
+
+
+class SaveWandbUrl(pl.Callback):
+    def on_train_start(self, trainer, pl_module):
+        pl_module._logger.info("Saving Wandb Url")
+        save_dir = trainer.logger.save_dir
+        maybe_wandb_logger = trainer.loggers[-1]
+        if isinstance(maybe_wandb_logger, pl.loggers.WandbLogger):
+            url = maybe_wandb_logger.experiment.url
+            s3 = s3fs.S3FileSystem()
+            if save_dir.startswith("s3://"):
+                with s3.open(f"{save_dir}/wandb_url.txt", "wb") as s3_file:
+                    s3_file.write(url.encode())
+            else:
+                with open(os.path.join(save_dir, "wandb_url.txt"), "w") as f:
+                    f.write(url)

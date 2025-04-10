@@ -26,7 +26,10 @@ class AmplfiResult(bilby.result.Result):
     ) -> CrossmatchResult:
         """
         Calculate a `ligo.skymap.postprocess.crossmatch.CrossmatchResult`
-        based on sky localization and distance posterior samples
+        based on sky localization and distance posterior samples.
+        The posterior dataframe and injection_parameters dict
+        should have `ra` and `dec` entries
+
         """
         skymap = self.to_skymap(
             nside=nside,
@@ -35,7 +38,7 @@ class AmplfiResult(bilby.result.Result):
         )
 
         coordinates = SkyCoord(
-            self.injection_parameters["phi"] * u.rad,
+            self.injection_parameters["ra"] * u.rad,
             self.injection_parameters["dec"] * u.rad,
             distance=self.injection_parameters["distance"] * u.Mpc,
         )
@@ -47,13 +50,17 @@ class AmplfiResult(bilby.result.Result):
         min_samples_per_pix: int = 15,
         use_distance: bool = True,
     ) -> Table:
-        """Calculate a histogram skymap from posterior samples"""
+        """
+        Calculate a histogram skymap from posterior samples
+        The posterior dataframe and injection_parameters dict
+           should have `ra` and `dec` entries
+        """
         distance = None
         if use_distance:
             distance = self.posterior["distance"]
 
         return skymap.histogram_skymap(
-            self.posterior["phi"],
+            self.posterior["ra"],
             self.posterior["dec"],
             distance,
             nside=nside,
@@ -65,13 +72,15 @@ class AmplfiResult(bilby.result.Result):
     ) -> tuple[float, float, float]:
         """
         Calculate the searched area, and estimates
-        of 50% and 90% credible region
+        of 50% and 90% credible region.
+        The posterior dataframe and injection_parameters dict
+        should have `ra` and `dec` entries
         """
-        skymap = self.to_skymap(nside)["PROBDENSITY"]
+        smap = self.to_skymap(nside)["PROBDENSITY"]
 
         return skymap.calculate_searched_area(
-            skymap,
-            self.injection_parameters["phi"],
+            smap,
+            self.injection_parameters["ra"],
             self.injection_parameters["dec"],
             nside=nside,
         )
@@ -80,7 +89,9 @@ class AmplfiResult(bilby.result.Result):
         self, nside: int = 32, outpath: Optional[Path] = None
     ) -> plt.Figure:
         """
-        Plot a mollweide projection of the skymap
+        Plot a mollweide projection of the skymap.
+        The posterior dataframe and injection_parameters dict
+        should have `ra` and `dec` entries
         """
         skymap = self.to_skymap(nside)["PROBDENSITY"]
 

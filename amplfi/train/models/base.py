@@ -3,10 +3,10 @@ import math
 import sys
 from pathlib import Path
 from typing import Optional
-
 import lightning.pytorch as pl
 import torch
 from ml4gw.transforms import ChannelWiseScaler
+from amplfi.train.callbacks import SaveWandbUrl
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
@@ -31,16 +31,13 @@ class AmplfiModel(pl.LightningModule):
         self,
         inference_params: list[str],
         learning_rate: float,
+        pct_start: float,
         train_outdir: Path,
         test_outdir: Optional[Path] = None,
         weight_decay: float = 0.0,
-        patience: int = 10,
-        factor: float = 0.1,
         verbose: bool = False,
     ):
         super().__init__()
-        self.scheduler_patience = patience
-        self.scheduler_factor = factor
         self._logger = self.init_logging(verbose)
 
         if test_outdir is None:
@@ -99,21 +96,27 @@ class AmplfiModel(pl.LightningModule):
             world_size = torch.distributed.get_world_size()
 
         lr = self.hparams.learning_rate * math.sqrt(world_size)
+
         optimizer = torch.optim.AdamW(
             self.model.parameters(),
             lr=lr,
             weight_decay=self.hparams.weight_decay,
         )
 
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
-            patience=self.scheduler_patience,
-            factor=self.scheduler_factor,
+            max_lr=lr,
+            pct_start=self.hparams.pct_start,
+            total_steps=self.trainer.estimated_stepping_batches,
         )
 
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {"scheduler": scheduler, "monitor": "valid_loss"},
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "valid_loss",
+                "interval": "step",
+            },
         }
 
     def scale(self, parameters, reverse: bool = False):
@@ -124,3 +127,7 @@ class AmplfiModel(pl.LightningModule):
         scaled = self.scaler(parameters, reverse=reverse)
         scaled = scaled.transpose(1, 0)
         return scaled
+
+    def configure_callbacks(self):
+        callbacks = [SaveWandbUrl()]
+        return callbacks
