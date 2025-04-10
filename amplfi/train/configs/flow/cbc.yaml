@@ -31,7 +31,6 @@ trainer:
 model:
   class_path: amplfi.train.models.flow.FlowModel
   init_args:
-    optimizer:
     train_outdir: ${oc.env:AMPLFI_OUTDIR}
     nside: 32
     min_samples_per_pix: 15
