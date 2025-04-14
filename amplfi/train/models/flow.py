@@ -52,12 +52,16 @@ class FlowModel(AmplfiModel):
         plot_mollview:
             If `True`, plot mollview plots for
             testing set events
-        save_posterior:
-            If `True`, save bilby Result objects and posterior samples
         cross_match:
             If `True`, run ligo.skymap.postprocess.crossmatch
             on result objects at the end of testing epoch
             and produce searched area and volume cdfs
+        save_fits:
+            If `True`, save skymaps as FITS files
+            for testing set events
+        save_posterior:
+            If `True`, save bilby Result objects and posterior samples
+
     """
 
     def __init__(
@@ -68,11 +72,11 @@ class FlowModel(AmplfiModel):
         nside: int = 32,
         min_samples_per_pix: int = 15,
         num_plot: int = 10,
+        plot_data: bool = False,
         plot_corner: bool = True,
         plot_mollview: bool = True,
         cross_match: bool = True,
         save_fits: bool = True,
-        plot_data: bool = False,
         save_posterior: bool = False,
         **kwargs,
     ) -> None:
