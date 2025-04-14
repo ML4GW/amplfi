@@ -10,6 +10,9 @@ from ..callbacks import (
     SavePosterior,
     CrossMatchStatistics,
     ProbProbPlot,
+    PlotMollview,
+    PlotCorner,
+    SaveFITS,
 )
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
@@ -43,12 +46,22 @@ class FlowModel(AmplfiModel):
         plot_data:
             If `True`, plot strain visualization for `num_plot`
             of the testing set events
-        save_posterior:
-            If `True`, save bilby Result objects and posterior samples
+        plot_corner:
+            If `True`, plot corner plots for
+            testing set events
+        plot_mollview:
+            If `True`, plot mollview plots for
+            testing set events
         cross_match:
             If `True`, run ligo.skymap.postprocess.crossmatch
             on result objects at the end of testing epoch
             and produce searched area and volume cdfs
+        save_fits:
+            If `True`, save skymaps as FITS files
+            for testing set events
+        save_posterior:
+            If `True`, save bilby Result objects and posterior samples
+
     """
 
     def __init__(
@@ -60,8 +73,11 @@ class FlowModel(AmplfiModel):
         min_samples_per_pix: int = 15,
         num_plot: int = 10,
         plot_data: bool = False,
-        save_posterior: bool = False,
+        plot_corner: bool = True,
+        plot_mollview: bool = True,
         cross_match: bool = True,
+        save_fits: bool = True,
+        save_posterior: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -71,6 +87,9 @@ class FlowModel(AmplfiModel):
         self.nside = nside
         self.min_samples_per_pix = min_samples_per_pix
         self.plot_data = plot_data
+        self.plot_corner = plot_corner
+        self.plot_mollview = plot_mollview
+        self.save_fits = save_fits
         self.save_posterior = save_posterior
         self.cross_match = cross_match
 
@@ -130,19 +149,6 @@ class FlowModel(AmplfiModel):
         test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
         self.test_results.append(result)
-
-        # plot corner and skymap
-        skymap_filename = test_outdir / "mollview.png"
-        corner_filename = test_outdir / "corner.png"
-        # fits_filename = test_outdir / "amplfi.skymap.fits"
-        result.plot_corner(
-            save=True,
-            filename=corner_filename,
-            levels=(0.5, 0.9),
-        )
-        result.plot_mollview(
-            outpath=skymap_filename,
-        )
 
         return result
 
@@ -276,6 +282,15 @@ class FlowModel(AmplfiModel):
             callbacks.append(
                 StrainVisualization(self.test_outdir, self.num_plot)
             )
+
+        if self.save_fits:
+            callbacks.append(SaveFITS(self.test_outdir, self.nside))
+
+        if self.plot_mollview:
+            callbacks.append(PlotMollview(self.test_outdir, self.nside))
+
+        if self.plot_corner:
+            callbacks.append(PlotCorner(self.test_outdir))
 
         if self.save_posterior:
             callbacks.append(SavePosterior(self.test_outdir))

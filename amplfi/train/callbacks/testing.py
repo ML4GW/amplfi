@@ -1,3 +1,4 @@
+from astropy import io
 from pathlib import Path
 from typing import TYPE_CHECKING
 from gwpy.plot import Plot
@@ -13,6 +14,7 @@ from tqdm.auto import tqdm
 if TYPE_CHECKING:
     from ligo.skymap.postprocess.crossmatch import CrossmatchResult
     from amplfi.train.models import FlowModel
+    from amplfi.utils.result import AmplfiResult
 
 
 class StrainVisualization(pl.Callback):
@@ -97,7 +99,7 @@ class StrainVisualization(pl.Callback):
         plot = Plot(
             *qscans,
             figsize=(18, 5),
-            geometry=(1, 2),
+            geometry=(1, len(ifos)),
             yscale="log",
             method="pcolormesh",
             cmap="viridis",
@@ -143,17 +145,139 @@ class StrainVisualization(pl.Callback):
                 label=f"{ifo} data",
             )
 
-        axes[0].set_title("Real")
-        axes[1].set_title("Imaginary")
+        axes[0].set_title("real")
+        axes[1].set_title("imaginary")
 
-        axes[0].set_ylabel("Whitened Amplitude")
-        axes[0].set_xlabel("Frequency (Hz)")
-        axes[0].set_xlabel("Frequency (Hz)")
+        axes[0].set_ylabel("whitened amplitude")
+        axes[0].set_xlabel("frequency (hz)")
+        axes[0].set_xlabel("frequency (hz)")
 
         plt.legend()
 
         plt.savefig(whitened_fd_strain_fname)
         plt.close()
+
+    def on_predict_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        return self.on_test_batch_end(
+            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        )
+
+
+class PlotMollview(pl.Callback):
+    """
+    Lightning Callback for plotting mollview skymaps
+    after each test batch
+    """
+
+    def __init__(self, outdir: Path, nside: int):
+        self.outdir = outdir
+        self.nside = nside
+
+    def on_test_batch_end(
+        self,
+        trainer,
+        pl_module: "FlowModel",
+        outputs: "AmplfiResult",
+        batch,
+        batch_idx,
+        dataloader_idx=0,
+    ) -> None:
+        """
+        Called at the end of each test step.
+        `outputs` consists of objects returned by `pl_module.test_step`.
+        """
+
+        # test_step returns bilby result object
+        result = outputs
+
+        outdir = self.outdir / f"event_{batch_idx}"
+        outdir.mkdir(exist_ok=True)
+        skymap_filename = outdir / "mollview.png"
+        result.plot_mollview(
+            self.nside,
+            outpath=skymap_filename,
+        )
+
+    def on_predict_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        return self.on_test_batch_end(
+            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        )
+
+
+class PlotCorner(pl.Callback):
+    """
+    Lightning Callback for making corner plots after test epoch
+    """
+
+    def __init__(self, outdir: Path):
+        self.outdir = outdir
+
+    def on_test_batch_end(
+        self,
+        trainer,
+        pl_module: "FlowModel",
+        outputs: "AmplfiResult",
+        batch,
+        batch_idx,
+        dataloader_idx=0,
+    ) -> None:
+        """
+        Called at the end of each test step.
+        `outputs` consists of objects returned by `pl_module.test_step`.
+        """
+
+        # test_step returns bilby result object
+        result = outputs
+
+        outdir = self.outdir / f"event_{batch_idx}"
+        corner_filename = outdir / "corner.png"
+        outdir.mkdir(exist_ok=True)
+
+        result.plot_corner(
+            save=True,
+            filename=corner_filename,
+            levels=(0.5, 0.9),
+        )
+
+    def on_predict_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ):
+        return self.on_test_batch_end(
+            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        )
+
+
+class SaveFITS(pl.Callback):
+    """ """
+
+    def __init__(self, outdir: Path, nside: int):
+        self.outdir = outdir
+        self.nside = nside
+
+    def on_test_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs: "AmplfiResult",
+        batch,
+        batch_idx,
+        dataloader_idx=0,
+    ) -> None:
+        """
+        Called at the end of each test step.
+        `outputs` consists of objects returned by `pl_module.test_step`.
+        """
+
+        # test_step returns bilby result object
+        result = outputs
+        fits = io.fits.table_to_hdu(result.to_skymap(self.nside))
+        outdir = self.outdir / f"event_{batch_idx}"
+        outdir.mkdir(exist_ok=True)
+        fits.writeto(outdir / "amplfi.skymap.fits", overwrite=True)
 
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
@@ -173,7 +297,13 @@ class SavePosterior(pl.Callback):
         self.outdir = outdir
 
     def on_test_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+        self,
+        trainer,
+        pl_module,
+        outputs: "AmplfiResult",
+        batch,
+        batch_idx,
+        dataloader_idx=0,
     ) -> None:
         """
         Called at the end of each test step.
