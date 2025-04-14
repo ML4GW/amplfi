@@ -99,7 +99,7 @@ class StrainVisualization(pl.Callback):
         plot = Plot(
             *qscans,
             figsize=(18, 5),
-            geometry=(1, 2),
+            geometry=(1, len(ifos)),
             yscale="log",
             method="pcolormesh",
             cmap="viridis",
