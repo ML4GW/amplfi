@@ -129,7 +129,8 @@ class StrainVisualization(pl.Callback):
 
         if self.save_data:
             np.savetxt(
-                outdir / "asds.txt", np.concatenate([frequencies_masked, asds])
+                outdir / "asds.txt",
+                np.vstack((np.expand_dims(frequencies_masked, axis=0), asds)),
             )
         plt.legend()
         plt.savefig(asd_fname)
