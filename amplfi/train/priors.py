@@ -33,51 +33,37 @@ def precessing_to_lalsimulation_parameters(
     """
     Convert precessing spin parameters to lalsimulation parameters
     """
-    chirp_mass, mass_ratio = (
-        parameters.pop("chirp_mass"),
-        parameters.pop("mass_ratio"),
-    )
     mass_1, mass_2 = chirp_mass_and_mass_ratio_to_components(
-        chirp_mass, mass_ratio
+        parameters["chirp_mass"], parameters["mass_ratio"]
     )
 
-    a_1, a_2 = parameters.pop("a_1"), parameters.pop("a_2")
-    tilt_1, tilt_2 = parameters.pop("tilt_1"), parameters.pop("tilt_2")
-    inclination = parameters.pop("inclination")
-    phi_jl, phi_12 = parameters.pop("phi_jl"), parameters.pop("phi_12")
-    phic = parameters.pop("phic")
+    parameters["mass_1"] = mass_1
+    parameters["mass_2"] = mass_2
 
     # TODO: hard coding f_ref = 40 here b/c not sure best way to link this
     # to the f_ref specified in the config file
     incl, s1x, s1y, s1z, s2x, s2y, s2z = bilby_spins_to_lalsim(
-        inclination,
-        phi_jl,
-        tilt_1,
-        tilt_2,
-        phi_12,
-        a_1,
-        a_2,
-        mass_1,
-        mass_2,
+        parameters["inclination"],
+        parameters["phi_jl"],
+        parameters["tilt_1"],
+        parameters["tilt_2"],
+        parameters["phi_12"],
+        parameters["a_1"],
+        parameters["a_2"],
+        parameters["mass_1"],
+        parameters["mass_2"],
         40,
-        torch.zeros(len(inclination), device=inclination.device),
+        torch.zeros(len(mass_1), device=mass_1.device),
     )
 
-    output = {}
-    output["mass_1"] = mass_1
-    output["mass_2"] = mass_2
-    output["chirp_mass"] = chirp_mass
-    output["mass_ratio"] = mass_ratio
-    output["s1x"] = s1x
-    output["s1y"] = s1y
-    output["s1z"] = s1z
-    output["s2x"] = s2x
-    output["s2y"] = s2y
-    output["s2z"] = s2z
-    output["distance"] = parameters["distance"]
-    output["inclination"] = incl
-    output["phic"] = phic
-    return output
+    parameters["s1x"] = s1x
+    parameters["s1y"] = s1y
+    parameters["s1z"] = s1z
+    parameters["s2x"] = s2x
+    parameters["s2y"] = s2y
+    parameters["s2z"] = s2z
+    parameters["inclination"] = incl
+    return parameters
 
 
 def aligned_to_lalsimulation_parameters(
@@ -86,37 +72,22 @@ def aligned_to_lalsimulation_parameters(
     """
     Convert precessing spin parameters to lalsimulation parameters
     """
-    chirp_mass, mass_ratio = (
-        parameters.pop("chirp_mass"),
-        parameters.pop("mass_ratio"),
-    )
     mass_1, mass_2 = chirp_mass_and_mass_ratio_to_components(
-        chirp_mass, mass_ratio
+        parameters["chirp_mass"], parameters["mass_ratio"]
     )
 
-    s1x = torch.zeros_like(mass_1)
-    s1y = torch.zeros_like(mass_1)
+    parameters["mass_1"] = mass_1
+    parameters["mass_2"] = mass_2
 
-    s2x = torch.zeros_like(mass_1)
-    s2y = torch.zeros_like(mass_1)
+    parameters["s1x"] = torch.zeros_like(mass_1)
+    parameters["s1y"] = torch.zeros_like(mass_1)
 
-    output = {}
-    output["chi1"] = parameters["chi1"]
-    output["chi2"] = parameters["chi2"]
-    output["mass_1"] = mass_1
-    output["mass_2"] = mass_2
-    output["chirp_mass"] = chirp_mass
-    output["mass_ratio"] = mass_ratio
-    output["s1x"] = s1x
-    output["s1y"] = s1y
-    output["s1z"] = parameters.pop("chi1")
-    output["s2x"] = s2x
-    output["s2y"] = s2y
-    output["s2z"] = parameters.pop("chi2")
-    output["distance"] = parameters.pop("distance")
-    output["inclination"] = parameters.pop("inclination")
-    output["phic"] = parameters.pop("phic")
-    return output
+    parameters["s2x"] = torch.zeros_like(mass_1)
+    parameters["s2y"] = torch.zeros_like(mass_1)
+
+    parameters["s1z"] = parameters["chi1"]
+    parameters["s2z"] = parameters["chi2"]
+    return parameters
 
 
 # TODO: we want validate_args = False at test time
