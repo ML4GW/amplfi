@@ -23,9 +23,10 @@ class StrainVisualization(pl.Callback):
     and asds being analyzed during the test step
     """
 
-    def __init__(self, outdir: Path, num_plot: int):
+    def __init__(self, outdir: Path, num_plot: int, save_data: bool = True):
         self.outdir = outdir
         self.num_plot = num_plot
+        self.save_data = save_data
 
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
@@ -66,6 +67,8 @@ class StrainVisualization(pl.Callback):
 
         for i, ifo in enumerate(ifos):
             plt.plot(strain[i], label=ifo)
+            if self.save_data:
+                np.savetxt(outdir / "whitened_td_strain.txt", strain)
 
         plt.legend()
         plt.savefig(whitened_td_strain_fname)
@@ -124,6 +127,11 @@ class StrainVisualization(pl.Callback):
             plt.xlabel("Frequency (Hz)")
             plt.ylabel("Scaled Amplitude")
 
+        if self.save_data:
+            np.savetxt(
+                outdir / "asds.txt",
+                np.vstack((np.expand_dims(frequencies_masked, axis=0), asds)),
+            )
         plt.legend()
         plt.savefig(asd_fname)
         plt.close()
