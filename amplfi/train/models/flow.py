@@ -17,6 +17,7 @@ from ..callbacks import (
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
+from scipy.special import logsumexp
 
 if TYPE_CHECKING:
     pass
@@ -136,20 +137,25 @@ class FlowModel(AmplfiModel):
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
         )
+        log_probs = self.model.log_prob(samples, context)
+
         samples = samples.squeeze(1)
+        log_probs = log_probs.squeeze(1)
+
         descaled = self.scale(samples, reverse=True)
-        descaled = self.filter_parameters(descaled)
+        descaled, mask = self.filter_parameters(descaled)
         parameters = self.scale(parameters, reverse=True)
 
+        log_probs = log_probs[mask]
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
+            log_probs.cpu().numpy(),
             parameters.cpu().numpy()[0],
         )
 
         test_outdir = self.test_outdir / f"event_{batch_idx}"
         test_outdir.mkdir(parents=True, exist_ok=True)
         self.test_results.append(result)
-
         return result
 
     def predict_step(self, batch, _):
@@ -159,12 +165,15 @@ class FlowModel(AmplfiModel):
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
         )
-
-        samples = samples.squeeze(1)
+        log_probs = self.model.log_prob(samples, context)
+        log_probs = log_probs.squeeze(1)
         descaled = self.scale(samples, reverse=True)
-        descaled = self.filter_parameters(descaled)
+        descaled, mask = self.filter_parameters(descaled)
+
+        log_probs = log_probs[mask]
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
+            log_probs.cpu().numpy(),
             None,
         )
 
@@ -179,6 +188,7 @@ class FlowModel(AmplfiModel):
     def cast_as_bilby_result(
         self,
         samples: np.ndarray,
+        log_probs: np.ndarray,
         truth: Optional[np.ndarray] = None,
     ) -> AmplfiResult:
         """Cast posterior samples as Bilby Result object
@@ -207,7 +217,12 @@ class FlowModel(AmplfiModel):
         posterior = {}
         for idx, k in enumerate(self.inference_params):
             posterior[k] = samples.T[idx].flatten()
+
+        posterior["log_prob"] = log_probs
         posterior = pd.DataFrame(posterior)
+
+        num_samples = len(posterior)
+        log_evidence = logsumexp(posterior["log_prob"]) - np.log(num_samples)
 
         r = AmplfiResult(
             label="PEModel",
@@ -215,6 +230,7 @@ class FlowModel(AmplfiModel):
             posterior=posterior,
             search_parameter_keys=self.inference_params,
             priors=priors,
+            log_evidence=log_evidence,
         )
         r.posterior["ra"] = r.posterior["phi"]
         return r
@@ -260,7 +276,7 @@ class FlowModel(AmplfiModel):
         )
         parameters = parameters[net_mask]
 
-        return parameters
+        return parameters, net_mask
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
