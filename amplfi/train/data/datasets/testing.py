@@ -393,9 +393,9 @@ class RawStrainTestingDataset(FlowDataset):
     """
 
     def __init__(
-        self, *args, gpstimes: Union[float, np.ndarray, Path], **kwargs
+        self, *args, gpstimes: Union[float, list[float], Path], **kwargs
     ):
-        self.gpstimes = self.parse_gps_times(gpstimes)
+        self.gpstimes = self.parse_gps_times(np.array(gpstimes))
         super().__init__(*args, **kwargs)
 
     def parse_gps_times(self, gpstimes: Union[float, np.ndarray, Path]):
@@ -427,7 +427,7 @@ class RawStrainTestingDataset(FlowDataset):
 
     def predict_dataloader(self) -> torch.utils.data.DataLoader:
         dataset = torch.utils.data.TensorDataset(
-            self.background, self.gpstimes
+            self.background, torch.tensor(self.gpstimes)
         )
         dataloader = torch.utils.data.DataLoader(
             dataset,

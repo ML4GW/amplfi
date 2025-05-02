@@ -152,13 +152,15 @@ class FlowModel(AmplfiModel):
 
         return result
 
-    def predict_step(self, batch, batch_idx, _):
+    def predict_step(self, batch, _):
         strain, asds, gpstime = batch
         context = (strain, asds)
 
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
         )
+
+        samples = samples.squeeze(1)
         descaled = self.scale(samples, reverse=True)
         descaled = self.filter_parameters(descaled)
         result = self.cast_as_bilby_result(
@@ -166,21 +168,8 @@ class FlowModel(AmplfiModel):
             None,
         )
 
-        test_outdir = self.test_outdir / f"event_{batch_idx}"
+        test_outdir = self.test_outdir / f"event_{int(gpstime)}"
         test_outdir.mkdir(parents=True, exist_ok=True)
-
-        skymap_filename = test_outdir / f"{gpstime.item()}_mollview.png"
-        corner_filename = test_outdir / f"{gpstime.item()}_corner.png"
-        # fits_filename = test_outdir / f"{gpstime.item()}.fits"
-
-        result.plot_corner(
-            save=True,
-            filename=corner_filename,
-            levels=(0.5, 0.9),
-        )
-        result.plot_mollview(
-            outpath=skymap_filename,
-        )
 
         return result
 
@@ -201,14 +190,13 @@ class FlowModel(AmplfiModel):
 
         """
 
-        injection_parameters = (
-            {
+        injection_parameters = None
+        if truth is not None:
+            injection_parameters = {
                 k: float(v)
                 for k, v in zip(self.inference_params, truth, strict=False)
             }
-            if truth is not None
-            else None
-        )
+            injection_parameters["ra"] = injection_parameters["phi"]
 
         # create dummy prior with correct attributes
         # for making our results compatible with bilbys make_pp_plot
@@ -229,7 +217,6 @@ class FlowModel(AmplfiModel):
             priors=priors,
         )
         r.posterior["ra"] = r.posterior["phi"]
-        r.injection_parameters["ra"] = r.injection_parameters["phi"]
         return r
 
     def filter_parameters(self, parameters: torch.Tensor):
