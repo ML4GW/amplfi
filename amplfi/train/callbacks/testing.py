@@ -224,6 +224,15 @@ class PlotCorner(pl.Callback):
     def __init__(self, outdir: Path):
         self.outdir = outdir
 
+    def plot_corner(self, result: "AmplfiResult", outdir: Path):
+        corner_filename = outdir / "corner.png"
+        outdir.mkdir(exist_ok=True)
+        result.plot_corner(
+            save=True,
+            filename=corner_filename,
+            levels=(0.5, 0.9),
+        )
+
     def on_test_batch_end(
         self,
         trainer,
@@ -240,23 +249,19 @@ class PlotCorner(pl.Callback):
 
         # test_step returns bilby result object
         result = outputs
-
         outdir = self.outdir / f"event_{batch_idx}"
-        corner_filename = outdir / "corner.png"
-        outdir.mkdir(exist_ok=True)
-
-        result.plot_corner(
-            save=True,
-            filename=corner_filename,
-            levels=(0.5, 0.9),
-        )
+        self.plot_corner(result, outdir)
 
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        return self.on_test_batch_end(
-            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
-        )
+        # test_step returns bilby result object
+        result = outputs
+
+        # for predict step, use gpstime to name the directory
+        gpstime = batch[2].cpu().numpy()[0]
+        outdir = self.outdir / f"event_{int(gpstime)}"
+        self.plot_corner(result, outdir)
 
 
 class SaveFITS(pl.Callback):
@@ -265,6 +270,15 @@ class SaveFITS(pl.Callback):
     def __init__(self, outdir: Path, nside: int):
         self.outdir = outdir
         self.nside = nside
+
+    def save_fits(
+        self,
+        result: "AmplfiResult",
+        outdir: Path,
+    ):
+        fits = io.fits.table_to_hdu(result.to_skymap(self.nside))
+        outdir.mkdir(exist_ok=True)
+        fits.writeto(outdir / "amplfi.skymap.fits", overwrite=True)
 
     def on_test_batch_end(
         self,
@@ -282,17 +296,20 @@ class SaveFITS(pl.Callback):
 
         # test_step returns bilby result object
         result = outputs
-        fits = io.fits.table_to_hdu(result.to_skymap(self.nside))
         outdir = self.outdir / f"event_{batch_idx}"
         outdir.mkdir(exist_ok=True)
-        fits.writeto(outdir / "amplfi.skymap.fits", overwrite=True)
+        self.save_fits(result, outdir)
 
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        return self.on_test_batch_end(
-            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
-        )
+        # test_step returns bilby result object
+        result = outputs
+
+        # for predict step, use gpstime to name the directory
+        gpstime = batch[2].cpu().numpy()[0]
+        outdir = self.outdir / f"event_{int(gpstime)}"
+        self.save_fits(result, outdir)
 
 
 class SavePosterior(pl.Callback):
@@ -304,6 +321,17 @@ class SavePosterior(pl.Callback):
     def __init__(self, outdir: Path):
         self.outdir = outdir
 
+    def save_posterior(
+        self,
+        result: "AmplfiResult",
+        outdir: Path,
+    ):
+        # save posterior samples for ease of use with
+        # ligo skymap and save full result to have
+        # access to the true injection parameters
+        result.save_posterior_samples(outdir / "posterior_samples.dat")
+        result.save_to_file(outdir / "result.hdf5", extension="hdf5")
+
     def on_test_batch_end(
         self,
         trainer,
@@ -324,18 +352,20 @@ class SavePosterior(pl.Callback):
         outdir = self.outdir / f"event_{batch_idx}"
         outdir.mkdir(exist_ok=True)
 
-        # save posterior samples for ease of use with
-        # ligo skymap and save full result to have
-        # access to the true injection parameters
-        result.save_posterior_samples(outdir / "posterior_samples.dat")
-        result.save_to_file(outdir / "result.hdf5", extension="hdf5")
+        self.save_posterior(result, outdir)
 
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        return self.on_test_batch_end(
-            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
-        )
+        # test_step returns bilby result object
+        result = outputs
+
+        # for predict step, use gpstime to name the directory
+        gpstime = batch[2].cpu().numpy()[0]
+        outdir = self.outdir / f"event_{int(gpstime)}"
+        outdir.mkdir(exist_ok=True)
+
+        self.save_posterior(result, outdir)
 
 
 class ProbProbPlot(pl.Callback):
