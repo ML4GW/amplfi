@@ -278,7 +278,7 @@ class ParameterTestingDataset(FlowDataset):
         self.waveforms = torch.stack([cross, plus], dim=0)
         self.parameters = torch.column_stack(params)
         self.background = self.background_from_gpstimes(
-            parameters["gpstime"], self.test_fnames
+            parameters["gpstime"], self.test_fnames, timeslides=None
         )
 
         # once we've generated validation/testing waveforms on cpu,
@@ -390,22 +390,52 @@ class RawStrainTestingDataset(FlowDataset):
             the gps times of the events to analyze. If a path is
             passed, the gps times should be stored in a dataset
             named `gpstimes`
+        timesides:
+            A tuple of floats, list of tuple of floats, or path
+            to an hdf5 file containing a `timeslides` dataset,
+            containing a list of tuple of floats. The tuple
+            corresponds to a timeshift to apply to each detector
+            relative to the gpstime. If left as `None`, no
+            timeshifts will be applied.
+
     """
 
     def __init__(
-        self, *args, gpstimes: Union[float, list[float], Path], **kwargs
+        self,
+        *args,
+        gpstimes: Union[float, list[float], Path],
+        timeslides: Optional[
+            Union[tuple[float], list[tuple[float]], Path]
+        ] = None,
+        **kwargs,
     ):
-        self.gpstimes = self.parse_gps_times(np.array(gpstimes))
+        self.gpstimes, self.timeslides = self.parse_gpstimes_and_timeslides(
+            gpstimes, timeslides
+        )
         super().__init__(*args, **kwargs)
 
-    def parse_gps_times(self, gpstimes: Union[float, np.ndarray, Path]):
+    def parse_gpstimes_and_timeslides(
+        self, gpstimes: Union[float, np.ndarray, Path], timeslides
+    ):
         if isinstance(gpstimes, (float, int)):
             gpstimes = np.array([gpstimes])
         elif isinstance(gpstimes, Path):
             with h5py.File(gpstimes, "r") as f:
                 gpstimes = f["gpstimes"][:]
+        else:
+            gpstimes = np.array(gpstimes)
 
-        return gpstimes
+        if isinstance(timeslides, (float, int)):
+            timeslides = np.array([timeslides])
+        elif isinstance(timeslides, Path):
+            with h5py.File(timeslides, "r") as f:
+                timeslides = f["timeslides"][:]
+        else:
+            timeslides = np.array(timeslides)
+
+        if len(timeslides) != len(gpstimes):
+            raise ValueError("Number of timeslides and gpstimes must be equal")
+        return gpstimes, timeslides
 
     def setup(self, stage: str):
         world_size, rank = self.get_world_size_and_rank()
@@ -416,7 +446,7 @@ class RawStrainTestingDataset(FlowDataset):
             )
 
         self.background = self.background_from_gpstimes(
-            self.gpstimes, self.test_fnames
+            self.gpstimes, self.test_fnames, self.timeslides
         )
 
         # once we've generated validation/testing waveforms on cpu,
