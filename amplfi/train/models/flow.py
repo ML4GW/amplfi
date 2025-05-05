@@ -166,6 +166,8 @@ class FlowModel(AmplfiModel):
             self.hparams.samples_per_event, context=context
         )
         log_probs = self.model.log_prob(samples, context)
+
+        samples = samples.squeeze(1)
         log_probs = log_probs.squeeze(1)
         descaled = self.scale(samples, reverse=True)
         descaled, mask = self.filter_parameters(descaled)
