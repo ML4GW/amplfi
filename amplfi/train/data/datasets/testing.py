@@ -404,9 +404,7 @@ class RawStrainTestingDataset(FlowDataset):
         self,
         *args,
         gpstimes: Union[float, list[float], Path],
-        timeslides: Optional[
-            Union[tuple[float], list[tuple[float]], Path]
-        ] = None,
+        timeslides: Optional[Union[float, list[tuple[float]], Path]] = None,
         **kwargs,
     ):
         self.gpstimes, self.timeslides = self.parse_gpstimes_and_timeslides(
@@ -430,11 +428,9 @@ class RawStrainTestingDataset(FlowDataset):
         elif isinstance(timeslides, Path):
             with h5py.File(timeslides, "r") as f:
                 timeslides = f["timeslides"][:]
-        else:
+        elif isinstance(timeslides, list):
             timeslides = np.array(timeslides)
 
-        if len(timeslides) != len(gpstimes):
-            raise ValueError("Number of timeslides and gpstimes must be equal")
         return gpstimes, timeslides
 
     def setup(self, stage: str):

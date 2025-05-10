@@ -474,7 +474,6 @@ class AmplfiDataset(pl.LightningDataModule):
 
         # build background dataloader
         val_background = self.val_background[0][:, rank:]
-
         background_dataset = InMemoryDataset(
             val_background,
             kernel_size=int(self.hparams.sample_rate * self.sample_length),
@@ -514,7 +513,7 @@ class AmplfiDataset(pl.LightningDataModule):
                 batch_size=self.hparams.batch_size,
                 coincident=False,
                 batches_per_epoch=self.hparams.batches_per_epoch,
-                shuffle=True,
+                shuffle=False,
             )
         else:
             background_dataset = Hdf5TimeSeriesDataset(
@@ -527,7 +526,7 @@ class AmplfiDataset(pl.LightningDataModule):
             )
 
         background_dataloader = torch.utils.data.DataLoader(
-            background_dataset, pin_memory=False, num_workers=10
+            background_dataset, shuffle=False, pin_memory=False, num_workers=1
         )
         return ZippedDataset(
             waveform_dataloader,
@@ -564,7 +563,10 @@ class AmplfiDataset(pl.LightningDataModule):
 
         # apply timeslides if specified
         if timeslides is None:
-            timeslides = np.zeros(len(gpstimes), self.num_ifos)
+            timeslides = np.zeros((len(gpstimes), self.num_ifos))
+        else:
+            self._logger.info("Applying timeshifts to data")
+            timeslides = timeslides[:, : self.num_ifos]
 
         def find_file(time: float) -> Optional[Path]:
             """
@@ -594,12 +596,15 @@ class AmplfiDataset(pl.LightningDataModule):
 
         background = []
         for time, shifts in zip(gpstimes, timeslides, strict=True):
-            time = time.item()
             strain = []
 
             # loop over ifo shifts
             for ifo, shift in zip(self.hparams.ifos, shifts, strict=True):
                 shifted_time = time + shift
+                self._logger.debug(
+                    f"Shifted {time} by {shift} seconds "
+                    f"to {shifted_time} for ifo {ifo}"
+                )
                 # find file for this gpstime
                 file, start = find_file(shifted_time)
 
@@ -617,7 +622,8 @@ class AmplfiDataset(pl.LightningDataModule):
                         self.sample_length,
                         length - self.sample_length,
                     )
-
+                else:
+                    self._logger.info(f"Found segment for {time}")
                 # convert from time to index in file
                 middle_idx = int(
                     (shifted_time - start) * self.hparams.sample_rate
