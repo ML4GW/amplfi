@@ -25,7 +25,7 @@ TRAIN_CONFIGS = {
 }
 
 # corresponds to default CBC waveform
-DEFAUlT_PRIOR = root / "amplfi" / "train" / "configs" / "prior.yaml"
+DEFAULT_PRIOR = root / "amplfi" / "train" / "configs" / "prior.yaml"
 
 
 def fill_kubernetes_template(output: Path, s3_bucket):
@@ -249,7 +249,7 @@ def main():
         configs = TRAIN_CONFIGS[args.mode]
         configs.extend(data_config)
 
-    configs.extend(DEFAUlT_PRIOR)
+    configs.append(DEFAULT_PRIOR)
 
     copy_configs(directory / args.name, configs)
 
