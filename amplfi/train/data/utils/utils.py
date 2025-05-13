@@ -24,29 +24,29 @@ class ParameterTransformer(torch.nn.Module):
         return parameters
 
 
-class ParameterSampler(torch.nn.Module):
+class ParameterSampler:
     def __init__(
         self,
+        parameters: dict[str, torch.distributions.Distribution],
         conversion_function: Optional[Callable] = None,
-        **parameters: Callable,
     ):
         """
         A class for sampling parameters from a prior distribution
 
         Args:
-            conversion_function:
-                A callable that takes a dictionary of sampled parameters
-                and returns a dictionary of waveform generation parameters
-            **parameters:
+            parameters:
                 A dictionary of parameter samplers that take an integer N
                 and return a tensor of shape (N, ...) representing
                 samples from the prior distribution
+            conversion_function:
+                A callable that takes a dictionary of sampled parameters
+                and returns a dictionary of waveform generation parameters
         """
         super().__init__()
         self.parameters = parameters
         self.conversion_function = conversion_function or (lambda x: x)
 
-    def forward(
+    def __call__(
         self,
         N: int,
         device: str = "cpu",

@@ -17,13 +17,15 @@ TUNE_CONFIGS = [
     root / "amplfi" / "train" / "configs" / "tune.yaml",
 ]
 
-
 TRAIN_CONFIGS = {
     "similarity": [
         root / "amplfi" / "train" / "configs" / "similarity" / "cbc.yaml"
     ],
     "flow": [root / "amplfi" / "train" / "configs" / "flow" / "cbc.yaml"],
 }
+
+# corresponds to default CBC waveform
+DEFAULT_PRIOR = root / "amplfi" / "train" / "configs" / "prior.yaml"
 
 
 def fill_kubernetes_template(output: Path, s3_bucket):
@@ -246,6 +248,8 @@ def main():
     else:
         configs = TRAIN_CONFIGS[args.mode]
         configs.extend(data_config)
+
+    configs.append(DEFAULT_PRIOR)
 
     copy_configs(directory / args.name, configs)
 

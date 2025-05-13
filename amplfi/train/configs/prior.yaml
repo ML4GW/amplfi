@@ -1,0 +1,71 @@
+# default prior for use with `IMRPhenomPv2`
+class_path: amplfi.train.data.utils.utils.ParameterSampler
+init_args:
+  conversion_function: amplfi.train.conversion.precessing_to_lalsimulation_parameters
+  parameters:
+    chirp_mass: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 10
+        high: 100
+        validate_args: false
+    mass_ratio: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.125 
+        high: 0.999
+        validate_args: false
+    distance: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low:  100 
+        high: 3100 
+        validate_args: false
+    inclination: 
+      class_path: ml4gw.distributions.Sine
+      init_args:
+        low: 0 
+        high: 3.14159 
+        validate_args: false
+    phic: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.0 
+        high: 6.28318 
+        validate_args: false
+    a_1: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.0 
+        high: 0.999
+        validate_args: false
+    a_2: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.0 
+        high: 0.999
+        validate_args: false
+    tilt_1: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.0 
+        high: 3.14159  
+        validate_args: false
+    tilt_2: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.0 
+        high: 3.14159 
+        validate_args: false
+    phi_jl: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.0 
+        high: 6.28318 
+        validate_args: false
+    phi_12: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0.0
+        high: 6.28318 
+        validate_args: false

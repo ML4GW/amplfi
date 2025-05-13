@@ -82,8 +82,7 @@ data:
       init_args:
         jitter: 0.1
         num_fit_params: 100000
-        parameter_sampler: 
-          class_path: amplfi.train.priors.precessing_cbc_prior
+        parameter_sampler: ./prior.yaml 
         dec: 
           class_path: ml4gw.distributions.Cosine
         psi: 
