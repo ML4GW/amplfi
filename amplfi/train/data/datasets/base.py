@@ -92,8 +92,14 @@ class AmplfiDataset(pl.LightningDataModule):
         num_files_per_batch: Optional[int] = None,
         max_num_workers: int = 6,
         verbose: bool = False,
+        seed: Optional[int] = None,
     ):
         super().__init__()
+        # TODO: we shouldn't have to do this, since
+        # lightning calls this in the `trainer`, but
+        # I found that our testing parameters were different
+        # even when using the same seed
+        pl.seed_everything(seed)
         self.save_hyperparameters(ignore=["waveform_sampler"])
         self.init_logging(verbose)
         self.waveform_sampler = waveform_sampler

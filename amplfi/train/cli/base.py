@@ -42,3 +42,9 @@ class AmplfiBaseCLI(LightningCLI):
             "model.init_args.inference_params",
             apply_on="parse",
         )
+
+        parser.link_arguments(
+            "seed_everything",
+            "data.init_args.seed",
+            apply_on="parse",
+        )
