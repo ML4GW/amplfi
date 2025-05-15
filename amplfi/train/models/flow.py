@@ -132,6 +132,7 @@ class FlowModel(AmplfiModel):
 
     def test_step(self, batch, batch_idx) -> AmplfiResult:
         strain, asds, parameters = batch
+
         context = (strain, asds)
 
         samples = self.model.sample(
@@ -147,6 +148,7 @@ class FlowModel(AmplfiModel):
         parameters = self.scale(parameters, reverse=True)
 
         log_probs = log_probs[mask]
+
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             log_probs.cpu().numpy(),
@@ -166,6 +168,8 @@ class FlowModel(AmplfiModel):
             self.hparams.samples_per_event, context=context
         )
         log_probs = self.model.log_prob(samples, context)
+
+        samples = samples.squeeze(1)
         log_probs = log_probs.squeeze(1)
         descaled = self.scale(samples, reverse=True)
         descaled, mask = self.filter_parameters(descaled)
@@ -223,7 +227,6 @@ class FlowModel(AmplfiModel):
 
         num_samples = len(posterior)
         log_evidence = logsumexp(posterior["log_prob"]) - np.log(num_samples)
-
         r = AmplfiResult(
             label="PEModel",
             injection_parameters=injection_parameters,

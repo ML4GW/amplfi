@@ -28,22 +28,11 @@ class StrainVisualization(pl.Callback):
         self.num_plot = num_plot
         self.save_data = save_data
 
-    def on_test_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
-    ) -> None:
+    def plot_strain(self, outdir, result, batch, trainer):
         """
         Called at the end of each test step.
         `outputs` consists of objects returned by `pl_module.test_step`.
         """
-
-        # test_step returns bilby result object
-        result = outputs
-
-        if batch_idx >= self.num_plot:
-            return
-
-        outdir = self.outdir / f"event_{batch_idx}"
-        outdir.mkdir(exist_ok=True)
 
         # unpack batch
         strain, asds, _ = batch
@@ -165,12 +154,31 @@ class StrainVisualization(pl.Callback):
         plt.savefig(whitened_fd_strain_fname)
         plt.close()
 
+    def on_test_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ) -> None:
+        result = outputs
+        # test_step returns bilby result object
+
+        if batch_idx >= self.num_plot:
+            return
+
+        outdir = self.outdir / f"event_{batch_idx}"
+        outdir.mkdir(exist_ok=True)
+        self.plot_strain(outdir, result, batch, trainer)
+
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        return self.on_test_batch_end(
-            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
-        )
+        result = outputs
+        # test_step returns bilby result object
+
+        if batch_idx >= self.num_plot:
+            return
+
+        gpstime = batch[2].cpu().numpy()[0]
+        outdir = self.outdir / f"event_{int(gpstime)}"
+        self.plot_strain(outdir, result, batch, trainer)
 
 
 class PlotMollview(pl.Callback):
@@ -182,6 +190,12 @@ class PlotMollview(pl.Callback):
     def __init__(self, outdir: Path, nside: int):
         self.outdir = outdir
         self.nside = nside
+
+    def plot_mollview(self, outdir: Path, result: "AmplfiResult"):
+        result.plot_mollview(
+            self.nside,
+            outpath=outdir / "mollview.png",
+        )
 
     def on_test_batch_end(
         self,
@@ -202,18 +216,18 @@ class PlotMollview(pl.Callback):
 
         outdir = self.outdir / f"event_{batch_idx}"
         outdir.mkdir(exist_ok=True)
-        skymap_filename = outdir / "mollview.png"
-        result.plot_mollview(
-            self.nside,
-            outpath=skymap_filename,
-        )
+        self.plot_mollview(outdir, result)
 
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        return self.on_test_batch_end(
-            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
-        )
+        # test_step returns bilby result object
+        result = outputs
+
+        gpstime = batch[2].cpu().numpy()[0]
+        outdir = self.outdir / f"event_{int(gpstime)}"
+        outdir.mkdir(exist_ok=True)
+        self.plot_mollview(outdir, result)
 
 
 class PlotCorner(pl.Callback):
