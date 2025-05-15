@@ -205,7 +205,7 @@ requires-dist = [
     { name = "ligo-skymap", specifier = ">=2.2.2" },
     { name = "luigi", specifier = ">=3.5.1,<4" },
     { name = "ml4gw", git = "https://github.com/ML4GW/ml4gw.git" },
-    { name = "mldatafind", specifier = ">=0.1.6" },
+    { name = "mldatafind", specifier = ">=0.1.7" },
     { name = "numpy", specifier = "<2.0.0" },
     { name = "omegaconf", specifier = ">=2.3.0,<3" },
     { name = "ray", extras = ["default", "tune"], specifier = ">=2.38.0,<3" },
@@ -2515,7 +2515,7 @@ dependencies = [
 
 [[package]]
 name = "mldatafind"
-version = "0.1.6"
+version = "0.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -2524,9 +2524,9 @@ dependencies = [
     { name = "law" },
     { name = "luigi" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f0/2a/5fc81079a9c38fdc07d517480f22b41480b6bd2da253757e6d6656ea5894/mldatafind-0.1.6.tar.gz", hash = "sha256:254901e92072504a960ea2b9ec9c9cc6f4c2cd0fce1706356e37870a90b1f398", size = 113478 }
+sdist = { url = "https://files.pythonhosted.org/packages/87/be/98b6fe09232a13cb09675a93c18634eb0d8a4f9c7f7897bad0fcf05ff917/mldatafind-0.1.7.tar.gz", hash = "sha256:8185e162e63ab037dfb644af8484f6338a7b77e0d0497061c383c670cd1027a0", size = 113771 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/c4/bb266b1538df7d12742b14ef4c30e8ed9ab6390da1484f3e05a747033f86/mldatafind-0.1.6-py3-none-any.whl", hash = "sha256:c4d64460b69d548a37b41d3e175c461c386f33f8ee0d73764fc09de3e6fcb109", size = 13722 },
+    { url = "https://files.pythonhosted.org/packages/36/f4/afca97cda6ddb5232fc288292794142b78d905f6c9c271a009f748752ff6/mldatafind-0.1.7-py3-none-any.whl", hash = "sha256:e7aa09c7551b67e1ed81187cb382069c8e286984e56fa513815041043975f1ff", size = 14074 },
 ]
 
 [[package]]
