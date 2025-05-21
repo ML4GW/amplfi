@@ -6,7 +6,7 @@ from gwpy.timeseries import TimeSeries
 import lightning.pytorch as pl
 import matplotlib.pyplot as plt
 import numpy as np
-
+import h5py
 import bilby
 from tqdm.auto import tqdm
 
@@ -386,11 +386,47 @@ class CrossMatchStatistics(pl.Callback):
     Make searched area and searched volume CDF plots
     """
 
+    crossmatch_attributes = [
+        "searched_area",
+        "searched_vol",
+        "searched_probsearched_prob_vol",
+        "searched_prob_dist",
+        "offset",
+        "countour_areas",
+    ]
+
+    def __init__(self, contours: tuple[float] = (0.5, 0.9)):
+        self.contours = contours
+
+    def write_skymap_statistics(
+        self, outdir: Path, results: list["CrossmatchResult"]
+    ):
+        """
+        Write skymap statistics to file
+        """
+
+        with h5py.File(outdir / "skymap_stats.hdf5", "w") as f:
+            for attr in self.crossmatch_attributes:
+                if attr == "contour_areas":
+                    for i, contour in enumerate(self.countours):
+                        f.create_dataset(
+                            f"contour_areas_{int(contour * 100)}",
+                            data=np.array(
+                                [result.contour_areas[i] for result in results]
+                            ),
+                        )
+                else:
+                    f.create_dataset(
+                        attr,
+                        data=np.array(
+                            [getattr(result, attr) for result in results]
+                        ),
+                    )
+
     def on_test_epoch_end(self, _, pl_module: "FlowModel"):
         crossmatch_results: list["CrossmatchResult"] = []
         test_outdir = pl_module.test_outdir
         logger = pl_module._logger
-
         logger.info("Calculating cross match statistics for each result")
         for result in tqdm(pl_module.test_results):
             # calculate skymap staistics via ligo.skymap.postprocess.crossmatch
@@ -398,9 +434,11 @@ class CrossMatchStatistics(pl.Callback):
                 nside=pl_module.nside,
                 min_samples_per_pix=pl_module.min_samples_per_pix,
                 use_distance=True,
-                contours=[0.5, 0.9],
+                contours=self.countours,
             )
             crossmatch_results.append(crossmatch_result)
+
+        self.write_skymap_statistics(test_outdir, crossmatch_results)
 
         # searched area cum hist
         searched_areas = [
