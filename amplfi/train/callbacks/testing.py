@@ -389,10 +389,11 @@ class CrossMatchStatistics(pl.Callback):
     crossmatch_attributes = [
         "searched_area",
         "searched_vol",
-        "searched_probsearched_prob_vol",
+        "searched_prob",
+        "searched_prob_vol",
         "searched_prob_dist",
         "offset",
-        "countour_areas",
+        "contour_areas",
     ]
 
     def __init__(self, contours: tuple[float] = (0.5, 0.9)):
@@ -408,7 +409,7 @@ class CrossMatchStatistics(pl.Callback):
         with h5py.File(outdir / "skymap_stats.hdf5", "w") as f:
             for attr in self.crossmatch_attributes:
                 if attr == "contour_areas":
-                    for i, contour in enumerate(self.countours):
+                    for i, contour in enumerate(self.contours):
                         f.create_dataset(
                             f"contour_areas_{int(contour * 100)}",
                             data=np.array(
@@ -434,7 +435,7 @@ class CrossMatchStatistics(pl.Callback):
                 nside=pl_module.nside,
                 min_samples_per_pix=pl_module.min_samples_per_pix,
                 use_distance=True,
-                contours=self.countours,
+                contours=self.contours,
             )
             crossmatch_results.append(crossmatch_result)
 
@@ -467,7 +468,6 @@ class CrossMatchStatistics(pl.Callback):
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
         plt.savefig(test_outdir / "searched_volume.png")
-        np.save(test_outdir / "searched_volume.npy", searched_volumes)
 
         plt.figure(figsize=(10, 6))
         plt.step(searched_areas, counts, where="post")
@@ -478,7 +478,6 @@ class CrossMatchStatistics(pl.Callback):
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
         plt.savefig(test_outdir / "searched_area.png")
-        np.save(test_outdir / "searched_area.npy", searched_areas)
 
         plt.close()
         plt.figure(figsize=(10, 6))
