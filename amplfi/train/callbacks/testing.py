@@ -526,11 +526,14 @@ class CrossMatchStatistics(pl.Callback):
             linewidth=2,
         )
 
+<<<<<<< HEAD
         plt.title("Searched Area Probability-Probability Plot")
         ax.set_xlabel("Credible interval")
         ax.set_ylabel("Fraction of events in credible interval")
         ax.grid(True)
         ax.legend()
+=======
+>>>>>>> 128405e (add searched probs and vols as outputs to crossmatch callback)
         fig.savefig(test_outdir / "searched_prob_pp_plot.png")
         plt.close()
 
