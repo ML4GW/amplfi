@@ -11,7 +11,6 @@ import numpy as np
 import torch
 from astropy.time import Time
 from ml4gw.waveforms.conversion import chirp_mass_and_mass_ratio_to_components
-
 from amplfi.train.data.datasets import FlowDataset
 
 from ..utils.utils import ZippedDataset
@@ -241,7 +240,7 @@ class ParameterTestingDataset(FlowDataset):
                     continue
 
                 parameters[parameter] = torch.tensor(
-                    f[parameter][:], dtype=torch.float32
+                    f[parameter][:2], dtype=torch.float32
                 )
 
         # apply conversion function to parameters
