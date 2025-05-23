@@ -240,7 +240,7 @@ class ParameterTestingDataset(FlowDataset):
                     continue
 
                 parameters[parameter] = torch.tensor(
-                    f[parameter], dtype=torch.float32
+                    f[parameter][:], dtype=torch.float32
                 )
 
         # apply conversion function to parameters
