@@ -526,6 +526,11 @@ class CrossMatchStatistics(pl.Callback):
             linewidth=2,
         )
 
+        plt.title("Searched Area Probability-Probability Plot")
+        ax.set_xlabel("Credible interval")
+        ax.set_ylabel("Fraction of events in credible interval")
+        ax.grid(True)
+        ax.legend()
         fig.savefig(test_outdir / "searched_prob_pp_plot.png")
         plt.close()
 
@@ -560,5 +565,10 @@ class CrossMatchStatistics(pl.Callback):
             linewidth=2,
         )
 
+        plt.title("Searched Volume Probability-Probability Plot")
+        ax.set_xlabel("Credible interval")
+        ax.set_ylabel("Fraction of events in credible interval")
+        ax.grid(True)
+        ax.legend()
         fig.savefig(test_outdir / "searched_prob_vol_pp_plot.png")
         plt.close()
