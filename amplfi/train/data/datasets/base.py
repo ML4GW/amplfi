@@ -591,13 +591,12 @@ class AmplfiDataset(pl.LightningDataModule):
         )
 
         # convert to number of indices
-        post = int(post * self.hparams.sample_rate)
-        pre = int(pre * self.hparams.sample_rate)
+        num_post = int(post * self.hparams.sample_rate)
+        num_pre = int(pre * self.hparams.sample_rate)
 
         background = []
         for time, shifts in zip(gpstimes, timeslides, strict=True):
             strain = []
-
             # loop over ifo shifts
             for ifo, shift in zip(self.hparams.ifos, shifts, strict=True):
                 shifted_time = time + shift
@@ -605,31 +604,33 @@ class AmplfiDataset(pl.LightningDataModule):
                     f"Shifted {time} by {shift} seconds "
                     f"to {shifted_time} for ifo {ifo}"
                 )
-                # find file for this gpstime
+
                 file, start = find_file(shifted_time)
+                # find file for this gpstime
 
                 # if none exists, use random segment
                 if file is None:
                     self._logger.info(
                         "No segment in testing directory containing "
-                        f"{shifted_time}. Using random segment"
+                        f"{time}. Using random segment"
                     )
                     file = random.choice(self.test_fnames)
                     start, length = list(
                         map(float, file.name.split(".")[0].split("-")[1:])
                     )
-                    shifted_time = start + random.randint(
-                        self.sample_length,
-                        length - self.sample_length,
+                    time = start + random.randint(
+                        -int(pre),
+                        int(length - post),
                     )
                 else:
-                    self._logger.info(f"Found segment for {time}")
+                    self._logger.info(f"Found segment for {shifted_time}")
+
                 # convert from time to index in file
                 middle_idx = int(
                     (shifted_time - start) * self.hparams.sample_rate
                 )
-                start_idx = middle_idx + pre
-                end_idx = middle_idx + post
+                start_idx = middle_idx + num_pre
+                end_idx = middle_idx + num_post
 
                 with h5py.File(file) as f:
                     strain.append(torch.tensor(f[ifo][start_idx:end_idx]))
