@@ -480,7 +480,6 @@ class AmplfiDataset(pl.LightningDataModule):
 
         # build background dataloader
         val_background = self.val_background[0][:, rank:]
-
         background_dataset = InMemoryDataset(
             val_background,
             kernel_size=int(self.hparams.sample_rate * self.sample_length),
@@ -520,7 +519,7 @@ class AmplfiDataset(pl.LightningDataModule):
                 batch_size=self.hparams.batch_size,
                 coincident=False,
                 batches_per_epoch=self.hparams.batches_per_epoch,
-                shuffle=True,
+                shuffle=False,
             )
         else:
             background_dataset = Hdf5TimeSeriesDataset(
@@ -533,7 +532,7 @@ class AmplfiDataset(pl.LightningDataModule):
             )
 
         background_dataloader = torch.utils.data.DataLoader(
-            background_dataset, pin_memory=False, num_workers=10
+            background_dataset, shuffle=False, pin_memory=False, num_workers=1
         )
         return ZippedDataset(
             waveform_dataloader,
@@ -551,7 +550,10 @@ class AmplfiDataset(pl.LightningDataModule):
         raise NotImplementedError
 
     def background_from_gpstimes(
-        self, gpstimes: np.ndarray, fnames: List[Path]
+        self,
+        gpstimes: np.ndarray,
+        fnames: List[Path],
+        timeslides: Optional[np.ndarray] = None,
     ) -> torch.Tensor:
         """
         Construct a Tensor of background segments corresponding
@@ -560,11 +562,17 @@ class AmplfiDataset(pl.LightningDataModule):
         """
 
         # load in background segments corresponding to gpstimes
-        background = []
         segments = [
             tuple(map(float, f.name.split(".")[0].split("-")[1:]))
             for f in fnames
         ]
+
+        # apply timeslides if specified
+        if timeslides is None:
+            timeslides = np.zeros((len(gpstimes), self.num_ifos))
+        else:
+            self._logger.info("Applying timeshifts to data")
+            timeslides = timeslides[:, : self.num_ifos]
 
         def find_file(time: float) -> Optional[Path]:
             """
@@ -589,41 +597,50 @@ class AmplfiDataset(pl.LightningDataModule):
         )
 
         # convert to number of indices
-        post = int(post * self.hparams.sample_rate)
-        pre = int(pre * self.hparams.sample_rate)
+        num_post = int(post * self.hparams.sample_rate)
+        num_pre = int(pre * self.hparams.sample_rate)
 
         background = []
-        for time in gpstimes:
-            time = time.item()
+        for time, shifts in zip(gpstimes, timeslides, strict=True):
             strain = []
-
-            # find file for this gpstime
-            file, start = find_file(time)
-
-            # if none exists, use random segment
-            if file is None:
-                self._logger.info(
-                    "No segment in testing directory containing "
-                    f"{time}. Using random segment"
-                )
-                file = random.choice(self.test_fnames)
-                start, length = list(
-                    map(float, file.name.split(".")[0].split("-")[1:])
-                )
-                time = start + random.randint(
-                    self.sample_length,
-                    length - self.sample_length,
+            # loop over ifo shifts
+            for ifo, shift in zip(self.hparams.ifos, shifts, strict=True):
+                shifted_time = time + shift
+                self._logger.debug(
+                    f"Shifted {time} by {shift} seconds "
+                    f"to {shifted_time} for ifo {ifo}"
                 )
 
-            # convert from time to index in file
-            middle_idx = int((time - start) * self.hparams.sample_rate)
-            start_idx = middle_idx + pre
-            end_idx = middle_idx + post
+                file, start = find_file(shifted_time)
+                # find file for this gpstime
 
-            with h5py.File(file) as f:
-                for ifo in self.hparams.ifos:
+                # if none exists, use random segment
+                if file is None:
+                    self._logger.info(
+                        "No segment in testing directory containing "
+                        f"{time}. Using random segment"
+                    )
+                    file = random.choice(self.test_fnames)
+                    start, length = list(
+                        map(float, file.name.split(".")[0].split("-")[1:])
+                    )
+                    time = start + random.randint(
+                        -int(pre),
+                        int(length - post),
+                    )
+                else:
+                    self._logger.info(f"Found segment for {shifted_time}")
+
+                # convert from time to index in file
+                middle_idx = int(
+                    (shifted_time - start) * self.hparams.sample_rate
+                )
+                start_idx = middle_idx + num_pre
+                end_idx = middle_idx + num_post
+
+                with h5py.File(file) as f:
                     strain.append(torch.tensor(f[ifo][start_idx:end_idx]))
-                strain = torch.stack(strain, dim=0)
-                background.append(strain)
+            strain = torch.stack(strain, dim=0)
+            background.append(strain)
         background = torch.stack(background, dim=0)
         return background
