@@ -11,7 +11,6 @@ import h5py
 import bilby
 from tqdm.auto import tqdm
 
-
 if TYPE_CHECKING:
     from ligo.skymap.postprocess.crossmatch import CrossmatchResult
     from amplfi.train.models import FlowModel
