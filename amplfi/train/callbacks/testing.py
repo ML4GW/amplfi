@@ -10,6 +10,7 @@ import scipy
 import h5py
 import bilby
 from tqdm.auto import tqdm
+import ligo.skymap.plot  # noqa: F401
 
 if TYPE_CHECKING:
     from ligo.skymap.postprocess.crossmatch import CrossmatchResult
