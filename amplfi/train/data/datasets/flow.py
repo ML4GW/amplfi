@@ -1,6 +1,7 @@
 import torch
 
 from .base import AmplfiDataset
+from ml4gw import gw
 
 
 class FlowDataset(AmplfiDataset):
@@ -33,6 +34,18 @@ class FlowDataset(AmplfiDataset):
             torch.Tensor(parameters[k]) for k in self.hparams.inference_params
         ]
         parameters = torch.vstack(parameters).T
+
+        num_freqs = waveforms.shape[-1] // 2 + 1
+        psds = torch.nn.functional.interpolate(
+            psds, size=(num_freqs,), mode="linear"
+        )
+        snrs = gw.compute_network_snr(
+            waveforms,
+            psds,
+            self.hparams.sample_rate,
+            self.hparams.highpass,
+        )
+
         X += waveforms
         X = self.whitener(X, psds)
 
@@ -50,4 +63,4 @@ class FlowDataset(AmplfiDataset):
         psds = psds[:, :, mask]
         asds = torch.sqrt(psds)
 
-        return X, asds, parameters
+        return X, asds, parameters, snrs

@@ -47,7 +47,7 @@ class StrainVisualization(pl.Callback):
         outdir.mkdir(exist_ok=True)
 
         # unpack batch
-        strain, asds, _ = batch
+        strain, asds, *_ = batch
         strain, asds = strain[0].cpu().numpy(), asds[0].cpu().numpy()
 
         # steal some attributes needed from datamodule
@@ -586,7 +586,7 @@ class SaveInjectionParameters(pl.Callback):
     def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         # save parameters of randomly sampled injections
         with h5py.File(self.outdir / "parameters.hdf5", "w") as f:
-            for param in pl_module.inference_params:
+            for param in pl_module.inference_params + ["snr"]:
                 f.create_dataset(
                     param,
                     data=pl_module.injection_parameters[param],

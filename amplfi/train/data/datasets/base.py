@@ -388,7 +388,7 @@ class AmplfiDataset(pl.LightningDataModule):
         if self.trainer.training:
             [batch] = batch
             cross, plus, parameters = self.waveform_sampler.sample(batch)
-            strain, asds, parameters = self.inject(
+            strain, asds, parameters, snrs = self.inject(
                 batch, cross, plus, parameters
             )
 
@@ -402,7 +402,7 @@ class AmplfiDataset(pl.LightningDataModule):
                 if k not in ["dec", "psi", "phi"]
             ]
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
-            strain, asds, parameters = self.inject(
+            strain, asds, parameters, snrs = self.inject(
                 background, cross, plus, parameters
             )
 
@@ -414,11 +414,11 @@ class AmplfiDataset(pl.LightningDataModule):
                 if k not in ["dec", "psi", "phi"]
             ]
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
-            strain, asds, parameters = self.inject(
+            strain, asds, parameters, snrs = self.inject(
                 background, cross, plus, parameters
             )
 
-        return strain, asds, parameters
+        return strain, asds, parameters, snrs
 
     # ================================================ #
     # Dataloaders used by lightning
