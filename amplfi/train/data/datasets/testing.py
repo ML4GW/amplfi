@@ -12,7 +12,7 @@ import torch
 from astropy.time import Time
 from ml4gw.waveforms.conversion import chirp_mass_and_mass_ratio_to_components
 from amplfi.train.data.datasets import FlowDataset
-
+from ml4gw import gw
 from ..utils.utils import ZippedDataset
 
 
@@ -169,7 +169,9 @@ class StrainTestingDataset(FlowDataset):
         psds = psds[:, :, mask]
         asds = torch.sqrt(psds)
 
-        return X, asds, parameters
+        # return None for snrs, since for strain testing set
+        # we don't have the raw waveforms to calculate SNRs
+        return X, asds, parameters, None
 
 
 class ParameterTestingDataset(FlowDataset):
@@ -240,7 +242,7 @@ class ParameterTestingDataset(FlowDataset):
                     continue
 
                 parameters[parameter] = torch.tensor(
-                    f[parameter][:], dtype=torch.float32
+                    f[parameter][:2], dtype=torch.float32
                 )
 
         # apply conversion function to parameters
@@ -351,6 +353,18 @@ class ParameterTestingDataset(FlowDataset):
         parameters = torch.vstack(parameters).T
 
         X, psds = self.psd_estimator(X)
+
+        num_freqs = waveforms.shape[-1] // 2 + 1
+        psds = torch.nn.functional.interpolate(
+            psds, size=(num_freqs,), mode="linear"
+        )
+        snrs = gw.compute_network_snr(
+            waveforms,
+            psds,
+            self.hparams.sample_rate,
+            self.hparams.highpass,
+        )
+
         X += waveforms
         X = self.whitener(X, psds)
 
@@ -368,7 +382,7 @@ class ParameterTestingDataset(FlowDataset):
         psds = psds[:, :, mask]
         asds = torch.sqrt(psds)
 
-        return X, asds, parameters
+        return X, asds, parameters, snrs
 
 
 class RawStrainTestingDataset(FlowDataset):
@@ -411,7 +425,8 @@ class RawStrainTestingDataset(FlowDataset):
         self._logger = self.get_logger(world_size, rank)
         if stage != "predict":
             raise ValueError(
-                "RealEventDataset should only be used with `predict` stage"
+                "RawStrainTestingDataset should only be used "
+                "with `predict` stage"
             )
 
         self.background = self.background_from_gpstimes(

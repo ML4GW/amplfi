@@ -68,7 +68,7 @@ class FlowModel(AmplfiModel):
         save_injection_parameters:
             If `True`, save the injection parameters for each event
             in the testing set to a an hdf5 file. Useful for
-            datasets where the injection parameters are randomly
+            testing datasets where the injection parameters are randomly
             sampled.
     """
 
@@ -143,14 +143,12 @@ class FlowModel(AmplfiModel):
 
     def on_test_epoch_start(self):
         self.test_results: list[AmplfiResult] = []
-        num_test = self.trainer.datamodule.waveform_sampler.num_test_waveforms
-        self.injection_parameters = {
-            param: np.zeros(num_test)
-            for param in self.hparams.inference_params + ["snr"]
-        }
 
-    def test_step(self, batch, batch_idx) -> AmplfiResult:
-        strain, asds, parameters, snrs = batch
+    def on_test_batch_end(self, outputs, *_):
+        self.test_results.append(outputs)
+
+    def test_step(self, batch, _) -> AmplfiResult:
+        strain, asds, parameters, snr = batch
         context = (strain, asds)
 
         samples = self.model.sample(
@@ -169,22 +167,28 @@ class FlowModel(AmplfiModel):
         parameters = self.scale(parameters, reverse=True)
         parameters = parameters.cpu().numpy()[0]
 
+        # create a dictionary of injection parameters
+        # mapping from parameter string to the true injection value
+        # and add snr if provided
+        injection_parameters = {
+            k: float(v)
+            for k, v in zip(self.inference_params, parameters, strict=False)
+        }
+        injection_parameters["ra"] = injection_parameters["phi"]
+
+        if snr is not None:
+            injection_parameters["snr"] = snr[0].item()
+
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             log_probs.cpu().numpy(),
-            parameters,
+            injection_parameters,
         )
 
-        self.test_results.append(result)
-
-        # append parameters to the injection_parameters dict
-        for i, param in enumerate(self.inference_params):
-            self.injection_parameters[param][batch_idx] = parameters[i]
-        self.injection_parameters["snr"][batch_idx] = snrs[0].item()
         return result
 
     def predict_step(self, batch, _):
-        strain, asds, gpstime = batch
+        strain, asds, _ = batch
         context = (strain, asds)
 
         samples = self.model.sample(
@@ -192,6 +196,7 @@ class FlowModel(AmplfiModel):
         )
         log_probs = self.model.log_prob(samples, context)
         log_probs = log_probs.squeeze(1)
+        samples = samples.squeeze(1)
         descaled = self.scale(samples, reverse=True)
         descaled, mask = self.filter_parameters(descaled)
 
@@ -208,24 +213,20 @@ class FlowModel(AmplfiModel):
         self,
         samples: np.ndarray,
         log_probs: np.ndarray,
-        truth: Optional[np.ndarray] = None,
+        injection_parameters: Optional[dict[str, float]] = None,
     ) -> AmplfiResult:
         """Cast posterior samples as Bilby Result object
         for ease of producing corner and pp plots
 
         Args:
-            samples: posterior samples (1, num_samples, num_params)
-            truth: true values of the parameters  (1, num_params)
+            samples:
+                An array of posterior samples of shape
+                (1, num_samples, num_params)
+            injection_parameters:
+                For injections, a dictionary mapping from parameter string
+                to the true injection value
 
         """
-
-        injection_parameters = None
-        if truth is not None:
-            injection_parameters = {
-                k: float(v)
-                for k, v in zip(self.inference_params, truth, strict=False)
-            }
-            injection_parameters["ra"] = injection_parameters["phi"]
 
         # create dummy prior with correct attributes
         # for making our results compatible with bilbys make_pp_plot
