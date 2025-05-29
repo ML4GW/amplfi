@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import torch
-
 from ..architectures.flows import FlowArchitecture
 from ..callbacks import (
     StrainVisualization,
@@ -13,6 +12,7 @@ from ..callbacks import (
     PlotMollview,
     PlotCorner,
     SaveFITS,
+    SaveInjectionParameters,
 )
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
@@ -35,6 +35,9 @@ class FlowModel(AmplfiModel):
         arch:
             Neural network architecture to train.
             This should be a subclass of `FlowArchitecture`.
+        filter_params:
+            If `True`, filter the samples produced by the flow
+            to keep only valid samples within the prior boundaries.
         samples_per_event:
             Number of samples to draw per event for testing
         nside:
@@ -62,13 +65,18 @@ class FlowModel(AmplfiModel):
             for testing set events
         save_posterior:
             If `True`, save bilby Result objects and posterior samples
-
+        save_injection_parameters:
+            If `True`, save the injection parameters for each event
+            in the testing set to a an hdf5 file. Useful for
+            datasets where the injection parameters are randomly
+            sampled.
     """
 
     def __init__(
         self,
         *args,
         arch: FlowArchitecture,
+        filter_params: bool = True,
         samples_per_event: int = 10000,
         nside: int = 32,
         min_samples_per_pix: int = 15,
@@ -79,6 +87,7 @@ class FlowModel(AmplfiModel):
         cross_match: bool = True,
         save_fits: bool = True,
         save_posterior: bool = False,
+        save_injection_parameters: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -93,6 +102,8 @@ class FlowModel(AmplfiModel):
         self.save_fits = save_fits
         self.save_posterior = save_posterior
         self.cross_match = cross_match
+        self.save_injection_parameters = save_injection_parameters
+        self.filter_params = filter_params
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
@@ -130,6 +141,14 @@ class FlowModel(AmplfiModel):
         )
         return loss
 
+    def on_test_epoch_start(self):
+        self.test_results: list[AmplfiResult] = []
+        num_test = self.trainer.datamodule.waveform_sampler.num_test_waveforms
+        self.injection_parameters = {
+            param: np.zeros(num_test)
+            for param in self.hparams.inference_params
+        }
+
     def test_step(self, batch, batch_idx) -> AmplfiResult:
         strain, asds, parameters = batch
         context = (strain, asds)
@@ -143,19 +162,25 @@ class FlowModel(AmplfiModel):
         log_probs = log_probs.squeeze(1)
 
         descaled = self.scale(samples, reverse=True)
-        descaled, mask = self.filter_parameters(descaled)
-        parameters = self.scale(parameters, reverse=True)
+        if self.filter_params:
+            descaled, mask = self.filter_parameters(descaled)
+            log_probs = log_probs[mask]
 
-        log_probs = log_probs[mask]
+        parameters = self.scale(parameters, reverse=True)
+        parameters = parameters.cpu().numpy()[0]
+
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             log_probs.cpu().numpy(),
-            parameters.cpu().numpy()[0],
+            parameters,
         )
 
-        test_outdir = self.test_outdir / f"event_{batch_idx}"
-        test_outdir.mkdir(parents=True, exist_ok=True)
         self.test_results.append(result)
+
+        # append parameters to the injection_parameters dict
+        for i, param in enumerate(self.inference_params):
+            self.injection_parameters[param][batch_idx] = parameters[i]
+
         return result
 
     def predict_step(self, batch, _):
@@ -177,13 +202,7 @@ class FlowModel(AmplfiModel):
             None,
         )
 
-        test_outdir = self.test_outdir / f"event_{int(gpstime)}"
-        test_outdir.mkdir(parents=True, exist_ok=True)
-
         return result
-
-    def on_test_epoch_start(self):
-        self.test_results: list[AmplfiResult] = []
 
     def cast_as_bilby_result(
         self,
@@ -283,20 +302,26 @@ class FlowModel(AmplfiModel):
         callbacks += [ProbProbPlot()]
         if self.plot_data:
             callbacks.append(
-                StrainVisualization(self.test_outdir, self.num_plot)
+                StrainVisualization(self.test_outdir / "events", self.num_plot)
             )
 
+        if self.save_injection_parameters:
+            callbacks.append(SaveInjectionParameters(self.test_outdir))
+
+        event_outdir = self.test_outdir / "events"
+        event_outdir.mkdir(parents=True, exist_ok=True)
+
         if self.save_fits:
-            callbacks.append(SaveFITS(self.test_outdir, self.nside))
+            callbacks.append(SaveFITS(event_outdir, self.nside))
 
         if self.plot_mollview:
-            callbacks.append(PlotMollview(self.test_outdir, self.nside))
+            callbacks.append(PlotMollview(event_outdir, self.nside))
 
         if self.plot_corner:
-            callbacks.append(PlotCorner(self.test_outdir))
+            callbacks.append(PlotCorner(event_outdir))
 
         if self.save_posterior:
-            callbacks.append(SavePosterior(self.test_outdir))
+            callbacks.append(SavePosterior(event_outdir))
 
         if self.cross_match:
             callbacks.append(CrossMatchStatistics())

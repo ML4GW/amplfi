@@ -43,7 +43,7 @@ class StrainVisualization(pl.Callback):
         if batch_idx >= self.num_plot:
             return
 
-        outdir = self.outdir / f"event_{batch_idx}"
+        outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
 
         # unpack batch
@@ -201,7 +201,7 @@ class PlotMollview(pl.Callback):
         # test_step returns bilby result object
         result = outputs
 
-        outdir = self.outdir / f"event_{batch_idx}"
+        outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
         skymap_filename = outdir / "mollview.png"
         result.plot_mollview(
@@ -250,7 +250,7 @@ class PlotCorner(pl.Callback):
 
         # test_step returns bilby result object
         result = outputs
-        outdir = self.outdir / f"event_{batch_idx}"
+        outdir = self.outdir / str(batch_idx)
         self.plot_corner(result, outdir)
 
     def on_predict_batch_end(
@@ -297,7 +297,7 @@ class SaveFITS(pl.Callback):
 
         # test_step returns bilby result object
         result = outputs
-        outdir = self.outdir / f"event_{batch_idx}"
+        outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
         self.save_fits(result, outdir)
 
@@ -350,7 +350,7 @@ class SavePosterior(pl.Callback):
         # test_step returns bilby result object
         result = outputs
 
-        outdir = self.outdir / f"event_{batch_idx}"
+        outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
 
         self.save_posterior(result, outdir)
@@ -376,7 +376,7 @@ class ProbProbPlot(pl.Callback):
         bilby.result.make_pp_plot(
             pl_module.test_results,
             save=True,
-            filename=pl_module.test_outdir / "pp-plot.png",
+            filename=pl_module.test_outdir / "plots" / "pp-plot.png",
             keys=pl_module.inference_params,
         )
 
@@ -469,7 +469,7 @@ class CrossMatchStatistics(pl.Callback):
         plt.title("Searched Volume Cumulative Distribution Function")
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(test_outdir / "searched_volume.png")
+        plt.savefig(test_outdir / "plots" / "searched_volume.png")
 
         # searched area cum hist
         plt.figure(figsize=(10, 6))
@@ -480,7 +480,7 @@ class CrossMatchStatistics(pl.Callback):
         plt.title("Searched Area Cumulative Distribution Function")
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(test_outdir / "searched_area.png")
+        plt.savefig(test_outdir / "plots" / "searched_area.png")
 
         plt.close()
         plt.figure(figsize=(10, 6))
@@ -492,7 +492,7 @@ class CrossMatchStatistics(pl.Callback):
         )
         plt.xlabel("Sq. deg.")
         plt.legend()
-        plt.savefig(test_outdir / "fifty_ninety_areas.png")
+        plt.savefig(test_outdir / "plots" / "fifty_ninety_areas.png")
         plt.close()
 
         # searched prob pp-plot
@@ -531,7 +531,7 @@ class CrossMatchStatistics(pl.Callback):
         ax.set_ylabel("Fraction of events in credible interval")
         ax.grid(True)
         ax.legend()
-        fig.savefig(test_outdir / "searched_prob_pp_plot.png")
+        fig.savefig(test_outdir / "plots" / "searched_prob_pp_plot.png")
         plt.close()
 
         # searched prob-vol pp-plot
@@ -570,5 +570,24 @@ class CrossMatchStatistics(pl.Callback):
         ax.set_ylabel("Fraction of events in credible interval")
         ax.grid(True)
         ax.legend()
-        fig.savefig(test_outdir / "searched_prob_vol_pp_plot.png")
+        fig.savefig(test_outdir / "plots" / "searched_prob_vol_pp_plot.png")
         plt.close()
+
+
+class SaveInjectionParameters(pl.Callback):
+    """
+    Save randomly sampled injection parameters to a file
+    at the end of each test epoch.
+    """
+
+    def __init__(self, outdir: Path):
+        self.outdir = outdir
+
+    def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
+        # save parameters of randomly sampled injections
+        with h5py.File(self.outdir / "parameters.hdf5", "w") as f:
+            for param in pl_module.inference_params:
+                f.create_dataset(
+                    param,
+                    data=pl_module.injection_parameters[param],
+                )
