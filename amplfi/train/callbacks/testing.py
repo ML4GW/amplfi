@@ -6,10 +6,11 @@ from gwpy.timeseries import TimeSeries
 import lightning.pytorch as pl
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 import h5py
 import bilby
 from tqdm.auto import tqdm
-
+import ligo.skymap.plot  # noqa: F401
 
 if TYPE_CHECKING:
     from ligo.skymap.postprocess.crossmatch import CrossmatchResult
@@ -459,6 +460,7 @@ class CrossMatchStatistics(pl.Callback):
         searched_volumes = np.sort(searched_volumes)
         counts = np.arange(1, len(searched_areas) + 1) / len(searched_areas)
 
+        # searched volume cum hist
         plt.figure(figsize=(10, 6))
         plt.step(searched_volumes, counts, where="post")
         plt.xscale("log")
@@ -469,6 +471,7 @@ class CrossMatchStatistics(pl.Callback):
         plt.axhline(0.5, color="grey", linestyle="--")
         plt.savefig(test_outdir / "searched_volume.png")
 
+        # searched area cum hist
         plt.figure(figsize=(10, 6))
         plt.step(searched_areas, counts, where="post")
         plt.xscale("log")
@@ -490,3 +493,82 @@ class CrossMatchStatistics(pl.Callback):
         plt.xlabel("Sq. deg.")
         plt.legend()
         plt.savefig(test_outdir / "fifty_ninety_areas.png")
+        plt.close()
+
+        # searched prob pp-plot
+        searched_probs = [
+            result.searched_prob for result in crossmatch_results
+        ]
+
+        fig = plt.figure(figsize=(7, 7))
+        ax = fig.add_subplot(111, projection="pp_plot")
+        plt.rcParams.update({"font.size": 16})
+
+        number_of_samples = len(searched_probs)
+        alphas = [0.68, 0.95, 0.997]
+        for alpha in alphas:
+            ax.add_confidence_band(
+                number_of_samples,
+                alpha=alpha,
+                color=(0, 0, 0, 0.1),
+                edgecolor=(0, 0, 0, 0.2),
+                annotate=False,
+            )
+        ax.add_diagonal()
+        p = scipy.stats.kstest(searched_probs, "uniform").pvalue
+        ax.add_series(
+            searched_probs,
+            label="AMPLFI"
+            + r"$~({0:#.2g})$ ".format(round(p, 2))
+            + str(len(searched_probs))
+            + " events",
+            color="saddlebrown",
+            linewidth=2,
+        )
+
+        plt.title("Searched Area Probability-Probability Plot")
+        ax.set_xlabel("Credible interval")
+        ax.set_ylabel("Fraction of events in credible interval")
+        ax.grid(True)
+        ax.legend()
+        fig.savefig(test_outdir / "searched_prob_pp_plot.png")
+        plt.close()
+
+        # searched prob-vol pp-plot
+        searched_prob_vols = [
+            result.searched_prob_vol for result in crossmatch_results
+        ]
+
+        fig = plt.figure(figsize=(7, 7))
+        ax = fig.add_subplot(111, projection="pp_plot")
+        plt.rcParams.update({"font.size": 16})
+
+        number_of_samples = len(searched_prob_vols)
+        alphas = [0.68, 0.95, 0.997]
+        for alpha in alphas:
+            ax.add_confidence_band(
+                number_of_samples,
+                alpha=alpha,
+                color=(0, 0, 0, 0.1),
+                edgecolor=(0, 0, 0, 0.2),
+                annotate=False,
+            )
+        ax.add_diagonal()
+        p = scipy.stats.kstest(searched_prob_vols, "uniform").pvalue
+        ax.add_series(
+            searched_prob_vols,
+            label="AMPLFI"
+            + r"$~({0:#.2g})$ ".format(round(p, 2))
+            + str(len(searched_prob_vols))
+            + " events",
+            color="saddlebrown",
+            linewidth=2,
+        )
+
+        plt.title("Searched Volume Probability-Probability Plot")
+        ax.set_xlabel("Credible interval")
+        ax.set_ylabel("Fraction of events in credible interval")
+        ax.grid(True)
+        ax.legend()
+        fig.savefig(test_outdir / "searched_prob_vol_pp_plot.png")
+        plt.close()
