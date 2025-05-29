@@ -112,7 +112,7 @@ class FlowModel(AmplfiModel):
         return -self.model.log_prob(parameters, context=context)
 
     def training_step(self, batch, _):
-        strain, asds, parameters = batch
+        strain, asds, parameters, _ = batch
         context = (strain, asds)
         loss = self(context, parameters).mean()
         self.log(
@@ -127,7 +127,7 @@ class FlowModel(AmplfiModel):
         return loss
 
     def validation_step(self, batch, _):
-        strain, asds, parameters = batch
+        strain, asds, parameters, _ = batch
         context = (strain, asds)
         loss = self(context, parameters).mean()
         self.log(
@@ -146,11 +146,11 @@ class FlowModel(AmplfiModel):
         num_test = self.trainer.datamodule.waveform_sampler.num_test_waveforms
         self.injection_parameters = {
             param: np.zeros(num_test)
-            for param in self.hparams.inference_params
+            for param in self.hparams.inference_params + ["snr"]
         }
 
     def test_step(self, batch, batch_idx) -> AmplfiResult:
-        strain, asds, parameters = batch
+        strain, asds, parameters, snrs = batch
         context = (strain, asds)
 
         samples = self.model.sample(
@@ -180,7 +180,7 @@ class FlowModel(AmplfiModel):
         # append parameters to the injection_parameters dict
         for i, param in enumerate(self.inference_params):
             self.injection_parameters[param][batch_idx] = parameters[i]
-
+        self.injection_parameters["snr"][batch_idx] = snrs[0].item()
         return result
 
     def predict_step(self, batch, _):
