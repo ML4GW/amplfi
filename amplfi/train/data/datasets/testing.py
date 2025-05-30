@@ -279,7 +279,7 @@ class ParameterTestingDataset(FlowDataset):
         self.waveforms = torch.stack([cross, plus], dim=0)
         self.parameters = torch.column_stack(params)
         self.background = self.background_from_gpstimes(
-            parameters["gpstime"] - 98304000, self.test_fnames
+            parameters["gpstime"], self.test_fnames
         )
 
         # once we've generated validation/testing waveforms on cpu,
