@@ -586,7 +586,7 @@ class SaveInjectionParameters(pl.Callback):
         self.outdir = outdir
 
     def on_test_epoch_start(self, trainer, pl_module: "FlowModel"):
-        num_test = trainer.datamodule.waveform_sampler.num_test_waveforms
+        num_test = len(trainer.datamodule.test_dataloader())
         self.injection_parameters = {
             param: np.zeros(num_test)
             for param in pl_module.inference_params + ["snr"]

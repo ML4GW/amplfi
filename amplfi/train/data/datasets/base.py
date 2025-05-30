@@ -16,6 +16,7 @@ from ..waveforms.sampler import WaveformSampler
 import numpy as np
 from pathlib import Path
 import random
+from tqdm.auto import tqdm
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
@@ -589,17 +590,17 @@ class AmplfiDataset(pl.LightningDataModule):
         )
 
         # convert to number of indices
-        post = int(post * self.hparams.sample_rate)
-        pre = int(pre * self.hparams.sample_rate)
+        num_post = int(post * self.hparams.sample_rate)
+        num_pre = int(pre * self.hparams.sample_rate)
 
         background = []
-        for time in gpstimes:
+        self._logger.info("Loading background segments for testing")
+        for time in tqdm(gpstimes):
             time = time.item()
             strain = []
 
             # find file for this gpstime
             file, start = find_file(time)
-
             # if none exists, use random segment
             if file is None:
                 self._logger.info(
@@ -611,19 +612,19 @@ class AmplfiDataset(pl.LightningDataModule):
                     map(float, file.name.split(".")[0].split("-")[1:])
                 )
                 time = start + random.randint(
-                    self.sample_length,
-                    length - self.sample_length,
+                    -int(pre),
+                    int(length - post),
                 )
 
             # convert from time to index in file
             middle_idx = int((time - start) * self.hparams.sample_rate)
-            start_idx = middle_idx + pre
-            end_idx = middle_idx + post
+            start_idx = middle_idx + num_pre
+            end_idx = middle_idx + num_post
 
             with h5py.File(file) as f:
                 for ifo in self.hparams.ifos:
-                    strain.append(torch.tensor(f[ifo][start_idx:end_idx]))
-                strain = torch.stack(strain, dim=0)
+                    strain.append(f[ifo][start_idx:end_idx])
+                strain = np.stack(strain, axis=0)
                 background.append(strain)
-        background = torch.stack(background, dim=0)
-        return background
+        background = np.stack(background, axis=0)
+        return torch.tensor(background)
