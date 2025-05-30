@@ -279,7 +279,11 @@ class SaveFITS(pl.Callback):
         outdir: Path,
     ):
         fits = io.fits.table_to_hdu(
-            result.to_skymap(self.nside, self.min_samples_per_pix)
+            result.to_skymap(
+                self.nside,
+                self.min_samples_per_pix,
+                use_distance=True,
+            )
         )
         outdir.mkdir(exist_ok=True)
         fits.writeto(outdir / "amplfi.skymap.fits", overwrite=True)
