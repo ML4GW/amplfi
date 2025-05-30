@@ -313,7 +313,9 @@ class FlowModel(AmplfiModel):
         event_outdir.mkdir(parents=True, exist_ok=True)
 
         if self.save_fits:
-            callbacks.append(SaveFITS(event_outdir, self.nside))
+            callbacks.append(
+                SaveFITS(event_outdir, self.nside, self.min_samples_per_pix)
+            )
 
         if self.plot_mollview:
             callbacks.append(PlotMollview(event_outdir, self.nside))

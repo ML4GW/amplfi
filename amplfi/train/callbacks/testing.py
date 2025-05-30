@@ -268,16 +268,19 @@ class PlotCorner(pl.Callback):
 class SaveFITS(pl.Callback):
     """ """
 
-    def __init__(self, outdir: Path, nside: int):
+    def __init__(self, outdir: Path, nside: int, min_samples_per_pix: int):
         self.outdir = outdir
         self.nside = nside
+        self.min_samples_per_pix = min_samples_per_pix
 
     def save_fits(
         self,
         result: "AmplfiResult",
         outdir: Path,
     ):
-        fits = io.fits.table_to_hdu(result.to_skymap(self.nside))
+        fits = io.fits.table_to_hdu(
+            result.to_skymap(self.nside, self.min_samples_per_pix)
+        )
         outdir.mkdir(exist_ok=True)
         fits.writeto(outdir / "amplfi.skymap.fits", overwrite=True)
 
