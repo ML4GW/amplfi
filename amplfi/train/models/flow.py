@@ -79,7 +79,7 @@ class FlowModel(AmplfiModel):
         filter_params: bool = True,
         samples_per_event: int = 10000,
         nside: int = 32,
-        min_samples_per_pix: int = 15,
+        min_samples_per_pix: int = 5,
         num_plot: int = 10,
         plot_data: bool = False,
         plot_corner: bool = True,
