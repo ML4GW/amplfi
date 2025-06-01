@@ -6,6 +6,7 @@ from mldatafind.law.tasks import Query as _Query
 from mldatafind.law.tasks.condor.workflows import StaticMemoryWorkflow
 from .base import DATA_SANDBOX, AmplfiDataTaskMixin
 from .paths import paths
+from luigi.util import inherits
 
 
 # add mixin for appending amplfi specific
@@ -115,3 +116,57 @@ class LigoSkymap(
 
         # call ligo-skymap-from-samples
         ligo_skymap_from_samples.main(args)
+
+
+@inherits(LigoSkymap)
+class AggregateLigoSkymap(
+    AmplfiDataTaskMixin,
+    law.SandboxTask,
+):
+    parameter_file = luigi.OptionalParameter(
+        default="",
+        description="Path to an hdf5 file containing `ra`, `dec` and `dist`"
+        " datasets corresponding to the ground truth values of the event",
+    )
+
+    def requires(self):
+        return LigoSkymap.req(self)
+
+    def output(self):
+        return law.LocalFileTarget(self.data_dir / "ligo_skymap_stats.hdf5")
+
+    def run(self):
+        from ligo.skymap.postprocess import crossmatch
+        from astropy.coordinates import SkyCoord
+        from astropy import units as u
+        import h5py
+
+        crossmatch_attributes = [
+            "searched_area",
+            "searched_vol",
+            "searched_prob",
+            "searched_prob_vol",
+            "searched_prob_dist",
+            "offset",
+            "contour_areas",
+        ]
+        data = {attr: [] for attr in crossmatch_attributes}
+        for i, skymap in self.input()["collection"].items():
+            with h5py.File(self.parameter_file, "r") as f:
+                ra = f["ra"][i]
+                dec = f["dec"][i]
+                dist = f["dist"][i]
+
+            coord = SkyCoord(
+                ra=ra * u.rad,
+                dec=dec * u.rad,
+                distance=dist * u.Mpc,
+                unit="rad",
+            )
+            cm = crossmatch(skymap, coord)
+            for attr in crossmatch_attributes:
+                data[attr].append(getattr(cm, attr))
+
+        with h5py.File(self.output().path, "w") as f:
+            for attr, values in data.items():
+                f.create_dataset(attr, data=values)
