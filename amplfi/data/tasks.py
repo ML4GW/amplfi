@@ -135,7 +135,9 @@ class AggregateLigoSkymap(
     parameter_file = luigi.OptionalParameter(
         default="",
         description="Path to an hdf5 file containing `phi`, `dec` and `dist`"
-        " datasets corresponding to the ground truth values of the event.",
+        " datasets corresponding to the ground truth values of the event. For "
+        "example, this can be the output of the "
+        "`SaveInjectionParameters` lightning callback",
     )
 
     def __init__(self, *args, **kwargs):
