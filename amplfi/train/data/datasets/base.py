@@ -21,6 +21,8 @@ from tqdm.auto import tqdm
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
 
+SECONDS_PER_DAY = 86400
+
 
 class AmplfiDataset(pl.LightningDataModule):
     """
@@ -61,6 +63,15 @@ class AmplfiDataset(pl.LightningDataModule):
             for training, validation and testing.
             See `train.data.waveforms.sampler`
             for methods this object should define.
+        train_val_range:
+            Tuple of gpstimes that specify time range of
+            training and validation data.
+            Will filter the data directory to only include files that contain
+            segments that overlap with this range. If `None`, use all data.
+        test_range:
+            Tuple of gpstimes that specify range of testing data to use.
+            Will filter the data directory to only include files that contain
+            segments that overlap with this range. If `None`, use all data.
         fftlength:
             Length of the fft used to calculate the psd.
             Defaults to `kernel_length`
@@ -89,6 +100,8 @@ class AmplfiDataset(pl.LightningDataModule):
         ifos: List[str],
         waveform_sampler: WaveformSampler,
         fftlength: Optional[int] = None,
+        train_val_range: Optional[tuple[float, float]] = None,
+        test_range: Optional[tuple[float, float]] = None,
         min_valid_duration: float = 10000,
         num_files_per_batch: Optional[int] = None,
         max_num_workers: int = 6,
@@ -221,18 +234,48 @@ class AmplfiDataset(pl.LightningDataModule):
         """Use larger batch sizes when we don't need gradients."""
         return int(1 * self.hparams.batch_size)
 
-    @property
-    def train_val_fnames(self):
+    def filter_fnames(self, fnames: Sequence[str], start: float, end: float):
+        filtered_fnames = []
+        fstarts = [int(fname.stem.split("-")[1]) for fname in fnames]
+
+        for i, fstart in enumerate(fstarts):
+            if fstart >= start and fstart <= end:
+                filtered_fnames.append(fnames[i])
+        return filtered_fnames
+
+    def get_train_val_fnames(self):
         """List of background files used for both training and validation"""
         background_dir = self.data_dir / "train" / "background"
-        fnames = list(background_dir.glob("*.hdf5"))
+        fnames = sorted((background_dir.glob("*.hdf5")))
+        if self.hparams.train_val_range is not None:
+            start, end = self.hparams.train_val_range
+            self._logger.info(
+                f"Downselecting training and validation data "
+                f"between {start} to {end}"
+            )
+            fnames = self.filter_fnames(fnames, start, end)
+
         return fnames
 
-    @property
-    def test_fnames(self):
+    def get_test_fnames(self):
         """List of background files used for testing a trained model"""
         test_dir = self.data_dir / "test" / "background"
         fnames = list(test_dir.glob("*.hdf5"))
+        if self.hparams.test_range is not None:
+            start, end = self.hparams.test_range
+            self._logger.info(
+                f"Downselecting testing data between {start} to {end}"
+            )
+            fnames = self.filter_fnames(fnames, start, end)
+
+        duration = (
+            sum([int(fname.stem.split("-")[-1]) for fname in fnames])
+            / SECONDS_PER_DAY
+        )
+        self._logger.info(
+            f"Using {len(fnames)} files with a total duration "
+            f"of {duration} days for testing"
+        )
         return fnames
 
     def train_val_split(self) -> Sequence[str]:
@@ -240,7 +283,8 @@ class AmplfiDataset(pl.LightningDataModule):
         Split background files into training and validation sets
         based on the requested duration of the validation set
         """
-        fnames = sorted(self.train_val_fnames)
+        fnames = sorted(self.get_train_val_fnames())
+
         durations = [int(fname.stem.split("-")[-1]) for fname in fnames]
         valid_fnames = []
         valid_duration = 0
@@ -250,6 +294,19 @@ class AmplfiDataset(pl.LightningDataModule):
             valid_fnames.append(str(fname))
 
         train_fnames = fnames
+        train_duration = (
+            sum([int(fname.stem.split("-")[-1]) for fname in train_fnames])
+            / SECONDS_PER_DAY
+        )
+
+        self._logger.info(
+            f"Using {len(train_fnames)} files with a total duration "
+            f"of {train_duration} days for training"
+        )
+        self._logger.info(
+            f"Using {len(valid_fnames)} files with a total duration "
+            f"of {valid_duration} days for validation"
+        )
         return train_fnames, valid_fnames
 
     # ================================================ #
@@ -341,9 +398,6 @@ class AmplfiDataset(pl.LightningDataModule):
             self.val_parameters = torch.column_stack(params)
 
         elif stage == "test":
-            self._logger.info(
-                f"Loaded background files {self.test_fnames} for testing"
-            )
             (
                 cross,
                 plus,
@@ -512,9 +566,9 @@ class AmplfiDataset(pl.LightningDataModule):
             pin_memory=False,
             num_workers=10,
         )
-
-        if len(self.test_fnames) == 1:
-            test_background = self.load_background(self.test_fnames)[0]
+        test_fnames = self.get_test_fnames()
+        if len(test_fnames) == 1:
+            test_background = self.load_background(test_fnames)[0]
             background_dataset = InMemoryDataset(
                 test_background,
                 kernel_size=int(self.hparams.sample_rate * self.sample_length),
@@ -525,7 +579,7 @@ class AmplfiDataset(pl.LightningDataModule):
             )
         else:
             background_dataset = Hdf5TimeSeriesDataset(
-                self.test_fnames,
+                test_fnames,
                 channels=self.hparams.ifos,
                 kernel_size=int(self.hparams.sample_rate * self.sample_length),
                 batch_size=1,
@@ -575,7 +629,7 @@ class AmplfiDataset(pl.LightningDataModule):
                 in_segment = time > start + self.sample_length
                 in_segment &= time < (start + length - self.sample_length)
                 if in_segment:
-                    return self.test_fnames[i], start
+                    return fnames[i], start
             else:
                 return None, None
 
@@ -607,7 +661,7 @@ class AmplfiDataset(pl.LightningDataModule):
                     "No segment in testing directory containing "
                     f"{time}. Using random segment"
                 )
-                file = random.choice(self.test_fnames)
+                file = random.choice()
                 start, length = list(
                     map(float, file.name.split(".")[0].split("-")[1:])
                 )
