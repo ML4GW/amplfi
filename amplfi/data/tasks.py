@@ -91,11 +91,11 @@ class LigoSkymap(
         return env
 
     def create_branch_map(self):
-        branch_map, i = {}, 0
+        branch_map = {}
         for event_dir in self.data_dir.iterdir():
             if event_dir.is_dir():
-                branch_map[i] = event_dir / "posterior_samples.dat"
-                i += 1
+                idx = int(event_dir.name)
+                branch_map[idx] = event_dir / "posterior_samples.dat"
         return branch_map
 
     def output(self):
@@ -139,6 +139,11 @@ class AggregateLigoSkymap(
         "example, this can be the output of the "
         "`SaveInjectionParameters` lightning callback",
     )
+    plot = luigi.BoolParameter(
+        default=False,
+        description="If True, will generate a plot using "
+        "ligo.skymap.tool.ligo_skymap_plot",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -157,6 +162,7 @@ class AggregateLigoSkymap(
 
     def run(self):
         from ligo.skymap.postprocess import crossmatch
+        from ligo.skymap.tool import ligo_skymap_plot
         from astropy.coordinates import SkyCoord
         from astropy import units as u
         import h5py
@@ -173,21 +179,33 @@ class AggregateLigoSkymap(
         data = {attr: [] for attr in crossmatch_attributes}
         skymaps = self.input()["collection"].targets
         logging.info("Crossmatching %d skymaps", len(skymaps))
-        for i, skymap in tqdm(skymaps.items()):
-            skymap = read_sky_map(
-                skymap.path, moc=True, nest=True, distances=True
-            )
+        for i, skymap_file in tqdm(skymaps.items()):
+            skymap = read_sky_map(skymap_file.path, moc=True, distances=True)
             with h5py.File(self.parameter_file, "r") as f:
                 ra = f["phi"][i]
                 dec = f["dec"][i]
                 dist = f["distance"][i]
 
+            ra = ra * u.rad
+            dec = dec * u.rad
+            dist = dist * u.Mpc
             coord = SkyCoord(
-                ra=ra * u.rad,
-                dec=dec * u.rad,
-                distance=dist * u.Mpc,
+                ra=ra,
+                dec=dec,
+                distance=dist,
             )
 
+            if self.plot:
+                ligo_skymap_plot.main(
+                    [
+                        skymap_file.path,
+                        "--radec",
+                        str(ra.to(u.deg).value),
+                        str(dec.to(u.deg).value),
+                        "--output",
+                        str(self.data_dir / str(i) / "ligo_skymap.png"),
+                    ]
+                )
             cm = crossmatch(skymap, coord)
             for attr in crossmatch_attributes:
                 data[attr].append(getattr(cm, attr))
