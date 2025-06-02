@@ -134,8 +134,8 @@ class AggregateLigoSkymap(
 
     parameter_file = luigi.OptionalParameter(
         default="",
-        description="Path to an hdf5 file containing `ra`, `dec` and `dist`"
-        " datasets corresponding to the ground truth values of the event",
+        description="Path to an hdf5 file containing `phi`, `dec` and `dist`"
+        " datasets corresponding to the ground truth values of the event.",
     )
 
     def __init__(self, *args, **kwargs):
@@ -176,7 +176,7 @@ class AggregateLigoSkymap(
                 skymap.path, moc=True, nest=True, distances=True
             )
             with h5py.File(self.parameter_file, "r") as f:
-                ra = f["ra"][i]
+                ra = f["phi"][i]
                 dec = f["dec"][i]
                 dist = f["distance"][i]
 
