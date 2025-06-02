@@ -1,6 +1,11 @@
+from functools import partial
 import law
 import luigi
-import logging
+from ligo.skymap.postprocess.crossmatch import crossmatch
+from ligo.skymap.tool import ligo_skymap_plot
+from astropy.coordinates import SkyCoord
+from astropy import units as u
+import h5py
 from mldatafind.law.parameters import PathParameter
 from mldatafind.law.tasks import Fetch
 from mldatafind.law.tasks import Query as _Query
@@ -10,6 +15,7 @@ from .paths import paths
 from luigi.util import inherits
 from ligo.skymap.io.fits import read_sky_map
 from tqdm.auto import tqdm
+import multiprocessing as mp
 
 
 # add mixin for appending amplfi specific
@@ -121,6 +127,51 @@ class LigoSkymap(
         ligo_skymap_from_samples.main(args)
 
 
+CROSSMATCH_ATTRS = [
+    "searched_area",
+    "searched_vol",
+    "searched_prob",
+    "searched_prob_vol",
+    "searched_prob_dist",
+    "offset",
+    "contour_areas",
+]
+
+
+def process_skymap(skymap_item, parameter_file, plot, data_dir):
+    i, skymap_target = skymap_item
+    skymap = read_sky_map(skymap_target.path, moc=True, distances=True)
+
+    with h5py.File(parameter_file, "r") as f:
+        ra = f["phi"][i] * u.rad
+        dec = f["dec"][i] * u.rad
+        dist = f["distance"][i] * u.Mpc
+
+    coord = SkyCoord(ra=ra, dec=dec, distance=dist)
+
+    if plot:
+        ligo_skymap_plot.main(
+            [
+                skymap_target.path,
+                "--radec",
+                str(ra.to(u.deg).value),
+                str(dec.to(u.deg).value),
+                "--output",
+                str(data_dir / str(i) / "ligo_skymap.png"),
+            ]
+        )
+
+    # Perform crossmatch
+    cm = crossmatch(skymap, coord)
+
+    # Extract attributes
+    result = {}
+    for attr in CROSSMATCH_ATTRS:
+        result[attr] = getattr(cm, attr)
+
+    return i, result
+
+
 @inherits(LigoSkymap)
 class AggregateLigoSkymap(
     AmplfiDataTaskMixin,
@@ -161,54 +212,29 @@ class AggregateLigoSkymap(
         return law.LocalFileTarget(self.data_dir / "ligo_skymap_stats.hdf5")
 
     def run(self):
-        from ligo.skymap.postprocess.crossmatch import crossmatch
-        from ligo.skymap.tool import ligo_skymap_plot
-        from astropy.coordinates import SkyCoord
-        from astropy import units as u
-        import h5py
+        import numpy as np
 
-        crossmatch_attributes = [
-            "searched_area",
-            "searched_vol",
-            "searched_prob",
-            "searched_prob_vol",
-            "searched_prob_dist",
-            "offset",
-            "contour_areas",
-        ]
-        data = {attr: [] for attr in crossmatch_attributes}
+        func = partial(
+            process_skymap,
+            parameter_file=self.parameter_file,
+            plot=self.plot,
+            data_dir=self.data_dir,
+        )
         skymaps = self.input()["collection"].targets
-        logging.info("Crossmatching %d skymaps", len(skymaps))
-        for i, skymap_file in tqdm(skymaps.items()):
-            skymap = read_sky_map(skymap_file.path, moc=True, distances=True)
-            with h5py.File(self.parameter_file, "r") as f:
-                ra = f["phi"][i]
-                dec = f["dec"][i]
-                dist = f["distance"][i]
-
-            ra = ra * u.rad
-            dec = dec * u.rad
-            dist = dist * u.Mpc
-            coord = SkyCoord(
-                ra=ra,
-                dec=dec,
-                distance=dist,
+        with mp.Pool(processes=mp.cpu_count()) as pool:
+            results = list(
+                tqdm(
+                    pool.imap(func, skymaps.items()),
+                    total=len(skymaps),
+                    desc="Crossmatching skymaps",
+                )
             )
 
-            if self.plot:
-                ligo_skymap_plot.main(
-                    [
-                        skymap_file.path,
-                        "--radec",
-                        str(ra.to(u.deg).value),
-                        str(dec.to(u.deg).value),
-                        "--output",
-                        str(self.data_dir / str(i) / "ligo_skymap.png"),
-                    ]
-                )
-            cm = crossmatch(skymap, coord)
-            for attr in crossmatch_attributes:
-                data[attr].append(getattr(cm, attr))
+        data = {attr: np.zeros(len(skymaps)) for attr in CROSSMATCH_ATTRS}
+
+        for i, result in results:
+            for attr in CROSSMATCH_ATTRS:
+                data[attr][i] = result[attr]
 
         with h5py.File(self.output().path, "w") as f:
             for attr, values in data.items():
