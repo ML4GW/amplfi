@@ -134,7 +134,6 @@ CROSSMATCH_ATTRS = [
     "searched_prob_vol",
     "searched_prob_dist",
     "offset",
-    "contour_areas",
 ]
 
 
