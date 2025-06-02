@@ -1,3 +1,5 @@
+from functools import partial
+import multiprocessing as mp
 from astropy import io
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -381,6 +383,25 @@ class ProbProbPlot(pl.Callback):
         )
 
 
+def crossmatch_skymap(
+    result: "AmplfiResult",
+    nside: int,
+    min_samples_per_pix: int,
+    contours: tuple[float],
+):
+    """
+    Function to process each skymap and calculate crossmatch statistics.
+    """
+
+    crossmatch_result = result.to_crossmatch_result(
+        nside=nside,
+        min_samples_per_pix=min_samples_per_pix,
+        use_distance=True,
+        contours=contours,
+    )
+    return crossmatch_result
+
+
 class CrossMatchStatistics(pl.Callback):
     """
     Use `ligo.skymap.postprocess.crossmatch` to calculate skymap statistics.
@@ -428,17 +449,23 @@ class CrossMatchStatistics(pl.Callback):
     def on_test_epoch_end(self, _, pl_module: "FlowModel"):
         crossmatch_results: list["CrossmatchResult"] = []
         test_outdir = pl_module.test_outdir
-        logger = pl_module._logger
-        logger.info("Calculating cross match statistics for each result")
-        for result in tqdm(pl_module.test_results):
-            # calculate skymap staistics via ligo.skymap.postprocess.crossmatch
-            crossmatch_result = result.to_crossmatch_result(
-                nside=pl_module.nside,
-                min_samples_per_pix=pl_module.min_samples_per_pix,
-                use_distance=True,
-                contours=self.contours,
+        test_results = pl_module.test_results
+
+        func = partial(
+            crossmatch_skymap,
+            nside=pl_module.nside,
+            min_samples_per_pix=pl_module.min_samples_per_pix,
+            contours=self.contours,
+        )
+
+        with mp.Pool(processes=min(mp.cpu_count(), len(test_results))) as pool:
+            crossmatch_results = list(
+                tqdm(
+                    pool.imap(func, test_results),
+                    total=len(test_results),
+                    desc="Crossmatching skymaps",
+                )
             )
-            crossmatch_results.append(crossmatch_result)
 
         self.write_skymap_statistics(test_outdir, crossmatch_results)
 

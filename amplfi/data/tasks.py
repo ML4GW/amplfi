@@ -219,7 +219,7 @@ class AggregateLigoSkymap(
             data_dir=self.data_dir,
         )
         skymaps = self.input()["collection"].targets
-        with mp.Pool(processes=mp.cpu_count()) as pool:
+        with mp.Pool(processes=min(mp.cpu_count(), len(skymaps))) as pool:
             results = list(
                 tqdm(
                     pool.imap(func, skymaps.items()),
