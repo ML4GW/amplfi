@@ -364,12 +364,22 @@ class AmplfiDataset(pl.LightningDataModule):
     def setup(self, stage: str) -> None:
         world_size, rank = self.get_world_size_and_rank()
         self._logger = self.get_logger(world_size, rank)
-        self.train_fnames, self.val_fnames = self.train_val_split()
 
         self._logger.info(f"Setting up data for stage {stage}")
+        if stage in ["fit", "validate"]:
+            self.train_fnames, self.val_fnames = self.train_val_split()
+
+        elif stage == "test":
+            self.test_fnames = self.get_test_fnames()
 
         # infer sample rate directly from background data
-        with h5py.File(self.train_fnames[0], "r") as f:
+        # and validate that it matches specified sample rate
+        sample_file = (
+            self.train_fnames[0]
+            if stage in ["fit", "validate"]
+            else self.test_fnames[0]
+        )
+        with h5py.File(sample_file, "r") as f:
             sample_rate = 1 / f[self.hparams.ifos[0]].attrs["dx"]
             assert sample_rate == self.hparams.sample_rate
 
@@ -562,9 +572,8 @@ class AmplfiDataset(pl.LightningDataModule):
             pin_memory=False,
             num_workers=10,
         )
-        test_fnames = self.get_test_fnames()
-        if len(test_fnames) == 1:
-            test_background = self.load_background(test_fnames)[0]
+        if len(self.test_fnames) == 1:
+            test_background = self.load_background(self.test_fnames)[0]
             background_dataset = InMemoryDataset(
                 test_background,
                 kernel_size=int(self.hparams.sample_rate * self.sample_length),
@@ -575,7 +584,7 @@ class AmplfiDataset(pl.LightningDataModule):
             )
         else:
             background_dataset = Hdf5TimeSeriesDataset(
-                test_fnames,
+                self.test_fnames,
                 channels=self.hparams.ifos,
                 kernel_size=int(self.hparams.sample_rate * self.sample_length),
                 batch_size=1,
