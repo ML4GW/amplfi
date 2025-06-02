@@ -274,7 +274,7 @@ class AmplfiDataset(pl.LightningDataModule):
         )
         self._logger.info(
             f"Using {len(fnames)} files with a total duration "
-            f"of {duration} days for testing"
+            f"of {duration:.3f} days for testing"
         )
         return fnames
 
@@ -301,11 +301,11 @@ class AmplfiDataset(pl.LightningDataModule):
 
         self._logger.info(
             f"Using {len(train_fnames)} files with a total duration "
-            f"of {train_duration} days for training"
+            f"of {train_duration:.3f} days for training"
         )
         self._logger.info(
             f"Using {len(valid_fnames)} files with a total duration "
-            f"of {valid_duration} days for validation"
+            f"of {valid_duration / SECONDS_PER_DAY:.3f} days for validation"
         )
         return train_fnames, valid_fnames
 
@@ -381,10 +381,6 @@ class AmplfiDataset(pl.LightningDataModule):
         # get_val_waveforms should be implemented by waveform_sampler object
         if stage in ["fit", "validate"]:
             self.val_background = self.load_background(self.val_fnames)
-            self._logger.info(
-                f"Loaded background files {self.val_fnames} for validation"
-            )
-
             cross, plus, parameters = self.waveform_sampler.get_val_waveforms(
                 rank, world_size
             )
