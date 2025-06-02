@@ -1,5 +1,6 @@
 import law
 import luigi
+import logging
 from mldatafind.law.parameters import PathParameter
 from mldatafind.law.tasks import Fetch
 from mldatafind.law.tasks import Query as _Query
@@ -7,6 +8,8 @@ from mldatafind.law.tasks.condor.workflows import StaticMemoryWorkflow
 from .base import DATA_SANDBOX, AmplfiDataTaskMixin
 from .paths import paths
 from luigi.util import inherits
+from ligo.skymap.io.fits import read_sky_map
+from tqdm.auto import tqdm
 
 
 # add mixin for appending amplfi specific
@@ -129,8 +132,17 @@ class AggregateLigoSkymap(
         " datasets corresponding to the ground truth values of the event",
     )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.sandbox = DATA_SANDBOX
+
     def requires(self):
-        return LigoSkymap.req(self)
+        return LigoSkymap.req(
+            self,
+            request_disk=self.request_disk,
+            request_cpus=self.request_cpus,
+            request_memory=self.request_memory,
+        )
 
     def output(self):
         return law.LocalFileTarget(self.data_dir / "ligo_skymap_stats.hdf5")
@@ -151,18 +163,23 @@ class AggregateLigoSkymap(
             "contour_areas",
         ]
         data = {attr: [] for attr in crossmatch_attributes}
-        for i, skymap in self.input()["collection"].items():
+        skymaps = self.input()["collection"].targets
+        logging.info("Crossmatching %d skymaps", len(skymaps))
+        for i, skymap in tqdm(skymaps.items()):
+            skymap = read_sky_map(
+                skymap.path, moc=True, nest=True, distances=True
+            )
             with h5py.File(self.parameter_file, "r") as f:
                 ra = f["ra"][i]
                 dec = f["dec"][i]
-                dist = f["dist"][i]
+                dist = f["distance"][i]
 
             coord = SkyCoord(
                 ra=ra * u.rad,
                 dec=dec * u.rad,
                 distance=dist * u.Mpc,
-                unit="rad",
             )
+
             cm = crossmatch(skymap, coord)
             for attr in crossmatch_attributes:
                 data[attr].append(getattr(cm, attr))

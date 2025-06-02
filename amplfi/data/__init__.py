@@ -1,1 +1,1 @@
-from .tasks import DataGeneration, LigoSkymap
+from .tasks import *
