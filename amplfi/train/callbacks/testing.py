@@ -1,6 +1,6 @@
 from astropy import io
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 from gwpy.plot import Plot
 from gwpy.timeseries import TimeSeries
 import lightning.pytorch as pl
@@ -10,11 +10,7 @@ import scipy
 import h5py
 import bilby
 from tqdm.auto import tqdm
-<<<<<<< HEAD
 import ligo.skymap.plot  # noqa: F401
-=======
-import luigi
->>>>>>> 48516d2 (run condor ligo skymap from samples)
 
 if TYPE_CHECKING:
     from ligo.skymap.postprocess.crossmatch import CrossmatchResult
@@ -595,27 +591,3 @@ class SaveInjectionParameters(pl.Callback):
                     param,
                     data=pl_module.injection_parameters[param],
                 )
-
-
-class LigoSkymap(pl.Callback):
-    """
-    Lightning Callback for running ligo-skymap-from-samples
-    law workflow on posterior samples after each test epoch.
-    """
-
-    def __init__(self, ligo_skymap_args: Optional[list[str]] = None):
-        self.ligo_skymap_args = ligo_skymap_args or []
-
-    def run_ligo_skymap(self, data_dir):
-        luigi.build(
-            LigoSkymap(
-                data_dir=data_dir,
-                ligo_skymap_args=self.ligo_skymap_args,
-                local_scheduler=True,
-            )
-        )
-
-    def on_test_epoch_end(self, _, pl_module: "FlowModel"):
-        logger = pl_module._logger
-        logger.info("Running ligo-skymap-from-samples on posterior samples")
-        self.run_ligo_skymap(pl_module.test_outdir)

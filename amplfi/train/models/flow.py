@@ -60,11 +60,6 @@ class FlowModel(AmplfiModel):
             If `True`, run ligo.skymap.postprocess.crossmatch
             on result objects at the end of testing epoch
             and produce searched area and volume cdfs
-        run_ligo_skymap:
-            If `True`, run a `law` workflow which will
-            launch ligo-skymap-from-samples density estimation
-            for each skymap, cross match the results with
-            the ground truth, and save the results
         save_fits:
             If `True`, save skymaps as FITS files
             for testing set events
@@ -90,7 +85,6 @@ class FlowModel(AmplfiModel):
         plot_corner: bool = True,
         plot_mollview: bool = True,
         cross_match: bool = True,
-        run_ligo_skymap: bool = False,
         save_fits: bool = True,
         save_posterior: bool = False,
         save_injection_parameters: bool = True,
