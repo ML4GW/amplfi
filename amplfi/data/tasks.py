@@ -161,7 +161,7 @@ class AggregateLigoSkymap(
         return law.LocalFileTarget(self.data_dir / "ligo_skymap_stats.hdf5")
 
     def run(self):
-        from ligo.skymap.postprocess import crossmatch
+        from ligo.skymap.postprocess.crossmatch import crossmatch
         from ligo.skymap.tool import ligo_skymap_plot
         from astropy.coordinates import SkyCoord
         from astropy import units as u
