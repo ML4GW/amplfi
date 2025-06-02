@@ -1,5 +1,6 @@
 from functools import partial
 import law
+import numpy as np
 import luigi
 from ligo.skymap.postprocess.crossmatch import crossmatch
 from ligo.skymap.tool import ligo_skymap_plot
@@ -211,8 +212,6 @@ class AggregateLigoSkymap(
         return law.LocalFileTarget(self.data_dir / "ligo_skymap_stats.hdf5")
 
     def run(self):
-        import numpy as np
-
         func = partial(
             process_skymap,
             parameter_file=self.parameter_file,
