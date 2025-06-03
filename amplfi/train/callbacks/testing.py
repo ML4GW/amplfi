@@ -268,16 +268,23 @@ class PlotCorner(pl.Callback):
 class SaveFITS(pl.Callback):
     """ """
 
-    def __init__(self, outdir: Path, nside: int):
+    def __init__(self, outdir: Path, nside: int, min_samples_per_pix: int):
         self.outdir = outdir
         self.nside = nside
+        self.min_samples_per_pix = min_samples_per_pix
 
     def save_fits(
         self,
         result: "AmplfiResult",
         outdir: Path,
     ):
-        fits = io.fits.table_to_hdu(result.to_skymap(self.nside))
+        fits = io.fits.table_to_hdu(
+            result.to_skymap(
+                self.nside,
+                self.min_samples_per_pix,
+                use_distance=True,
+            )
+        )
         outdir.mkdir(exist_ok=True)
         fits.writeto(outdir / "amplfi.skymap.fits", overwrite=True)
 
@@ -331,7 +338,9 @@ class SavePosterior(pl.Callback):
         # ligo skymap and save full result to have
         # access to the true injection parameters
         result.save_posterior_samples(outdir / "posterior_samples.dat")
-        result.save_to_file(outdir / "result.hdf5", extension="hdf5")
+        result.save_to_file(
+            outdir / "result.hdf5", extension="hdf5", overwrite=True
+        )
 
     def on_test_batch_end(
         self,
@@ -583,11 +592,34 @@ class SaveInjectionParameters(pl.Callback):
     def __init__(self, outdir: Path):
         self.outdir = outdir
 
+    def on_test_epoch_start(self, trainer, pl_module: "FlowModel"):
+        num_test = len(trainer.datamodule.test_dataloader())
+        self.injection_parameters = {
+            param: np.zeros(num_test)
+            for param in pl_module.inference_params + ["snr"]
+        }
+
     def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         # save parameters of randomly sampled injections
         with h5py.File(self.outdir / "parameters.hdf5", "w") as f:
             for param in pl_module.inference_params + ["snr"]:
                 f.create_dataset(
                     param,
-                    data=pl_module.injection_parameters[param],
+                    data=self.injection_parameters[param],
                 )
+
+    def on_test_batch_end(
+        self,
+        trainer,
+        pl_module: "FlowModel",
+        outputs,
+        batch,
+        batch_idx,
+        dataloader_idx=0,
+    ):
+        result: AmplfiResult = outputs
+        # append parameters to the injection_parameters dict
+        for param in pl_module.inference_params + ["snr"]:
+            self.injection_parameters[param][batch_idx] = (
+                result.injection_parameters[param]
+            )

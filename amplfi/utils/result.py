@@ -20,7 +20,7 @@ class AmplfiResult(bilby.result.Result):
     def to_crossmatch_result(
         self,
         nside: int,
-        min_samples_per_pix: int = 15,
+        min_samples_per_pix: int = 5,
         use_distance: bool = True,
         **crossmatch_kwargs,
     ) -> CrossmatchResult:
@@ -47,7 +47,7 @@ class AmplfiResult(bilby.result.Result):
     def to_skymap(
         self,
         nside: int,
-        min_samples_per_pix: int = 15,
+        min_samples_per_pix: int = 5,
         use_distance: bool = True,
     ) -> Table:
         """

@@ -33,7 +33,7 @@ model:
   init_args:
     train_outdir: ${oc.env:AMPLFI_OUTDIR}
     nside: 32
-    min_samples_per_pix: 15
+    min_samples_per_pix: 5
     samples_per_event: 10000
     num_plot: 50
     plot_data: false
