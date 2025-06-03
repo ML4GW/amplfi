@@ -357,8 +357,9 @@ class AmplfiDataset(pl.LightningDataModule):
                 if k in parameters.keys():
                     params.append(torch.Tensor(parameters[k]))
 
+            self.test_inference_params = torch.column_stack(params)
+            self.test_parameters: dict[str, torch.tensor] = parameters
             self.test_waveforms = torch.stack([cross, plus], dim=0)
-            self.test_parameters = torch.column_stack(params)
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
@@ -503,7 +504,7 @@ class AmplfiDataset(pl.LightningDataModule):
         # build waveform dataloader
         cross, plus = self.test_waveforms
         waveform_dataset = torch.utils.data.TensorDataset(
-            cross, plus, self.test_parameters
+            cross, plus, self.test_inference_params
         )
         waveform_dataloader = torch.utils.data.DataLoader(
             waveform_dataset,

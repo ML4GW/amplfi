@@ -276,8 +276,13 @@ class ParameterTestingDataset(FlowDataset):
             if k in parameters.keys():
                 params.append(torch.Tensor(parameters[k]))
 
-        self.waveforms = torch.stack([cross, plus], dim=0)
-        self.parameters = torch.column_stack(params)
+        # torch tensor of inference parameters
+        # that the model will draw samples for
+        self.test_inference_params = torch.column_stack(params)
+        # the whole set of parameters used to generate the waveforms
+        self.test_parameters: dict[str, torch.tensor] = parameters
+        self.test_waveforms = torch.stack([cross, plus], dim=0)
+
         self.background = self.background_from_gpstimes(
             parameters["gpstime"] - 98304000, self.test_fnames
         )
@@ -289,10 +294,10 @@ class ParameterTestingDataset(FlowDataset):
         self.transforms_to_device()
 
     def test_dataloader(self) -> torch.utils.data.DataLoader:
-        cross, plus = self.waveforms
+        cross, plus = self.test_waveforms
 
         waveform_dataset = torch.utils.data.TensorDataset(
-            cross, plus, self.parameters
+            cross, plus, self.test_inference_params
         )
 
         waveform_dataloader = torch.utils.data.DataLoader(
@@ -337,13 +342,6 @@ class ParameterTestingDataset(FlowDataset):
             parameters["phi"].float(),
         )
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
-
-        # downselect to requested inference parameters
-        parameters = {
-            k: v
-            for k, v in parameters.items()
-            if k in self.hparams.inference_params
-        }
 
         # make any requested parameter transforms
         parameters = self.transform(parameters)
