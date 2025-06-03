@@ -11,7 +11,7 @@ or directly from source
 
 
 ```console
-$ git clone git@git.ligo.org:ml4gw/amplfi.git
+$ git clone git@github.com:ML4GW/amplfi.git 
 $ cd amplfi
 $ pip install .  
 ```
