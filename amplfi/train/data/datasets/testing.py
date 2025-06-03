@@ -121,14 +121,14 @@ class StrainTestingDataset(FlowDataset):
         self.build_transforms(stage)
         self.transforms_to_device()
 
-        self.test_parameters = parameters
+        self.test_inference_params = parameters
         self.test_strain = strain
 
     def test_dataloader(self) -> torch.utils.data.DataLoader:
         # build dataset and dataloader that will
         # simply load one injection (and its parameters) at a time
         dataset = torch.utils.data.TensorDataset(
-            self.test_strain, self.test_parameters
+            self.test_strain, self.test_inference_params
         )
 
         return torch.utils.data.DataLoader(
