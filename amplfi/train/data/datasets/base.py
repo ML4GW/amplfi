@@ -390,10 +390,10 @@ class AmplfiDataset(pl.LightningDataModule):
         # modules are all still on CPU.
         # get_val_waveforms should be implemented by waveform_sampler object
         if stage in ["fit", "validate"]:
-            self.val_background = self.load_background(self.val_fnames)
             cross, plus, parameters = self.waveform_sampler.get_val_waveforms(
                 rank, world_size
             )
+            self.val_background = self.load_val_background(cross.shape[0])
             self._logger.info(f"Loaded {len(cross)} waveforms for validation")
             params = []
             for k in self.hparams.inference_params:
@@ -439,6 +439,21 @@ class AmplfiDataset(pl.LightningDataModule):
             background.append(data)
         return background
 
+    def load_val_background(self, N: int) -> List[Tensor]:
+        """
+        Sample `N` background segments from the set of validation files.
+        """
+        dataset = Hdf5TimeSeriesDataset(
+            self.val_fnames,
+            channels=self.hparams.ifos,
+            kernel_size=int(self.hparams.sample_rate * self.sample_length),
+            batch_size=N,
+            batches_per_epoch=1,
+            coincident=False,
+        )
+        background = next(iter(dataset))
+        return background
+
     def on_after_batch_transfer(self, batch, _):
         """
         This is a Lightning `hook` that gets called after
@@ -456,7 +471,6 @@ class AmplfiDataset(pl.LightningDataModule):
 
         elif self.trainer.validating or self.trainer.sanity_checking:
             [cross, plus, parameters], [background] = batch
-
             background = background[: len(cross)]
             keys = [
                 k
@@ -522,12 +536,6 @@ class AmplfiDataset(pl.LightningDataModule):
         return dataloader
 
     def val_dataloader(self):
-        # TODO: allow for multiple validation segment files
-
-        # offset the start of the validation background data
-        # by the device id to add more diversity in the validation set
-        _, rank = self.get_world_size_and_rank()
-
         # build waveform dataloader
         cross, plus = self.val_waveforms
         waveform_dataset = torch.utils.data.TensorDataset(
@@ -540,20 +548,14 @@ class AmplfiDataset(pl.LightningDataModule):
             pin_memory=False,
         )
 
-        # build background dataloader
-        val_background = self.val_background[0][:, rank:]
-
-        background_dataset = InMemoryDataset(
-            val_background,
-            kernel_size=int(self.hparams.sample_rate * self.sample_length),
-            batch_size=self.val_batch_size,
-            batches_per_epoch=len(waveform_dataloader),
-            coincident=False,
-            shuffle=False,
+        background_dataset = torch.utils.data.TensorDataset(
+            self.val_background
         )
 
         background_dataloader = torch.utils.data.DataLoader(
-            background_dataset, pin_memory=False
+            background_dataset,
+            batch_size=self.val_batch_size,
+            pin_memory=False,
         )
         return ZippedDataset(
             waveform_dataloader,
