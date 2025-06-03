@@ -620,20 +620,15 @@ class SaveInjectionParameters(pl.Callback):
         self.outdir = outdir
 
     def on_test_epoch_start(self, trainer, pl_module: "FlowModel"):
+        # initialize field in test parameters for snr
         num_test = len(trainer.datamodule.test_dataloader())
-        self.injection_parameters = {
-            param: np.zeros(num_test)
-            for param in pl_module.inference_params + ["snr"]
-        }
+        trainer.datamodule.test_parameters["snr"] = np.zeros(num_test)
 
     def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         # save parameters of randomly sampled injections
         with h5py.File(self.outdir / "parameters.hdf5", "w") as f:
-            for param in pl_module.inference_params + ["snr"]:
-                f.create_dataset(
-                    param,
-                    data=self.injection_parameters[param],
-                )
+            for param, data in trainer.datamodule.test_parameters.items():
+                f.create_dataset(param, data=data)
 
     def on_test_batch_end(
         self,
@@ -645,8 +640,6 @@ class SaveInjectionParameters(pl.Callback):
         dataloader_idx=0,
     ):
         result: AmplfiResult = outputs
-        # append parameters to the injection_parameters dict
-        for param in pl_module.inference_params + ["snr"]:
-            self.injection_parameters[param][batch_idx] = (
-                result.injection_parameters[param]
-            )
+        trainer.datamodule.test_parameters["snr"][batch_idx] = (
+            result.injection_parameters["snr"]
+        )
