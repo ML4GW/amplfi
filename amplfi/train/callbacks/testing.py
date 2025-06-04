@@ -1,4 +1,5 @@
 from functools import partial
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
 from astropy import io
 from pathlib import Path
@@ -467,14 +468,20 @@ class CrossMatchStatistics(pl.Callback):
             contours=self.contours,
         )
 
-        with mp.Pool(processes=min(mp.cpu_count(), len(test_results))) as pool:
-            crossmatch_results = list(
-                tqdm(
-                    pool.imap(func, test_results),
-                    total=len(test_results),
-                    desc="Crossmatching skymaps",
-                )
-            )
+        crossmatch_results = [None] * len(test_results)
+        num_processes = min(mp.cpu_count(), len(test_results))
+        with ProcessPoolExecutor(max_workers=num_processes) as executor:
+            future_to_index = {
+                executor.submit(func, result): idx
+                for idx, result in enumerate(test_results)
+            }
+            for future in tqdm(
+                as_completed(future_to_index),
+                total=len(future_to_index),
+                desc="Crossmatching skymaps",
+            ):
+                idx = future_to_index[future]
+                crossmatch_results[idx] = future.result()
 
         self.write_skymap_statistics(test_outdir, crossmatch_results)
 
