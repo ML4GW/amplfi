@@ -626,6 +626,10 @@ class SaveInjectionParameters(pl.Callback):
     def __init__(self, outdir: Path):
         self.outdir = outdir
 
+    # TODO: should these parameters be saved
+    # regardless of whether this callback is activated?
+    # i.e. should `on_test_epoch_start` and `on_test_batch_end`
+    # be moved to the base dataset?
     def on_test_epoch_start(self, trainer, pl_module: "FlowModel"):
         # initialize field in test parameters for snr
         num_test = len(trainer.datamodule.test_dataloader())
