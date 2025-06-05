@@ -629,7 +629,8 @@ class SaveInjectionParameters(pl.Callback):
     def on_test_epoch_start(self, trainer, pl_module: "FlowModel"):
         # initialize field in test parameters for snr
         num_test = len(trainer.datamodule.test_dataloader())
-        trainer.datamodule.test_parameters["snr"] = np.zeros(num_test)
+        for param in ["snr", "dec", "psi", "phi", "ra"]:
+            trainer.datamodule.test_parameters[param] = np.zeros(num_test)
 
     def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         # save parameters of randomly sampled injections
@@ -647,6 +648,7 @@ class SaveInjectionParameters(pl.Callback):
         dataloader_idx=0,
     ):
         result: AmplfiResult = outputs
-        trainer.datamodule.test_parameters["snr"][batch_idx] = (
-            result.injection_parameters["snr"]
-        )
+        for param in ["snr", "dec", "psi", "phi", "ra"]:
+            trainer.datamodule.test_parameters[param][batch_idx] = (
+                result.injection_parameters[param]
+            )
