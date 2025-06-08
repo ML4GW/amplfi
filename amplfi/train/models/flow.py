@@ -13,6 +13,7 @@ from ..callbacks import (
     PlotCorner,
     SaveFITS,
     SaveInjectionParameters,
+    ImportanceSample,
 )
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
@@ -109,6 +110,7 @@ class FlowModel(AmplfiModel):
         self.cross_match = cross_match
         self.save_injection_parameters = save_injection_parameters
         self.filter_params = filter_params
+        self.target_prior = target_prior
 
         if target_prior is not None:
             target_prior = PriorDict(filename=str(target_prior))
@@ -365,6 +367,14 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
+
+        if self.target_prior is not None:
+            callbacks.append(
+                ImportanceSample(
+                    self.test_outdir / "events", self.target_prior
+                )
+            )
+
         callbacks += [ProbProbPlot()]
 
         event_outdir = self.test_outdir / "events"
