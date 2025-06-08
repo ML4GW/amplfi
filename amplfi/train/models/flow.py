@@ -156,6 +156,16 @@ class FlowModel(AmplfiModel):
         )
         log_probs = self.model.log_prob(samples, context)
 
+        """
+        samples_dict = {
+            key: tensor
+            for key, tensor in zip(
+                self.hparams.inference_params, samples, strict=False
+            )
+        }
+        log_priors = self.training_prior.log_probs(samples_dict)
+        """
+
         samples = samples.squeeze(1)
         log_probs = log_probs.squeeze(1)
 

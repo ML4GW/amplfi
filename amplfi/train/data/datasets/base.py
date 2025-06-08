@@ -11,7 +11,7 @@ from ml4gw.transforms import ChannelWiseScaler, Whiten
 
 from ...augmentations import PsdEstimator, WaveformProjector
 from ..utils import fs as fs_utils
-from ..utils.utils import ZippedDataset
+from ..utils.utils import ZippedDataset, ParameterTransformer
 from ..waveforms.sampler import WaveformSampler
 import numpy as np
 from pathlib import Path
@@ -39,6 +39,9 @@ class AmplfiDataset(pl.LightningDataModule):
         inference_params:
             List of parameters to perform inference on. Can be a subset
             of the parameters that fully describes the waveforms
+        dec: Distribution,
+        psi: Distribution,
+        phi: Distribution,
         highpass:
             Highpass frequency in Hz
         sample_rate:
@@ -90,6 +93,9 @@ class AmplfiDataset(pl.LightningDataModule):
         self,
         data_dir: str,
         inference_params: list[str],
+        dec: Distribution,
+        psi: Distribution,
+        phi: Distribution,
         highpass: float,
         sample_rate: float,
         kernel_length: float,
@@ -99,6 +105,7 @@ class AmplfiDataset(pl.LightningDataModule):
         batch_size: int,
         ifos: List[str],
         waveform_sampler: WaveformSampler,
+        parameter_transformer: Optional[ParameterTransformer] = None,
         fftlength: Optional[int] = None,
         train_val_range: Optional[tuple[float, float]] = None,
         test_range: Optional[tuple[float, float]] = None,
@@ -118,6 +125,9 @@ class AmplfiDataset(pl.LightningDataModule):
         self.init_logging(verbose)
         self.waveform_sampler = waveform_sampler
         self.max_num_workers = max_num_workers
+
+        self.dec, self.psi, self.phi = dec, psi, phi
+        self.parameter_transformer = parameter_transformer or (lambda x: x)
 
         # generate our local node data directory
         # if our specified data source is remote
@@ -354,12 +364,38 @@ class AmplfiDataset(pl.LightningDataModule):
             self.scaler = self.trainer.model.scaler
         else:
             self._logger.info("Fitting standard scaler to parameters")
-            scaler = ChannelWiseScaler(self.num_params)
-            self.scaler = self.waveform_sampler.fit_scaler(scaler)
+            self.scaler = self.fit_scaler()
 
         self.projector = WaveformProjector(
             self.hparams.ifos, self.hparams.sample_rate
         )
+
+    def sample_extrinsic(self, X: torch.Tensor):
+        """
+        Sample extrinsic parameters used to project waveforms
+        """
+        N = len(X)
+        dec = self.dec.sample((N,)).to(X.device)
+        psi = self.psi.sample((N,)).to(X.device)
+        phi = self.phi.sample((N,)).to(X.device)
+        return dec, psi, phi
+
+    def fit_scaler(self):
+        scaler = ChannelWiseScaler(self.num_params)
+        parameters = self.waveform_sampler.get_fit_parameters()
+        dec, psi, phi = self.sample_extrinsic(parameters.shape[-1])
+        parameters["dec"] = dec
+        parameters["psi"] = psi
+        parameters["phi"] = phi
+
+        transformed = self.parameter_transformer(parameters)
+        fit = []
+        for key in self.hparams.inference_params:
+            fit.append(transformed[key])
+
+        fit = torch.row_stack(fit)
+        scaler.fit(fit)
+        return scaler
 
     def setup(self, stage: str) -> None:
         world_size, rank = self.get_world_size_and_rank()

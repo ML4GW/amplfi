@@ -2,11 +2,11 @@ from typing import TYPE_CHECKING, Optional
 
 import torch
 
-from ...utils.utils import ParameterSampler
+from ....prior import AmplfiPrior
 from ..sampler import WaveformSampler
 
 if TYPE_CHECKING:
-    from ml4gw.transforms import ChannelWiseScaler
+    pass
 
 
 class WaveformGenerator(WaveformSampler):
@@ -15,8 +15,8 @@ class WaveformGenerator(WaveformSampler):
         *args,
         num_val_waveforms: int,
         num_test_waveforms: int,
-        parameter_sampler: ParameterSampler,
-        test_parameter_sampler: Optional[ParameterSampler] = None,
+        parameter_sampler: AmplfiPrior,
+        test_parameter_sampler: Optional[AmplfiPrior] = None,
         num_fit_params: int,
         **kwargs,
     ):
@@ -30,7 +30,7 @@ class WaveformGenerator(WaveformSampler):
             num_test_waveforms:
                 Total number of testing waveforms to use.
                 Testing is performed on one device.
-            parameter_sampler:
+            training_prior:
                 A callable that takes an integer N and
                 returns a dictionary of parameter Tensors, each of length `N`
             test_parameter_sampler:
@@ -69,20 +69,9 @@ class WaveformGenerator(WaveformSampler):
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
-    def fit_scaler(self, scaler: "ChannelWiseScaler") -> "ChannelWiseScaler":
+    def get_fit_params(self) -> torch.Tensor:
         parameters = self.parameter_sampler(self.num_fit_params)
-
-        dec, psi, phi = self.sample_extrinsic(torch.ones(self.num_fit_params))
-        parameters.update({"dec": dec, "psi": psi, "phi": phi})
-        transformed = self.parameter_transformer(parameters)
-
-        fit = []
-        for key in self.inference_params:
-            fit.append(transformed[key])
-
-        fit = torch.row_stack(fit)
-        scaler.fit(fit)
-        return scaler
+        return parameters
 
     def forward(self):
         raise NotImplementedError
