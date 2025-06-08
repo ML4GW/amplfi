@@ -13,6 +13,7 @@ from ..callbacks import (
     PlotCorner,
     SaveFITS,
     SaveInjectionParameters,
+    ImportanceSample,
 )
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
@@ -20,7 +21,7 @@ from typing import Optional
 from scipy.special import logsumexp
 
 if TYPE_CHECKING:
-    pass
+    from pathlib import Path
 
 Tensor = torch.Tensor
 
@@ -88,6 +89,7 @@ class FlowModel(AmplfiModel):
         save_fits: bool = True,
         save_posterior: bool = False,
         save_injection_parameters: bool = True,
+        target_prior: Optional["Path"] = None,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -104,6 +106,7 @@ class FlowModel(AmplfiModel):
         self.cross_match = cross_match
         self.save_injection_parameters = save_injection_parameters
         self.filter_params = filter_params
+        self.target_prior = target_prior
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
@@ -310,6 +313,14 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
+
+        if self.target_prior is not None:
+            callbacks.append(
+                ImportanceSample(
+                    self.test_outdir / "events", self.target_prior
+                )
+            )
+
         callbacks += [ProbProbPlot()]
         if self.plot_data:
             callbacks.append(
