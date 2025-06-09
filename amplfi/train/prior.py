@@ -39,7 +39,7 @@ class AmplfiPrior:
         """
         # sample parameters from prior
         parameters = {
-            k: v.sample((N,)).to(device) for k, v in self.parameters.items()
+            k: v.sample((N,)).to(device) for k, v in self.priors.items()
         }
         # perform any necessary conversions
         # to from sampled parameters to
@@ -56,9 +56,11 @@ class AmplfiPrior:
                 Dictionary where key is parameter and
                 value is tensor of samples
         """
-        log_probs = torch.ones(len(samples[list(samples.keys())[0]]))
+
+        first = samples[list(samples.keys())[0]]
+        log_probs = torch.ones(len(first), device=first.device)
         for param, tensor in samples.items():
-            log_probs *= self.priors[param].log_prob(tensor)
+            log_probs += self.priors[param].log_prob(tensor).to(first.device)
         return log_probs
 
 

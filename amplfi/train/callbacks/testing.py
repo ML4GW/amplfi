@@ -3,7 +3,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
 from astropy import io
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from gwpy.plot import Plot
 from gwpy.timeseries import TimeSeries
 import lightning.pytorch as pl
@@ -32,25 +32,14 @@ class StrainVisualization(pl.Callback):
         self.num_plot = num_plot
         self.save_data = save_data
 
-    def on_test_batch_end(
-        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
-    ) -> None:
+    def plot_strain(self, outdir, result, batch, trainer):
         """
         Called at the end of each test step.
         `outputs` consists of objects returned by `pl_module.test_step`.
         """
 
-        # test_step returns bilby result object
-        result = outputs
-
-        if batch_idx >= self.num_plot:
-            return
-
-        outdir = self.outdir / str(batch_idx)
-        outdir.mkdir(exist_ok=True)
-
         # unpack batch
-        strain, asds, *_ = batch
+        strain, asds, _ = batch
         strain, asds = strain[0].cpu().numpy(), asds[0].cpu().numpy()
 
         # steal some attributes needed from datamodule
@@ -169,12 +158,38 @@ class StrainVisualization(pl.Callback):
         plt.savefig(whitened_fd_strain_fname)
         plt.close()
 
+    def on_test_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
+    ) -> None:
+        # test_step returns bilby result object
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        _: Optional["AmplfiResult"]
+        result, _ = outputs
+
+        if batch_idx >= self.num_plot:
+            return
+
+        outdir = self.outdir / str(batch_idx)
+        outdir.mkdir(exist_ok=True)
+        self.plot_strain(outdir, result, batch, trainer)
+
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        return self.on_test_batch_end(
-            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
-        )
+        # test_step returns bilby result object
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        _: Optional["AmplfiResult"]
+        result, _ = outputs
+
+        if batch_idx >= self.num_plot:
+            return
+
+        gpstime = batch[2].cpu().numpy()[0]
+        outdir = self.outdir / str(int(gpstime))
+        outdir.mkdir(exist_ok=True)
+        self.plot_strain(outdir, result, batch, trainer)
 
 
 class PlotMollview(pl.Callback):
@@ -202,7 +217,10 @@ class PlotMollview(pl.Callback):
         """
 
         # test_step returns bilby result object
-        result = outputs
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
 
         outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
@@ -212,12 +230,41 @@ class PlotMollview(pl.Callback):
             outpath=skymap_filename,
         )
 
+        if reweighted is not None:
+            reweighted_outdir = outdir / "reweighted"
+            skymap_filename = reweighted_outdir / "mollview.png"
+            reweighted_outdir.mkdir(exist_ok=True)
+            reweighted.plot_mollview(
+                self.nside,
+                outpath=skymap_filename,
+            )
+
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        return self.on_test_batch_end(
-            trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
+        # test_step returns bilby result object
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
+
+        gpstime = batch[2].cpu().numpy()[0]
+        outdir = self.outdir / str(int(gpstime))
+        outdir.mkdir(exist_ok=True)
+        skymap_filename = outdir / "mollview.png"
+        result.plot_mollview(
+            self.nside,
+            outpath=skymap_filename,
         )
+
+        if reweighted is not None:
+            reweighted_outdir = outdir / "reweighted"
+            skymap_filename = reweighted_outdir / "mollview.png"
+            reweighted_outdir.mkdir(exist_ok=True)
+            reweighted.plot_mollview(
+                self.nside,
+                outpath=skymap_filename,
+            )
 
 
 class PlotCorner(pl.Callback):
@@ -252,20 +299,36 @@ class PlotCorner(pl.Callback):
         """
 
         # test_step returns bilby result object
-        result = outputs
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
+
         outdir = self.outdir / str(batch_idx)
         self.plot_corner(result, outdir)
+
+        if reweighted is not None:
+            outdir = outdir / "reweighted"
+            self.plot_corner(reweighted, outdir)
 
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
         # test_step returns bilby result object
-        result = outputs
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
 
         # for predict step, use gpstime to name the directory
         gpstime = batch[2].cpu().numpy()[0]
-        outdir = self.outdir / f"event_{int(gpstime)}"
+        outdir = self.outdir / str(int(gpstime))
         self.plot_corner(result, outdir)
+
+        if reweighted is not None:
+            # for predict step, use gpstime to name the directory
+            outdir = outdir / "reweighted"
+            self.plot_corner(reweighted, outdir)
 
 
 class SaveFITS(pl.Callback):
@@ -306,21 +369,35 @@ class SaveFITS(pl.Callback):
         """
 
         # test_step returns bilby result object
-        result = outputs
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
+
         outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
         self.save_fits(result, outdir)
 
+        if reweighted is not None:
+            outdir = outdir / "reweighted"
+            outdir.mkdir(exist_ok=True)
+            self.save_fits(reweighted, outdir)
+
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        # test_step returns bilby result object
-        result = outputs
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
 
         # for predict step, use gpstime to name the directory
         gpstime = batch[2].cpu().numpy()[0]
-        outdir = self.outdir / f"event_{int(gpstime)}"
+        outdir = self.outdir / str(int(gpstime))
         self.save_fits(result, outdir)
+
+        if reweighted is not None:
+            outdir = outdir / "reweighted"
+            self.save_fits(reweighted, outdir)
 
 
 class SavePosterior(pl.Callback):
@@ -360,25 +437,40 @@ class SavePosterior(pl.Callback):
         """
 
         # test_step returns bilby result object
-        result = outputs
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
 
         outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
-
         self.save_posterior(result, outdir)
+
+        if reweighted is not None:
+            outdir = outdir / "reweighted"
+            outdir.mkdir(exist_ok=True)
+            self.save_posterior(reweighted, outdir)
 
     def on_predict_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
         # test_step returns bilby result object
-        result = outputs
+        # and optionally a reweighted result
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
 
         # for predict step, use gpstime to name the directory
         gpstime = batch[2].cpu().numpy()[0]
-        outdir = self.outdir / f"event_{int(gpstime)}"
-        outdir.mkdir(exist_ok=True)
 
+        outdir = self.outdir / str(int(gpstime))
+        outdir.mkdir(exist_ok=True)
         self.save_posterior(result, outdir)
+
+        if reweighted is not None:
+            outdir = outdir / "reweighted"
+            outdir.mkdir(exist_ok=True)
+            self.save_posterior(reweighted, outdir)
 
 
 class ProbProbPlot(pl.Callback):
@@ -389,6 +481,15 @@ class ProbProbPlot(pl.Callback):
             pl_module.test_results,
             save=True,
             filename=pl_module.test_outdir / "plots" / "pp-plot.png",
+            keys=pl_module.inference_params,
+        )
+
+        bilby.result.make_pp_plot(
+            pl_module.reweighted_results,
+            save=True,
+            filename=pl_module.test_outdir
+            / "plots"
+            / "reweighted-pp-plot.png",
             keys=pl_module.inference_params,
         )
 
@@ -651,65 +752,10 @@ class SaveInjectionParameters(pl.Callback):
         batch_idx,
         dataloader_idx=0,
     ):
-        result: AmplfiResult = outputs
+        result: "AmplfiResult"
+        _: Optional["AmplfiResult"]
+        result, _ = outputs
         for param in ["snr", "dec", "psi", "phi", "ra"]:
             trainer.datamodule.test_parameters[param][batch_idx] = (
                 result.injection_parameters[param]
             )
-
-
-class ImportanceSample(pl.Callback):
-    """
-    Reweight an `AmplfiResult` based on a target prior
-    """
-
-    # TODO: add likelihood reweighting
-    def __init__(
-        self,
-        outdir: Path,
-        target_prior: bilby.core.prior.PriorDict,
-    ):
-        self.outdir = outdir
-        self.target_prior = bilby.core.prior.PriorDict(filename=target_prior)
-
-    def on_predict_epoch_start(self):
-        self.reweighted_results: list[AmplfiResult] = []
-
-    def on_test_epoch_start(self):
-        self.reweighted_results: list[AmplfiResult] = []
-
-    def on_test_batch_end(
-        self,
-        trainer,
-        pl_module: "FlowModel",
-        outputs,
-        batch,
-        batch_idx,
-        dataloader_idx=0,
-    ):
-        result: AmplfiResult = outputs
-        outdir = self.outdir / str(batch_idx)
-        self.importance_sample(outdir, result)
-
-    def on_predict_batch_end(
-        self,
-        trainer,
-        pl_module: "FlowModel",
-        outputs,
-        batch,
-        batch_idx,
-        dataloader_idx=0,
-    ):
-        result: AmplfiResult = outputs
-        gpstime = batch[2].cpu().numpy()[0]
-        outdir = self.outdir / str(gpstime)
-        self.importance_sample(outdir, result)
-
-    def importance_sample(self, outdir, result: AmplfiResult):
-        reweighted: AmplfiResult = bilby.core.result.reweight(
-            result, new_prior=self.target_prior
-        )
-        self.reweighted_results.append(reweighted)
-        reweighted.save_to_file(
-            outdir / "reweighted.hdf5", extension="hdf5", overwrite=True
-        )

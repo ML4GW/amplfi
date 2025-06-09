@@ -192,7 +192,7 @@ class AmplfiDataset(pl.LightningDataModule):
         and performing training/inference.
         For example, taking logarithm of hrss
         """
-        return self.waveform_sampler.parameter_transformer(parameters)
+        return self.parameter_transformer(parameters)
 
     def scale(self, parameters, reverse: bool = False):
         """
@@ -705,7 +705,7 @@ class AmplfiDataset(pl.LightningDataModule):
                     "No segment in testing directory containing "
                     f"{time}. Using random segment"
                 )
-                file = random.choice()
+                file = random.choice(fnames)
                 start, length = list(
                     map(float, file.name.split(".")[0].split("-")[1:])
                 )

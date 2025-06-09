@@ -13,14 +13,15 @@ from ..callbacks import (
     PlotCorner,
     SaveFITS,
     SaveInjectionParameters,
-    ImportanceSample,
 )
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
+from bilby.core.prior import PriorDict
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from ..prior import AmplfiPrior
 
 Tensor = torch.Tensor
 
@@ -108,7 +109,10 @@ class FlowModel(AmplfiModel):
         self.cross_match = cross_match
         self.save_injection_parameters = save_injection_parameters
         self.filter_params = filter_params
-        self.target_prior = target_prior
+
+        if target_prior is not None:
+            target_prior = PriorDict(filename=str(target_prior))
+        self.target_prior: Optional[PriorDict] = target_prior
 
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
@@ -146,54 +150,75 @@ class FlowModel(AmplfiModel):
         )
         return loss
 
+    def on_predict_epoch_start(self):
+        self.on_test_epoch_start()
+
     def on_test_epoch_start(self):
         self.test_results: list[AmplfiResult] = []
+
+        # update the training prior to now include
+        # the extrinisc parameters, so log probabilites can be calculated
+        waveform_sampler = self.trainer.datamodule.waveform_sampler
+        training_prior = waveform_sampler.training_prior
+
+        for key in ["dec", "psi", "phi"]:
+            training_prior.priors[key] = getattr(self.trainer.datamodule, key)
+
+        self.training_prior: "AmplfiPrior" = training_prior
+
+        # if reweighting, write target prior to test directory
+        if self.target_prior is not None:
+            self.target_prior.to_file(self.test_outdir, label="reweight")
 
     def on_test_batch_end(self, outputs, *_):
         self.test_results.append(outputs)
 
-    def test_step(self, batch, _) -> AmplfiResult:
-        strain, asds, parameters, snr = batch
+    def analyze_event(self, strain, asds, parameters=None, snr=None):
         context = (strain, asds)
-
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
         )
         log_probs = self.model.log_prob(samples, context)
 
-        # convert samples to dictionary for
-        # calculating log probabilites
-        samples_dict = dict(
-            zip(self.hparams.inference_params, samples, strict=True)
-        )
-
-        waveform_sampler = self.trainer.datamodule.waveform_sampler
-        training_prior = waveform_sampler.training_prior
-        log_priors = training_prior.log_probs(samples_dict)
-
         samples = samples.squeeze(1)
         log_probs = log_probs.squeeze(1)
-        log_priors = log_priors.squeeze(1)
 
         descaled = self.scale(samples, reverse=True)
         if self.filter_params:
             descaled, mask = self.filter_parameters(descaled)
             log_probs = log_probs[mask]
 
-        parameters = self.scale(parameters, reverse=True)
-        parameters = parameters.cpu().numpy()[0]
+        # convert samples to dictionary for
+        # calculating log probabilites
+        samples_dict = dict(
+            zip(
+                self.hparams.inference_params,
+                descaled.transpose(1, 0),
+                strict=True,
+            )
+        )
 
-        # create a dictionary of injection parameters
-        # mapping from parameter string to the true
-        # injection value, and add snr if provided
-        injection_parameters = {
-            k: float(v)
-            for k, v in zip(self.inference_params, parameters, strict=False)
-        }
-        injection_parameters["ra"] = injection_parameters["phi"]
+        log_priors = self.training_prior.log_prob(samples_dict)
 
-        if snr is not None:
-            injection_parameters["snr"] = snr[0].item()
+        # when predicting, there will be no ground truth parameters
+        injection_parameters = None
+        if parameters is not None:
+            parameters = self.scale(parameters, reverse=True)
+            parameters = parameters.cpu().numpy()[0]
+
+            # create a dictionary of injection parameters
+            # mapping from parameter string to the true
+            # injection value, and add snr if provided
+            injection_parameters = {
+                k: float(v)
+                for k, v in zip(
+                    self.inference_params, parameters, strict=False
+                )
+            }
+            injection_parameters["ra"] = injection_parameters["phi"]
+
+            if snr is not None:
+                injection_parameters["snr"] = snr[0].item()
 
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
@@ -202,29 +227,28 @@ class FlowModel(AmplfiModel):
             injection_parameters,
         )
 
-        return result
+        # optionally reweight to different prior
+        # TODO: include likelihood reweighting
+        reweighted = None
+        if self.target_prior is not None:
+            self._logger.info(
+                f"Reweighting {len(result.posterior)} posterior samples"
+            )
+            reweighted = result.reweight_to_prior(self.target_prior)
+            self._logger.info(
+                f"{len(reweighted.posterior)} posterior samples "
+                "after rejection sampling"
+            )
+
+        return result, reweighted
+
+    def test_step(self, batch, _) -> AmplfiResult:
+        strain, asds, parameters, snr = batch
+        return self.analyze_event(strain, asds, parameters, snr)
 
     def predict_step(self, batch, _):
         strain, asds, _ = batch
-        context = (strain, asds)
-
-        samples = self.model.sample(
-            self.hparams.samples_per_event, context=context
-        )
-        log_probs = self.model.log_prob(samples, context)
-        log_probs = log_probs.squeeze(1)
-        samples = samples.squeeze(1)
-        descaled = self.scale(samples, reverse=True)
-        descaled, mask = self.filter_parameters(descaled)
-
-        log_probs = log_probs[mask]
-        result = self.cast_as_bilby_result(
-            descaled.cpu().numpy(),
-            log_probs.cpu().numpy(),
-            None,
-        )
-
-        return result
+        return self.analyze_event(strain, asds, None, None)
 
     def cast_as_bilby_result(
         self,
@@ -270,6 +294,7 @@ class FlowModel(AmplfiModel):
             log_prior_evaluations=log_priors,
         )
         r.posterior["ra"] = r.posterior["phi"]
+        r.posterior["log_prior"] = log_priors
         return r
 
     def filter_parameters(self, parameters: torch.Tensor):
@@ -286,8 +311,7 @@ class FlowModel(AmplfiModel):
         net_mask = torch.ones(
             parameters.shape[0], dtype=bool, device=parameters.device
         )
-        waveform_sampler = self.trainer.datamodule.waveform_sampler
-        priors = waveform_sampler.training_prior.parameters
+        priors = self.training_prior.priors
         for i, param in enumerate(self.inference_params):
             samples = parameters[:, i]
             if param in ["dec", "psi", "phi"]:
@@ -315,13 +339,6 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
-
-        if self.target_prior is not None:
-            callbacks.append(
-                ImportanceSample(
-                    self.test_outdir / "events", self.target_prior
-                )
-            )
 
         callbacks += [ProbProbPlot()]
         if self.plot_data:
