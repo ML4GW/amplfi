@@ -39,9 +39,12 @@ class AmplfiDataset(pl.LightningDataModule):
         inference_params:
             List of parameters to perform inference on. Can be a subset
             of the parameters that fully describes the waveforms
-        dec: Distribution,
-        psi: Distribution,
-        phi: Distribution,
+        dec:
+            The distribution of declinations to sample from
+        psi:
+            The distribution of polarization angles to sample from
+        phi:
+            The distribution of "right ascensions" to sample from
         highpass:
             Highpass frequency in Hz
         sample_rate:
@@ -66,6 +69,10 @@ class AmplfiDataset(pl.LightningDataModule):
             for training, validation and testing.
             See `train.data.waveforms.sampler`
             for methods this object should define.
+        parameter_transformer:
+            A `ParameterTransformer` object that applies any
+            additional transformations to parameters before
+            they are scaled and passed to the neural network.
         train_val_range:
             Tuple of gpstimes that specify time range of
             training and validation data.
