@@ -15,8 +15,8 @@ class WaveformGenerator(WaveformSampler):
         *args,
         num_val_waveforms: int,
         num_test_waveforms: int,
-        parameter_sampler: AmplfiPrior,
-        test_parameter_sampler: Optional[AmplfiPrior] = None,
+        training_prior: AmplfiPrior,
+        testing_prior: Optional[AmplfiPrior] = None,
         num_fit_params: int,
         **kwargs,
     ):
@@ -33,7 +33,7 @@ class WaveformGenerator(WaveformSampler):
             training_prior:
                 A callable that takes an integer N and
                 returns a dictionary of parameter Tensors, each of length `N`
-            test_parameter_sampler:
+            testing_prior:
                 A callable that takes an integer N and
                 returns a dictionary of parameter Tensors, each of length `N`.
                 Used for sampling test waveforms from a prior
@@ -44,33 +44,31 @@ class WaveformGenerator(WaveformSampler):
 
         """
         super().__init__(*args, **kwargs)
-        self.parameter_sampler = parameter_sampler
-        self.test_parameter_sampler = (
-            test_parameter_sampler or parameter_sampler
-        )
+        self.training_prior = training_prior
+        self.testing_prior = testing_prior or training_prior
         self.num_val_waveforms = num_val_waveforms
         self.num_test_waveforms = num_test_waveforms
         self.num_fit_params = num_fit_params
 
     def get_val_waveforms(self, _, world_size):
         num_waveforms = self.num_val_waveforms // world_size
-        parameters = self.parameter_sampler(num_waveforms, device="cpu")
+        parameters = self.training_prior(num_waveforms, device="cpu")
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
     def get_test_waveforms(self):
-        parameters = self.test_parameter_sampler(self.num_test_waveforms)
+        parameters = self.testing_prior(self.num_test_waveforms)
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
     def sample(self, X):
         N = len(X)
-        parameters = self.parameter_sampler(N, device=X.device)
+        parameters = self.training_prior(N, device=X.device)
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
     def get_fit_params(self) -> torch.Tensor:
-        parameters = self.parameter_sampler(self.num_fit_params)
+        parameters = self.training_prior(self.num_fit_params)
         return parameters
 
     def forward(self):

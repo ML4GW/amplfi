@@ -18,7 +18,6 @@ from ..callbacks import (
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
-from scipy.special import logsumexp
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -71,6 +70,9 @@ class FlowModel(AmplfiModel):
             in the testing set to a an hdf5 file. Useful for
             testing datasets where the injection parameters are randomly
             sampled.
+        target_prior:
+            Path to a bilby prior file for reweighting posterior samples to
+            a new prior.
     """
 
     def __init__(
@@ -159,18 +161,19 @@ class FlowModel(AmplfiModel):
         )
         log_probs = self.model.log_prob(samples, context)
 
-        """
-        samples_dict = {
-            key: tensor
-            for key, tensor in zip(
-                self.hparams.inference_params, samples, strict=False
-            )
-        }
-        log_priors = self.training_prior.log_probs(samples_dict)
-        """
+        # convert samples to dictionary for
+        # calculating log probabilites
+        samples_dict = dict(
+            zip(self.hparams.inference_params, samples, strict=True)
+        )
+
+        waveform_sampler = self.trainer.datamodule.waveform_sampler
+        training_prior = waveform_sampler.training_prior
+        log_priors = training_prior.log_probs(samples_dict)
 
         samples = samples.squeeze(1)
         log_probs = log_probs.squeeze(1)
+        log_priors = log_priors.squeeze(1)
 
         descaled = self.scale(samples, reverse=True)
         if self.filter_params:
@@ -181,8 +184,8 @@ class FlowModel(AmplfiModel):
         parameters = parameters.cpu().numpy()[0]
 
         # create a dictionary of injection parameters
-        # mapping from parameter string to the true injection value
-        # and add snr if provided
+        # mapping from parameter string to the true
+        # injection value, and add snr if provided
         injection_parameters = {
             k: float(v)
             for k, v in zip(self.inference_params, parameters, strict=False)
@@ -195,6 +198,7 @@ class FlowModel(AmplfiModel):
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             log_probs.cpu().numpy(),
+            log_priors.cpu().numpy(),
             injection_parameters,
         )
 
@@ -226,6 +230,7 @@ class FlowModel(AmplfiModel):
         self,
         samples: np.ndarray,
         log_probs: np.ndarray,
+        log_priors: np.ndarray,
         injection_parameters: Optional[dict[str, float]] = None,
     ) -> AmplfiResult:
         """Cast posterior samples as Bilby Result object
@@ -235,6 +240,8 @@ class FlowModel(AmplfiModel):
             samples:
                 An array of posterior samples of shape
                 (1, num_samples, num_params)
+            log_probs:
+
             injection_parameters:
                 For injections, a dictionary mapping from parameter string
                 to the true injection value
@@ -254,16 +261,13 @@ class FlowModel(AmplfiModel):
         posterior["log_prob"] = log_probs
         posterior = pd.DataFrame(posterior)
 
-        num_samples = len(posterior)
-        log_evidence = logsumexp(posterior["log_prob"]) - np.log(num_samples)
-
         r = AmplfiResult(
             label="PEModel",
             injection_parameters=injection_parameters,
             posterior=posterior,
             search_parameter_keys=self.inference_params,
             priors=priors,
-            log_evidence=log_evidence,
+            log_prior_evaluations=log_priors,
         )
         r.posterior["ra"] = r.posterior["phi"]
         return r
@@ -283,13 +287,11 @@ class FlowModel(AmplfiModel):
             parameters.shape[0], dtype=bool, device=parameters.device
         )
         waveform_sampler = self.trainer.datamodule.waveform_sampler
-        priors = waveform_sampler.parameter_sampler.parameters
+        priors = waveform_sampler.training_prior.parameters
         for i, param in enumerate(self.inference_params):
             samples = parameters[:, i]
-            if param in ["dec", "phi", "psi"]:
-                prior = getattr(
-                    self.trainer.datamodule.waveform_sampler, param
-                )
+            if param in ["dec", "psi", "phi"]:
+                prior = getattr(self.trainer.datamodule, param)
             else:
                 prior = priors[param]
 

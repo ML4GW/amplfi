@@ -23,12 +23,6 @@ class WaveformSampler(torch.nn.Module):
             Sample rate in Hz of generated waveforms
         inference_params:
             The parameters the model will perform inference on
-        dec:
-            The distribution of declinations to sample from
-        psi:
-            The distribution of polarization angles to sample from
-        phi:
-            The distribution of "right ascensions" to sample from
         jitter:
             The amount of jitter in seconds to randomly shift
             the waveform coalescence time. If `None`, no jitter is applied.
