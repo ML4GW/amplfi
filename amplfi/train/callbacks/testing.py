@@ -39,7 +39,7 @@ class StrainVisualization(pl.Callback):
         """
 
         # unpack batch
-        strain, asds, *_ = batch
+        strain, asds, _ = batch
         strain, asds = strain[0].cpu().numpy(), asds[0].cpu().numpy()
 
         # steal some attributes needed from datamodule
@@ -781,60 +781,3 @@ class SaveInjectionParameters(pl.Callback):
             trainer.datamodule.test_parameters[param][batch_idx] = (
                 result.injection_parameters[param]
             )
-
-
-class ImportanceSample(pl.Callback):
-    """
-    Reweight an `AmplfiResult` based on a target prior
-    """
-
-    # TODO: add likelihood reweighting
-    def __init__(
-        self,
-        outdir: Path,
-        target_prior: bilby.core.prior.PriorDict,
-    ):
-        self.outdir = outdir
-        self.target_prior = bilby.core.prior.PriorDict(filename=target_prior)
-
-    def on_predict_epoch_start(self):
-        self.reweighted_results: list[AmplfiResult] = []
-
-    def on_test_epoch_start(self):
-        self.reweighted_results: list[AmplfiResult] = []
-
-    def on_test_batch_end(
-        self,
-        trainer,
-        pl_module: "FlowModel",
-        outputs,
-        batch,
-        batch_idx,
-        dataloader_idx=0,
-    ):
-        result: AmplfiResult = outputs
-        outdir = self.outdir / str(batch_idx)
-        self.importance_sample(outdir, result)
-
-    def on_predict_batch_end(
-        self,
-        trainer,
-        pl_module: "FlowModel",
-        outputs,
-        batch,
-        batch_idx,
-        dataloader_idx=0,
-    ):
-        result: AmplfiResult = outputs
-        gpstime = batch[2].cpu().numpy()[0]
-        outdir = self.outdir / str(gpstime)
-        self.importance_sample(outdir, result)
-
-    def importance_sample(self, outdir, result: AmplfiResult):
-        reweighted: AmplfiResult = bilby.core.result.reweight(
-            result, new_prior=self.target_prior
-        )
-        self.reweighted_results.append(reweighted)
-        reweighted.save_to_file(
-            outdir / "reweighted.hdf5", extension="hdf5", overwrite=True
-        )

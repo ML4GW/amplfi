@@ -13,7 +13,6 @@ from ..callbacks import (
     PlotCorner,
     SaveFITS,
     SaveInjectionParameters,
-    ImportanceSample,
 )
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
@@ -110,7 +109,10 @@ class FlowModel(AmplfiModel):
         self.cross_match = cross_match
         self.save_injection_parameters = save_injection_parameters
         self.filter_params = filter_params
-        self.target_prior = target_prior
+
+        if target_prior is not None:
+            target_prior = PriorDict(filename=str(target_prior))
+        self.target_prior: Optional[PriorDict] = target_prior
 
         if target_prior is not None:
             target_prior = PriorDict(filename=str(target_prior))
@@ -175,15 +177,32 @@ class FlowModel(AmplfiModel):
             self.target_prior.to_file(self.test_outdir, label="reweight")
             (self.test_outdir / "reweighted").mkdir(exist_ok=True)
 
+        # update the training prior to now include
+        # the extrinisc parameters, so log probabilites can be calculated
+        waveform_sampler = self.trainer.datamodule.waveform_sampler
+        training_prior = waveform_sampler.training_prior
+
+        for key in ["dec", "psi", "phi"]:
+            training_prior.priors[key] = getattr(self.trainer.datamodule, key)
+
+        self.training_prior: "AmplfiPrior" = training_prior
+
+        # if reweighting, write target prior to test directory
+        if self.target_prior is not None:
+            self.target_prior.to_file(self.test_outdir, label="reweight")
+
     def on_test_batch_end(self, outputs, *_):
         result: "AmplfiResult"
         reweighted: Optional["AmplfiResult"]
         result, reweighted = outputs
         self.test_results.append(result)
 
+<<<<<<< HEAD
         if reweighted is not None:
             self.reweighted_results.append(reweighted)
 
+=======
+>>>>>>> 3be3eba (fix callbacks to save to correct directory)
     def analyze_event(self, strain, asds, parameters=None, snr=None):
         context = (strain, asds)
         samples = self.model.sample(
@@ -191,19 +210,8 @@ class FlowModel(AmplfiModel):
         )
         log_probs = self.model.log_prob(samples, context)
 
-        # convert samples to dictionary for
-        # calculating log probabilites
-        samples_dict = dict(
-            zip(self.hparams.inference_params, samples, strict=True)
-        )
-
-        waveform_sampler = self.trainer.datamodule.waveform_sampler
-        training_prior = waveform_sampler.training_prior
-        log_priors = training_prior.log_probs(samples_dict)
-
         samples = samples.squeeze(1)
         log_probs = log_probs.squeeze(1)
-        log_priors = log_priors.squeeze(1)
 
         descaled = self.scale(samples, reverse=True)
         if self.filter_params:
@@ -220,10 +228,14 @@ class FlowModel(AmplfiModel):
             )
         )
 
+<<<<<<< HEAD
         # calculate training prior probability of posterior samples
         log_prior_of_posterior_samples = self.training_prior.log_prob(
             samples_dict
         )
+=======
+        log_priors = self.training_prior.log_prob(samples_dict)
+>>>>>>> 3be3eba (fix callbacks to save to correct directory)
 
         # when predicting, there will be no ground truth parameters
         injection_parameters = None
@@ -254,11 +266,16 @@ class FlowModel(AmplfiModel):
 
         # optionally reweight to different prior
         # TODO: include likelihood reweighting
+<<<<<<< HEAD
         reweighted_result: Optional[AmplfiResult] = None
+=======
+        reweighted = None
+>>>>>>> 3be3eba (fix callbacks to save to correct directory)
         if self.target_prior is not None:
             self._logger.info(
                 f"Reweighting {len(result.posterior)} posterior samples"
             )
+<<<<<<< HEAD
             reweighted_result = result.reweight_to_prior(self.target_prior)
             self._logger.info(
                 f"{len(reweighted_result.posterior)} posterior samples "
@@ -266,6 +283,15 @@ class FlowModel(AmplfiModel):
             )
 
         return result, reweighted_result
+=======
+            reweighted = result.reweight_to_prior(self.target_prior)
+            self._logger.info(
+                f"{len(reweighted.posterior)} posterior samples "
+                "after rejection sampling"
+            )
+
+        return result, reweighted
+>>>>>>> 3be3eba (fix callbacks to save to correct directory)
 
     def test_step(self, batch, _) -> AmplfiResult:
         strain, asds, parameters, snr = batch
@@ -368,13 +394,6 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
-
-        if self.target_prior is not None:
-            callbacks.append(
-                ImportanceSample(
-                    self.test_outdir / "events", self.target_prior
-                )
-            )
 
         callbacks += [ProbProbPlot()]
 
