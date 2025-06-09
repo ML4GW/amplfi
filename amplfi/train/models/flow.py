@@ -191,18 +191,19 @@ class FlowModel(AmplfiModel):
         )
         log_probs = self.model.log_prob(samples, context)
 
-        """
-        samples_dict = {
-            key: tensor
-            for key, tensor in zip(
-                self.hparams.inference_params, samples, strict=False
-            )
-        }
-        log_priors = self.training_prior.log_probs(samples_dict)
-        """
+        # convert samples to dictionary for
+        # calculating log probabilites
+        samples_dict = dict(
+            zip(self.hparams.inference_params, samples, strict=True)
+        )
+
+        waveform_sampler = self.trainer.datamodule.waveform_sampler
+        training_prior = waveform_sampler.training_prior
+        log_priors = training_prior.log_probs(samples_dict)
 
         samples = samples.squeeze(1)
         log_probs = log_probs.squeeze(1)
+        log_priors = log_priors.squeeze(1)
 
         descaled = self.scale(samples, reverse=True)
         if self.filter_params:

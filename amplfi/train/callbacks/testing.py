@@ -834,7 +834,6 @@ class ImportanceSample(pl.Callback):
         reweighted: AmplfiResult = bilby.core.result.reweight(
             result, new_prior=self.target_prior
         )
-
         self.reweighted_results.append(reweighted)
         reweighted.save_to_file(
             outdir / "reweighted.hdf5", extension="hdf5", overwrite=True
