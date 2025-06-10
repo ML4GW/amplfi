@@ -558,23 +558,41 @@ class CrossMatchStatistics(pl.Callback):
                     )
 
     def on_test_epoch_end(self, _, pl_module: "FlowModel"):
-        crossmatch_results: list["CrossmatchResult"] = []
-        test_outdir = pl_module.test_outdir
-        test_results = pl_module.test_results
+        self.crossmatch(
+            pl_module.test_results,
+            pl_module.test_outdir,
+            pl_module.nside,
+            pl_module.min_samples_per_pix,
+        )
 
+        if pl_module.reweighted_results:
+            self.crossmatch(
+                pl_module.reweighted_results,
+                pl_module.test_outdir,
+                pl_module.nside,
+                pl_module.min_samples_per_pix,
+            )
+
+    def crossmatch(
+        self,
+        results: list["AmplfiResult"],
+        outdir: Path,
+        nside: int,
+        min_samples_per_pix: int,
+    ) -> None:
         func = partial(
             crossmatch_skymap,
-            nside=pl_module.nside,
-            min_samples_per_pix=pl_module.min_samples_per_pix,
+            nside=nside,
+            min_samples_per_pix=min_samples_per_pix,
             contours=self.contours,
         )
 
-        crossmatch_results = [None] * len(test_results)
-        num_processes = min(mp.cpu_count(), len(test_results))
+        crossmatch_results: list["CrossmatchResult"] = [None] * len(results)
+        num_processes = min(mp.cpu_count(), len(results))
         with ProcessPoolExecutor(max_workers=num_processes) as executor:
             future_to_index = {
                 executor.submit(func, result): idx
-                for idx, result in enumerate(test_results)
+                for idx, result in enumerate(results)
             }
             for future in tqdm(
                 as_completed(future_to_index),
@@ -584,7 +602,7 @@ class CrossMatchStatistics(pl.Callback):
                 idx = future_to_index[future]
                 crossmatch_results[idx] = future.result()
 
-        self.write_skymap_statistics(test_outdir, crossmatch_results)
+        self.write_skymap_statistics(outdir, crossmatch_results)
 
         # searched area cum hist
         searched_areas = [
@@ -613,7 +631,7 @@ class CrossMatchStatistics(pl.Callback):
         plt.title("Searched Volume Cumulative Distribution Function")
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(test_outdir / "plots" / "searched_volume.png")
+        plt.savefig(outdir / "plots" / "searched_volume.png")
 
         # searched area cum hist
         plt.figure(figsize=(10, 6))
@@ -624,7 +642,7 @@ class CrossMatchStatistics(pl.Callback):
         plt.title("Searched Area Cumulative Distribution Function")
         plt.grid()
         plt.axhline(0.5, color="grey", linestyle="--")
-        plt.savefig(test_outdir / "plots" / "searched_area.png")
+        plt.savefig(outdir / "plots" / "searched_area.png")
 
         plt.close()
         plt.figure(figsize=(10, 6))
@@ -636,7 +654,7 @@ class CrossMatchStatistics(pl.Callback):
         )
         plt.xlabel("Sq. deg.")
         plt.legend()
-        plt.savefig(test_outdir / "plots" / "fifty_ninety_areas.png")
+        plt.savefig(outdir / "plots" / "fifty_ninety_areas.png")
         plt.close()
 
         # searched prob pp-plot
@@ -675,7 +693,7 @@ class CrossMatchStatistics(pl.Callback):
         ax.set_ylabel("Fraction of events in credible interval")
         ax.grid(True)
         ax.legend()
-        fig.savefig(test_outdir / "plots" / "searched_prob_pp_plot.png")
+        fig.savefig(outdir / "plots" / "searched_prob_pp_plot.png")
         plt.close()
 
         # searched prob-vol pp-plot
@@ -714,7 +732,7 @@ class CrossMatchStatistics(pl.Callback):
         ax.set_ylabel("Fraction of events in credible interval")
         ax.grid(True)
         ax.legend()
-        fig.savefig(test_outdir / "plots" / "searched_prob_vol_pp_plot.png")
+        fig.savefig(outdir / "plots" / "searched_prob_vol_pp_plot.png")
         plt.close()
 
 

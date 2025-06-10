@@ -155,6 +155,7 @@ class FlowModel(AmplfiModel):
 
     def on_test_epoch_start(self):
         self.test_results: list[AmplfiResult] = []
+        self.reweighted_results: list[AmplfiResult] = []
 
         # update the training prior to now include
         # the extrinisc parameters, so log probabilites can be calculated
@@ -171,7 +172,13 @@ class FlowModel(AmplfiModel):
             self.target_prior.to_file(self.test_outdir, label="reweight")
 
     def on_test_batch_end(self, outputs, *_):
-        self.test_results.append(outputs)
+        result: "AmplfiResult"
+        reweighted: Optional["AmplfiResult"]
+        result, reweighted = outputs
+        self.test_results.append(result)
+
+        if reweighted is not None:
+            self.reweighted_results.append(reweighted)
 
     def analyze_event(self, strain, asds, parameters=None, snr=None):
         context = (strain, asds)
