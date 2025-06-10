@@ -373,7 +373,6 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
-
         callbacks += [ProbProbPlot()]
 
         event_outdir = self.test_outdir / "events"
