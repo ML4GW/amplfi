@@ -197,12 +197,9 @@ class FlowModel(AmplfiModel):
         result, reweighted = outputs
         self.test_results.append(result)
 
-<<<<<<< HEAD
         if reweighted is not None:
             self.reweighted_results.append(reweighted)
 
-=======
->>>>>>> 3be3eba (fix callbacks to save to correct directory)
     def analyze_event(self, strain, asds, parameters=None, snr=None):
         context = (strain, asds)
         samples = self.model.sample(
@@ -228,14 +225,10 @@ class FlowModel(AmplfiModel):
             )
         )
 
-<<<<<<< HEAD
         # calculate training prior probability of posterior samples
         log_prior_of_posterior_samples = self.training_prior.log_prob(
             samples_dict
         )
-=======
-        log_priors = self.training_prior.log_prob(samples_dict)
->>>>>>> 3be3eba (fix callbacks to save to correct directory)
 
         # when predicting, there will be no ground truth parameters
         injection_parameters = None
@@ -266,16 +259,11 @@ class FlowModel(AmplfiModel):
 
         # optionally reweight to different prior
         # TODO: include likelihood reweighting
-<<<<<<< HEAD
         reweighted_result: Optional[AmplfiResult] = None
-=======
-        reweighted = None
->>>>>>> 3be3eba (fix callbacks to save to correct directory)
         if self.target_prior is not None:
             self._logger.info(
                 f"Reweighting {len(result.posterior)} posterior samples"
             )
-<<<<<<< HEAD
             reweighted_result = result.reweight_to_prior(self.target_prior)
             self._logger.info(
                 f"{len(reweighted_result.posterior)} posterior samples "
@@ -283,15 +271,6 @@ class FlowModel(AmplfiModel):
             )
 
         return result, reweighted_result
-=======
-            reweighted = result.reweight_to_prior(self.target_prior)
-            self._logger.info(
-                f"{len(reweighted.posterior)} posterior samples "
-                "after rejection sampling"
-            )
-
-        return result, reweighted
->>>>>>> 3be3eba (fix callbacks to save to correct directory)
 
     def test_step(self, batch, _) -> AmplfiResult:
         strain, asds, parameters, snr = batch
