@@ -154,6 +154,7 @@ class FlowModel(AmplfiModel):
         self.on_test_epoch_start()
 
     def on_test_epoch_start(self):
+        self.test_outdir.mkdir(exist_ok=True, parents=True)
         self.test_results: list[AmplfiResult] = []
         self.reweighted_results: list[AmplfiResult] = []
 
@@ -170,6 +171,7 @@ class FlowModel(AmplfiModel):
         # if reweighting, write target prior to test directory
         if self.target_prior is not None:
             self.target_prior.to_file(self.test_outdir, label="reweight")
+            (self.test_outdir / "reweighted").mkdir(exist_ok=True)
 
     def on_test_batch_end(self, outputs, *_):
         result: "AmplfiResult"
@@ -346,18 +348,16 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
-
         callbacks += [ProbProbPlot()]
-        if self.plot_data:
-            callbacks.append(
-                StrainVisualization(self.test_outdir / "events", self.num_plot)
-            )
-
-        if self.save_injection_parameters:
-            callbacks.append(SaveInjectionParameters(self.test_outdir))
 
         event_outdir = self.test_outdir / "events"
         event_outdir.mkdir(parents=True, exist_ok=True)
+
+        if self.plot_data:
+            callbacks.append(StrainVisualization(event_outdir, self.num_plot))
+
+        if self.save_injection_parameters:
+            callbacks.append(SaveInjectionParameters(self.test_outdir))
 
         if self.save_fits:
             callbacks.append(

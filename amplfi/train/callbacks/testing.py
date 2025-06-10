@@ -484,14 +484,15 @@ class ProbProbPlot(pl.Callback):
             keys=pl_module.inference_params,
         )
 
-        bilby.result.make_pp_plot(
-            pl_module.reweighted_results,
-            save=True,
-            filename=pl_module.test_outdir
-            / "plots"
-            / "reweighted-pp-plot.png",
-            keys=pl_module.inference_params,
-        )
+        if pl_module.reweighted_results:
+            outdir = pl_module.test_outdir / "reweighted" / "plots"
+            outdir.mkdir(exist_ok=True, parents=True)
+            bilby.result.make_pp_plot(
+                pl_module.reweighted_results,
+                save=True,
+                filename=outdir / "pp-plot.png",
+                keys=pl_module.inference_params,
+            )
 
 
 def crossmatch_skymap(
@@ -539,6 +540,7 @@ class CrossMatchStatistics(pl.Callback):
         Write skymap statistics to file
         """
 
+        outdir.mkdir(exist_ok=True)
         with h5py.File(outdir / "skymap_stats.hdf5", "w") as f:
             for attr in self.crossmatch_attributes:
                 if attr == "contour_areas":
@@ -568,7 +570,7 @@ class CrossMatchStatistics(pl.Callback):
         if pl_module.reweighted_results:
             self.crossmatch(
                 pl_module.reweighted_results,
-                pl_module.test_outdir,
+                pl_module.test_outdir / "reweighted",
                 pl_module.nside,
                 pl_module.min_samples_per_pix,
             )
@@ -580,6 +582,7 @@ class CrossMatchStatistics(pl.Callback):
         nside: int,
         min_samples_per_pix: int,
     ) -> None:
+        (outdir / "plots").mkdir(exist_ok=True)
         func = partial(
             crossmatch_skymap,
             nside=nside,
