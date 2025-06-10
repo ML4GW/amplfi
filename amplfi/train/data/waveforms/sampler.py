@@ -67,7 +67,7 @@ class WaveformSampler(torch.nn.Module):
     def get_test_waveforms(self):
         raise NotImplementedError
 
-    def get_fit_parameters(belf):
+    def get_fit_parameters(self):
         raise NotImplementedError
 
     def sample(self, X: torch.Tensor):

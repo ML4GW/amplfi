@@ -11,7 +11,8 @@ from ml4gw.transforms import ChannelWiseScaler, Whiten
 
 from ...augmentations import PsdEstimator, WaveformProjector
 from ..utils import fs as fs_utils
-from ..utils.utils import ZippedDataset, ParameterTransformer
+from ..utils.utils import ZippedDataset
+from amplfi.train.prior import ParameterTransformer
 from ..waveforms.sampler import WaveformSampler
 import numpy as np
 from pathlib import Path
@@ -390,7 +391,8 @@ class AmplfiDataset(pl.LightningDataModule):
     def fit_scaler(self):
         scaler = ChannelWiseScaler(self.num_params)
         parameters = self.waveform_sampler.get_fit_parameters()
-        dec, psi, phi = self.sample_extrinsic(parameters.shape[-1])
+        key = list(parameters.keys())[0]
+        dec, psi, phi = self.sample_extrinsic(parameters[key])
         parameters["dec"] = dec
         parameters["psi"] = psi
         parameters["phi"] = phi
@@ -433,6 +435,7 @@ class AmplfiDataset(pl.LightningDataModule):
         # modules are all still on CPU.
         # get_val_waveforms should be implemented by waveform_sampler object
         if stage in ["fit", "validate"]:
+            self._logger.info("Loading waveforms for validation")
             cross, plus, parameters = self.waveform_sampler.get_val_waveforms(
                 rank, world_size
             )

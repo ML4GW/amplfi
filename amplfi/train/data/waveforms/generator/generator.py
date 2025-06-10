@@ -67,7 +67,7 @@ class WaveformGenerator(WaveformSampler):
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
-    def get_fit_params(self) -> torch.Tensor:
+    def get_fit_parameters(self) -> torch.Tensor:
         parameters = self.training_prior(self.num_fit_params)
         return parameters
 
