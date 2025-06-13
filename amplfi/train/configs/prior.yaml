@@ -1,8 +1,8 @@
 # default prior for use with `IMRPhenomPv2`
-class_path: amplfi.train.data.utils.utils.ParameterSampler
+class_path: amplfi.train.prior.AmplfiPrior
 init_args:
   conversion_function: amplfi.train.conversion.precessing_to_lalsimulation_parameters
-  parameters:
+  priors:
     chirp_mass: 
       class_path: torch.distributions.Uniform
       init_args:

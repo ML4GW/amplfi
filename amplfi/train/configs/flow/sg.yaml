@@ -60,8 +60,21 @@ model:
 data:
   class_path: amplfi.train.data.datasets.FlowDataset
   init_args:
+    dec: 
+      class_path: ml4gw.distributions.Cosine
+    psi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0
+        high: 3.14 
+    phi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: -3.14
+        high: 3.14
     data_dir: ${oc.env:AMPLFI_DATADIR}
     inference_params: ["frequency", "quality", "hrss", "phase",  "eccentricity", "dec", "psi", "phi"]
+    parameter_transformer: amplfi.train.priors.sg_transformer
     highpass: 25
     sample_rate: 2048
     kernel_length: 5
@@ -77,18 +90,6 @@ data:
       init_args:
         num_fit_params: 100000
         num_test_waveforms: 1000
-        parameter_transformer: amplfi.train.priors.sg_transformer
-        parameter_sampler: amplfi.train.priors.sg_prior
-        dec: 
-          class_path: ml4gw.distributions.Cosine
-        psi: 
-          class_path: torch.distributions.Uniform
-          init_args:
-            low: 0
-            high: 3.14 
-        phi: 
-          class_path: torch.distributions.Uniform
-          init_args:
-            low: -3.14
-            high: 3.14
+        training_prior: amplfi.train.priors.sg_prior
+        testing_prior: null
         num_val_waveforms: 10000

@@ -14,7 +14,7 @@ class FlowDataset(AmplfiDataset):
         self.whitener.to(self.device)
 
         X, psds = self.psd_estimator(X)
-        dec, psi, phi = self.waveform_sampler.sample_extrinsic(X)
+        dec, psi, phi = self.sample_extrinsic(X)
 
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
 
