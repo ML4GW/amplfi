@@ -71,7 +71,7 @@ class StrainTestingDataset(FlowDataset):
         parameters = {}
         with h5py.File(self.dataset_path, "r") as f:
             for ifo in self.hparams.ifos:
-                strain.append(torch.tensor(f[ifo][:2], dtype=torch.float32))
+                strain.append(torch.tensor(f[ifo][:], dtype=torch.float32))
 
             for parameter in self.hparams.inference_params + ["ra", "gpstime"]:
                 # skip phi since these are proper injections
@@ -81,7 +81,7 @@ class StrainTestingDataset(FlowDataset):
                     continue
 
                 parameters[parameter] = torch.tensor(
-                    f[parameter][:2], dtype=torch.float32
+                    f[parameter][:], dtype=torch.float32
                 )
 
         # convert ra to phi
