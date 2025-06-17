@@ -1,6 +1,6 @@
 [project]
 name = "amplfi"
-version = "0.4.0"
+version = "0.5.0"
 description = "Accelerated Multi-messenger PE with Likelihood Free Inference"
 authors = [
     { name = "Ethan Marx" },
