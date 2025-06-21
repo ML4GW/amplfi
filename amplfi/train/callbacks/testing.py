@@ -39,7 +39,7 @@ class StrainVisualization(pl.Callback):
         """
 
         # unpack batch
-        strain, asds, _ = batch
+        strain, asds, *_ = batch
         strain, asds = strain[0].cpu().numpy(), asds[0].cpu().numpy()
 
         # steal some attributes needed from datamodule
