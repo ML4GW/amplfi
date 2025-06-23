@@ -10,10 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ligo.skymap.postprocess.crossmatch import crossmatch, CrossmatchResult
 from copy import copy
-<<<<<<< HEAD
 import pandas as pd
-=======
->>>>>>> 3be3eba (fix callbacks to save to correct directory)
 
 
 class AmplfiResult(bilby.result.Result):
