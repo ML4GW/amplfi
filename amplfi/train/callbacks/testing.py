@@ -248,6 +248,7 @@ class PlotMollview(pl.Callback):
         reweighted: Optional["AmplfiResult"]
         result, reweighted = outputs
 
+        # TODO: remove "magic" index 2
         gpstime = batch[2].cpu().numpy()[0]
         outdir = self.outdir / str(int(gpstime))
         outdir.mkdir(exist_ok=True)
