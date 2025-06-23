@@ -114,10 +114,6 @@ class FlowModel(AmplfiModel):
             target_prior = PriorDict(filename=str(target_prior))
         self.target_prior: Optional[PriorDict] = target_prior
 
-        if target_prior is not None:
-            target_prior = PriorDict(filename=str(target_prior))
-        self.target_prior: Optional[PriorDict] = target_prior
-
         # save our hyperparameters
         self.save_hyperparameters(ignore=["arch"])
 
@@ -176,20 +172,6 @@ class FlowModel(AmplfiModel):
         if self.target_prior is not None:
             self.target_prior.to_file(self.test_outdir, label="reweight")
             (self.test_outdir / "reweighted").mkdir(exist_ok=True)
-
-        # update the training prior to now include
-        # the extrinisc parameters, so log probabilites can be calculated
-        waveform_sampler = self.trainer.datamodule.waveform_sampler
-        training_prior = waveform_sampler.training_prior
-
-        for key in ["dec", "psi", "phi"]:
-            training_prior.priors[key] = getattr(self.trainer.datamodule, key)
-
-        self.training_prior: "AmplfiPrior" = training_prior
-
-        # if reweighting, write target prior to test directory
-        if self.target_prior is not None:
-            self.target_prior.to_file(self.test_outdir, label="reweight")
 
     def on_test_batch_end(self, outputs, *_):
         result: "AmplfiResult"
