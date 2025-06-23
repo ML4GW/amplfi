@@ -9,6 +9,8 @@ from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
 import numpy as np
 from ligo.skymap.postprocess.crossmatch import crossmatch, CrossmatchResult
+from copy import copy
+import pandas as pd
 
 
 class AmplfiResult(bilby.result.Result):
@@ -112,3 +114,31 @@ class AmplfiResult(bilby.result.Result):
         plt.savefig(outpath)
 
         return fig
+
+    def reweight_to_prior(
+        self,
+        target_prior: bilby.core.prior.PriorDict,
+        max_rejection_steps: int = 1,
+    ) -> "AmplfiResult":
+        reweighted_result = copy(self)
+        keys = list(target_prior.keys())
+        samples_dict = {key: self.posterior[key].values for key in keys}
+        target_probs = target_prior.ln_prob(samples_dict, axis=0)
+        ln_weights = target_probs - self.posterior["log_prior"].values
+        weights = np.exp(ln_weights)
+
+        num_samples = len(self.posterior)
+        reweighted_posterior = pd.DataFrame(columns=self.posterior.columns)
+        for _ in range(max_rejection_steps):
+            if len(reweighted_posterior) >= num_samples:
+                break
+
+            samples = bilby.core.result.rejection_sample(
+                self.posterior, weights
+            )
+            reweighted_posterior = pd.concat(
+                [reweighted_posterior, samples], ignore_index=True
+            )
+
+        reweighted_result.posterior = reweighted_posterior[:num_samples]
+        return reweighted_result

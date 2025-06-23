@@ -43,8 +43,6 @@ class AmplfiModel(pl.LightningModule):
         if test_outdir is None:
             test_outdir = train_outdir / "test_results"
 
-        train_outdir.mkdir(exist_ok=True)
-        test_outdir.mkdir(exist_ok=True)
         self.test_outdir = test_outdir
         self.train_outdir = train_outdir
 
@@ -55,6 +53,9 @@ class AmplfiModel(pl.LightningModule):
         # initialize an unfit scaler here so that it is available
         # for the LightningModule to save and load from checkpoints
         self.scaler = ChannelWiseScaler(len(inference_params))
+
+    def on_train_start(self):
+        self.train_outdir.mkdir(exist_ok=True, parents=True)
 
     def init_logging(self, verbose):
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

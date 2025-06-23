@@ -12,6 +12,7 @@ from ml4gw.transforms import ChannelWiseScaler, Whiten
 from ...augmentations import PsdEstimator, WaveformProjector
 from ..utils import fs as fs_utils
 from ..utils.utils import ZippedDataset
+from amplfi.train.prior import ParameterTransformer
 from ..waveforms.sampler import WaveformSampler
 import numpy as np
 from pathlib import Path
@@ -39,6 +40,12 @@ class AmplfiDataset(pl.LightningDataModule):
         inference_params:
             List of parameters to perform inference on. Can be a subset
             of the parameters that fully describes the waveforms
+        dec:
+            The distribution of declinations to sample from
+        psi:
+            The distribution of polarization angles to sample from
+        phi:
+            The distribution of "right ascensions" to sample from
         highpass:
             Highpass frequency in Hz
         sample_rate:
@@ -63,6 +70,10 @@ class AmplfiDataset(pl.LightningDataModule):
             for training, validation and testing.
             See `train.data.waveforms.sampler`
             for methods this object should define.
+        parameter_transformer:
+            A `ParameterTransformer` object that applies any
+            additional transformations to parameters before
+            they are scaled and passed to the neural network.
         train_val_range:
             Tuple of gpstimes that specify time range of
             training and validation data.
@@ -90,6 +101,9 @@ class AmplfiDataset(pl.LightningDataModule):
         self,
         data_dir: str,
         inference_params: list[str],
+        dec: Distribution,
+        psi: Distribution,
+        phi: Distribution,
         highpass: float,
         sample_rate: float,
         kernel_length: float,
@@ -99,6 +113,7 @@ class AmplfiDataset(pl.LightningDataModule):
         batch_size: int,
         ifos: List[str],
         waveform_sampler: WaveformSampler,
+        parameter_transformer: Optional[ParameterTransformer] = None,
         fftlength: Optional[int] = None,
         train_val_range: Optional[tuple[float, float]] = None,
         test_range: Optional[tuple[float, float]] = None,
@@ -118,6 +133,9 @@ class AmplfiDataset(pl.LightningDataModule):
         self.init_logging(verbose)
         self.waveform_sampler = waveform_sampler
         self.max_num_workers = max_num_workers
+
+        self.dec, self.psi, self.phi = dec, psi, phi
+        self.parameter_transformer = parameter_transformer or (lambda x: x)
 
         # generate our local node data directory
         # if our specified data source is remote
@@ -182,7 +200,7 @@ class AmplfiDataset(pl.LightningDataModule):
         and performing training/inference.
         For example, taking logarithm of hrss
         """
-        return self.waveform_sampler.parameter_transformer(parameters)
+        return self.parameter_transformer(parameters)
 
     def scale(self, parameters, reverse: bool = False):
         """
@@ -354,12 +372,39 @@ class AmplfiDataset(pl.LightningDataModule):
             self.scaler = self.trainer.model.scaler
         else:
             self._logger.info("Fitting standard scaler to parameters")
-            scaler = ChannelWiseScaler(self.num_params)
-            self.scaler = self.waveform_sampler.fit_scaler(scaler)
+            self.scaler = self.fit_scaler()
 
         self.projector = WaveformProjector(
             self.hparams.ifos, self.hparams.sample_rate
         )
+
+    def sample_extrinsic(self, X: torch.Tensor):
+        """
+        Sample extrinsic parameters used to project waveforms
+        """
+        N = len(X)
+        dec = self.dec.sample((N,)).to(X.device)
+        psi = self.psi.sample((N,)).to(X.device)
+        phi = self.phi.sample((N,)).to(X.device)
+        return dec, psi, phi
+
+    def fit_scaler(self):
+        scaler = ChannelWiseScaler(self.num_params)
+        parameters = self.waveform_sampler.get_fit_parameters()
+        key = list(parameters.keys())[0]
+        dec, psi, phi = self.sample_extrinsic(parameters[key])
+        parameters["dec"] = dec
+        parameters["psi"] = psi
+        parameters["phi"] = phi
+
+        transformed = self.parameter_transformer(parameters)
+        fit = []
+        for key in self.hparams.inference_params:
+            fit.append(transformed[key])
+
+        fit = torch.row_stack(fit)
+        scaler.fit(fit)
+        return scaler
 
     def setup(self, stage: str) -> None:
         world_size, rank = self.get_world_size_and_rank()
@@ -390,6 +435,7 @@ class AmplfiDataset(pl.LightningDataModule):
         # modules are all still on CPU.
         # get_val_waveforms should be implemented by waveform_sampler object
         if stage in ["fit", "validate"]:
+            self._logger.info("Loading waveforms for validation")
             cross, plus, parameters = self.waveform_sampler.get_val_waveforms(
                 rank, world_size
             )
@@ -669,7 +715,7 @@ class AmplfiDataset(pl.LightningDataModule):
                     "No segment in testing directory containing "
                     f"{time}. Using random segment"
                 )
-                file = random.choice()
+                file = random.choice(fnames)
                 start, length = list(
                     map(float, file.name.split(".")[0].split("-")[1:])
                 )
