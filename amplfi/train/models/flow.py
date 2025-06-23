@@ -241,18 +241,18 @@ class FlowModel(AmplfiModel):
 
         # optionally reweight to different prior
         # TODO: include likelihood reweighting
-        reweighted = None
+        reweighted_result: Optional[AmplfiResult] = None
         if self.target_prior is not None:
             self._logger.info(
                 f"Reweighting {len(result.posterior)} posterior samples"
             )
-            reweighted = result.reweight_to_prior(self.target_prior)
+            reweighted_result = result.reweight_to_prior(self.target_prior)
             self._logger.info(
-                f"{len(reweighted.posterior)} posterior samples "
+                f"{len(reweighted_result.posterior)} posterior samples "
                 "after rejection sampling"
             )
 
-        return result, reweighted
+        return result, reweighted_result
 
     def test_step(self, batch, _) -> AmplfiResult:
         strain, asds, parameters, snr = batch
