@@ -207,7 +207,10 @@ class FlowModel(AmplfiModel):
             )
         )
 
-        log_priors = self.training_prior.log_prob(samples_dict)
+        # calculate training prior probability of posterior samples
+        log_prior_of_posterior_samples = self.training_prior.log_prob(
+            samples_dict
+        )
 
         # when predicting, there will be no ground truth parameters
         injection_parameters = None
@@ -232,7 +235,7 @@ class FlowModel(AmplfiModel):
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             log_probs.cpu().numpy(),
-            log_priors.cpu().numpy(),
+            log_prior_of_posterior_samples.cpu().numpy(),
             injection_parameters,
         )
 
