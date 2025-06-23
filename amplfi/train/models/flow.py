@@ -266,7 +266,7 @@ class FlowModel(AmplfiModel):
         self,
         samples: np.ndarray,
         log_probs: np.ndarray,
-        log_priors: np.ndarray,
+        log_prior_probs: np.ndarray,
         injection_parameters: Optional[dict[str, float]] = None,
     ) -> AmplfiResult:
         """Cast posterior samples as Bilby Result object
@@ -277,7 +277,11 @@ class FlowModel(AmplfiModel):
                 An array of posterior samples of shape
                 (1, num_samples, num_params)
             log_probs:
-
+                An array of log probabilities of posterior samples
+                as predicted under the normalizing flow model
+            log_prior_probs:
+                An array of log prior probabilities of posterior samples
+                as predicted under the training prior
             injection_parameters:
                 For injections, a dictionary mapping from parameter string
                 to the true injection value
@@ -303,10 +307,10 @@ class FlowModel(AmplfiModel):
             posterior=posterior,
             search_parameter_keys=self.inference_params,
             priors=priors,
-            log_prior_evaluations=log_priors,
+            log_prior_evaluations=log_prior_probs,
         )
         r.posterior["ra"] = r.posterior["phi"]
-        r.posterior["log_prior"] = log_priors
+        r.posterior["log_prior"] = log_prior_probs
         return r
 
     def filter_parameters(self, parameters: torch.Tensor):
