@@ -729,8 +729,7 @@ class AmplfiDataset(pl.LightningDataModule):
             end_idx = middle_idx + num_post
             with h5py.File(file) as f:
                 for ifo in self.hparams.ifos:
-                    data = f[ifo][start_idx:end_idx]
-                    strain.append(data)
+                    strain.append(f[ifo][start_idx:end_idx])
                 strain = np.stack(strain, axis=0)
                 background.append(strain)
         background = np.stack(background, axis=0)
