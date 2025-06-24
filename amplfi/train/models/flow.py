@@ -231,7 +231,6 @@ class FlowModel(AmplfiModel):
 
             if snr is not None:
                 injection_parameters["snr"] = snr[0].item()
-
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             log_probs.cpu().numpy(),
