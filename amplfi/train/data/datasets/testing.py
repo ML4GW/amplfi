@@ -193,7 +193,7 @@ class ParameterTestingDataset(FlowDataset):
             An optional list of parameters that is used for generating
             waveforms. If left as `None`, the waveform generation
             parameters will be assumed to be the keys from the
-            `waveform_sampler.parameter_sampler` object.
+            `waveform_sampler.training_prior` object.
     """
 
     def __init__(
@@ -209,9 +209,7 @@ class ParameterTestingDataset(FlowDataset):
         # by default, assume waveform generation parameters are those
         # specified in the parameter sampler parameter keys;
         # otherwise, use user passed parameters
-        prior_keys = list(
-            self.waveform_sampler.parameter_sampler.parameters.keys()
-        )
+        prior_keys = list(self.waveform_sampler.training_prior.priors.keys())
 
         self.waveform_generation_parameters = (
             prior_keys
@@ -250,7 +248,7 @@ class ParameterTestingDataset(FlowDataset):
         # if we're generating from
         if self.convert:
             parameters = (
-                self.waveform_sampler.parameter_sampler.conversion_function(
+                self.waveform_sampler.training_prior.conversion_function(
                     parameters
                 )
             )

@@ -32,7 +32,7 @@ jobs:
       - name: Install the project
         run: |
             apt-get update
-            apt-get install -y build-essential
+            apt-get install -y build-essential libkrb5-dev 
             apt-get clean
             uv sync --all-extras --dev
             

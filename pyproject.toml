@@ -20,7 +20,7 @@ dependencies = [
     "urllib3>=1.25.4,<1.27",
     "omegaconf>=2.3.0,<3",
     "law>=0.1.19",
-    "mldatafind>=0.1.7",
+    "mldatafind>=0.1.8",
     "luigi>=3.5.1,<4",
     "gwpy>=3.0.12",
     "wandb>=0.18.5,<0.19",
@@ -58,8 +58,6 @@ default-groups = [
     "docs",
 ]
 
-[tool.uv.sources]
-ml4gw = { git = "https://github.com/ML4GW/ml4gw.git" }
 
 [build-system]
 requires = ["hatchling"]

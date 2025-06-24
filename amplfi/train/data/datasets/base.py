@@ -720,15 +720,13 @@ class AmplfiDataset(pl.LightningDataModule):
                     map(float, file.name.split(".")[0].split("-")[1:])
                 )
                 time = start + random.randint(
-                    -int(pre),
+                    -int(pre // 1),
                     int(length - post),
                 )
-
             # convert from time to index in file
             middle_idx = int((time - start) * self.hparams.sample_rate)
             start_idx = middle_idx + num_pre
             end_idx = middle_idx + num_post
-
             with h5py.File(file) as f:
                 for ifo in self.hparams.ifos:
                     strain.append(f[ifo][start_idx:end_idx])
