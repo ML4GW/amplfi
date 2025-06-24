@@ -13,7 +13,7 @@ mkdir -p /cvmfs /hdfs /gpfs /ceph /hadoop
 
 # install git for pip installation from github
 apt-get update
-apt-get install -y --no-install-recommends git 
+apt-get install -y --no-install-recommends git
 apt-get clean
 
 # activate micromamba and create environment from lockfile
