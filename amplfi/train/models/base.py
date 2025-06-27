@@ -84,11 +84,7 @@ class AmplfiModel(pl.LightningModule):
             return world_size, rank
 
     def setup(self, stage):
-        if stage == "fit":
-            # if we're fitting, store an instance of the
-            # fit scaler in the model
-            # so that its weights can be checkpointed
-            self.scaler = self.trainer.datamodule.scaler
+        self.scaler = self.trainer.datamodule.scaler
 
     def configure_optimizers(self):
         if not torch.distributed.is_initialized():

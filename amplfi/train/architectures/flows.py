@@ -58,7 +58,7 @@ class FlowArchitecture(torch.nn.Module):
             embedded_context = self.embedding_net(context)
         return self.flow(embedded_context).log_prob(x)
 
-    def sample(self, n, context):
+    def sample(self, n: int, context: torch.Tensor):
         """Wrapper around :meth:`sample` from
         `TransformedDistribution` object.
         """
