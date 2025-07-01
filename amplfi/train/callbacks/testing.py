@@ -791,12 +791,22 @@ class EstimateSamplingLatency(pl.Callback):
     a forward pass on a batch of data and measuring the time taken.
     """
 
-    def __init__(self, num_samples: int = 20000, num_trials: int = 5):
+    def __init__(self, num_samples: int = 20000, num_trials: int = 10):
         self.num_samples = num_samples
         self.num_trials = num_trials
         self.logger = logging.getLogger("EstimateSamplingLatency")
 
-    def on_test_epoch_start(self, trainer, pl_module: "FlowModel"):
+        class WrappedSample(torch.nn.Module):
+            def __init__(self, module):
+                super().__init__()
+                self.module = module
+
+            def forward(self, num_samples, context):
+                return self.module.sample(num_samples, context)
+
+        self.wrapper = WrappedSample
+
+    def on_test_start(self, trainer, pl_module: "FlowModel"):
         batch = next(iter(trainer.datamodule.test_dataloader()))
         batch = trainer.datamodule.transfer_batch_to_device(
             batch, pl_module.device, 0
@@ -808,7 +818,7 @@ class EstimateSamplingLatency(pl.Callback):
         times = []
         self.logger.info(
             "Estimating sampling latency by sampling "
-            " {self.num_samples} samples {self.num_trials} times..."
+            f" {self.num_samples} samples {self.num_trials} times..."
         )
         with torch.no_grad():
             for i in range(self.num_trials):
@@ -831,3 +841,6 @@ class EstimateSamplingLatency(pl.Callback):
                 self.logger.info(f"Trial {i + 1}: {elapsed_time:.2f} s")
         avg_time = np.mean(times)
         self.logger.info(f"Mean time: {avg_time:.2f} s")
+
+    def on_train_start(self, trainer, pl_module):
+        return self.on_test_start(trainer, pl_module)
