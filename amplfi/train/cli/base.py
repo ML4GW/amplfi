@@ -1,6 +1,7 @@
 from lightning.pytorch.cli import LightningCLI
 
 from ..callbacks import SaveConfigCallback
+import torch
 
 
 class AmplfiBaseCLI(LightningCLI):
@@ -12,7 +13,14 @@ class AmplfiBaseCLI(LightningCLI):
         kwargs["save_config_kwargs"] = {"overwrite": True}
         super().__init__(*args, **kwargs)
 
+    def after_instantiate_classes(self) -> None:
+        super().after_instantiate_classes()
+        torch.set_float32_matmul_precision(
+            self._get(self.config, "matmul_precision")
+        )
+
     def add_arguments_to_parser(self, parser):
+        parser.add_argument("--matmul_precision", type=str, default="highest")
         parser.link_arguments(
             "data.init_args.sample_rate",
             "data.init_args.waveform_sampler.init_args.sample_rate",

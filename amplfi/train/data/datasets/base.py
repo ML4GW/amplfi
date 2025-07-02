@@ -367,7 +367,7 @@ class AmplfiDataset(pl.LightningDataModule):
         # parameters to fit the scaler.
         # Only fit the scaler during training.
         # During testing, use pre-fit parameters
-        if stage in ["predict", "test"]:
+        if stage in ["predict", "test"] and self.trainer.model.scaler.built:
             self._logger.info("Using pre-fit standard scaler")
             self.scaler = self.trainer.model.scaler
         else:

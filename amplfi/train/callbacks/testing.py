@@ -1,3 +1,5 @@
+import logging
+import torch
 from functools import partial
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
@@ -781,3 +783,54 @@ class SaveInjectionParameters(pl.Callback):
             trainer.datamodule.test_parameters[param][batch_idx] = (
                 result.injection_parameters[param]
             )
+
+
+class EstimateSamplingLatency(pl.Callback):
+    """
+    Estimate the sampling latency of the model by running
+    a forward pass on a batch of data and measuring the time taken.
+    """
+
+    def __init__(self, num_samples: int = 20000, num_trials: int = 10):
+        self.num_samples = num_samples
+        self.num_trials = num_trials
+        self.logger = logging.getLogger("EstimateSamplingLatency")
+
+    def on_test_start(self, trainer, pl_module: "FlowModel"):
+        batch = next(iter(trainer.datamodule.test_dataloader()))
+        batch = trainer.datamodule.transfer_batch_to_device(
+            batch, pl_module.device, 0
+        )
+        strain, asds, _, _ = trainer.datamodule.on_after_batch_transfer(
+            batch, None
+        )
+        context = (strain, asds)
+        times = []
+        self.logger.info(
+            "Estimating sampling latency by sampling "
+            f" {self.num_samples} samples {self.num_trials} times..."
+        )
+        with torch.no_grad():
+            for i in range(self.num_trials):
+                start_time = torch.cuda.Event(enable_timing=True)
+                end_time = torch.cuda.Event(enable_timing=True)
+
+                start_time.record()
+                _ = pl_module.model.sample(
+                    self.num_samples,
+                    context,
+                )
+                end_time.record()
+
+                # wait for the events to be recorded
+                torch.cuda.synchronize()
+
+                # convert to seconds
+                elapsed_time = start_time.elapsed_time(end_time) / 1000
+                times.append(elapsed_time)
+                self.logger.info(f"Trial {i + 1}: {elapsed_time:.2f} s")
+        avg_time = np.mean(times)
+        self.logger.info(f"Mean time: {avg_time:.2f} s")
+
+    def on_train_start(self, trainer, pl_module):
+        return self.on_test_start(trainer, pl_module)
