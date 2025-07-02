@@ -796,16 +796,6 @@ class EstimateSamplingLatency(pl.Callback):
         self.num_trials = num_trials
         self.logger = logging.getLogger("EstimateSamplingLatency")
 
-        class WrappedSample(torch.nn.Module):
-            def __init__(self, module):
-                super().__init__()
-                self.module = module
-
-            def forward(self, num_samples, context):
-                return self.module.sample(num_samples, context)
-
-        self.wrapper = WrappedSample
-
     def on_test_start(self, trainer, pl_module: "FlowModel"):
         batch = next(iter(trainer.datamodule.test_dataloader()))
         batch = trainer.datamodule.transfer_batch_to_device(
