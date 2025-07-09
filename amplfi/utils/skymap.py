@@ -39,7 +39,7 @@ def histogram_skymap(
     dist: Optional[np.ndarray] = None,
     nside: int = 32,
     min_samples_per_pix: int = 5,
-    metadata: dict = None,
+    metadata: Optional[dict] = None,
 ) -> Table:
     """Given right ascension declination samples
     and optionally distance samples,

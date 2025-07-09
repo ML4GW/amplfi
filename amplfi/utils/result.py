@@ -51,6 +51,7 @@ class AmplfiResult(bilby.result.Result):
         nside: int,
         min_samples_per_pix: int = 5,
         use_distance: bool = True,
+        metadata: Optional[dict] = None,
     ) -> Table:
         """
         Calculate a histogram skymap from posterior samples
@@ -67,6 +68,7 @@ class AmplfiResult(bilby.result.Result):
             distance,
             nside=nside,
             min_samples_per_pix=min_samples_per_pix,
+            metadata=metadata,
         )
 
     def calculate_searched_area(
