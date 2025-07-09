@@ -136,7 +136,7 @@ def histogram_skymap(
     table.add_columns(
         [mu, sigma, norm], names=["DISTMU", "DISTSIGMA", "DISTNORM"]
     )
-
+    table.meta = metadata
     return table
 
 
