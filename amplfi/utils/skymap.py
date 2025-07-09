@@ -20,6 +20,7 @@ _DEFAULT_METADATA = OrderedDict(
         "PIXTYPE": "HEALPIX",
         "ORDERING": "NUNIQ",
         "COORDSYS": "C",
+        "INSTRUME": None,
         "CREATOR": _PROGRAM_NAME,
         "DISTMEAN": None,
         "DISTSTD": None,
@@ -104,12 +105,13 @@ def histogram_skymap(
     sigma = np.ones(npix)
     norm = np.zeros(npix)
 
-    if not metadata:
-        metadata = _DEFAULT_METADATA.copy()
+    default_metadata = _DEFAULT_METADATA.copy()
+    if metadata:
+        default_metadata.update(metadata)
 
     if dist is not None:
-        metadata["DISTMEAN"] = np.mean(dist)
-        metadata["DISTSTD"] = np.std(dist)
+        default_metadata["DISTMEAN"] = np.mean(dist)
+        default_metadata["DISTSTD"] = np.std(dist)
         # compute distance ansatz for pixels containing
         # greater than a threshold number
         good_ipix = uniq[counts > min_samples_per_pix]
@@ -136,7 +138,7 @@ def histogram_skymap(
     table.add_columns(
         [mu, sigma, norm], names=["DISTMU", "DISTSIGMA", "DISTNORM"]
     )
-    table.meta = metadata
+    table.meta = default_metadata
     return table
 
 
