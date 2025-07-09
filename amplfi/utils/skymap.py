@@ -67,7 +67,7 @@ def histogram_skymap(
             calculate distance ansatz parameters.
             Otherwise, the default values are used.
         metadata:
-            Metadata for the skymap header.
+            Extra metadata for the skymap header.
 
     Returns:
         astropy.table.Table: HEALPix histogram skymap
