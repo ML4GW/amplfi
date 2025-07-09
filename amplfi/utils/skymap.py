@@ -1,3 +1,6 @@
+from importlib.metadata import version, PackageNotFoundError
+from collections import OrderedDict
+
 import healpy as hp
 from typing import Optional
 import numpy as np
@@ -5,6 +8,25 @@ from astropy.table import Table
 from astropy import units as u
 
 from . import distance
+
+_PROGRAM_NAME = "amplfi"
+try:
+    _PROGRAM_VERSION = version(_PROGRAM_NAME)
+except PackageNotFoundError:
+    _PROGRAM_VERSION = None
+
+_DEFAULT_METADATA = OrderedDict(
+    {
+        "PIXTYPE": "HEALPIX",
+        "ORDERING": "NUNIQ",
+        "COORDSYS": "C",
+        "INSTRUME": None,
+        "CREATOR": _PROGRAM_NAME,
+        "DISTMEAN": None,
+        "DISTSTD": None,
+        "VCSVERS": _PROGRAM_VERSION,
+    }
+)
 
 
 def nest2uniq(nside: int, ipix: int):
@@ -17,6 +39,7 @@ def histogram_skymap(
     dist: Optional[np.ndarray] = None,
     nside: int = 32,
     min_samples_per_pix: int = 5,
+    metadata: dict = None,
 ) -> Table:
     """Given right ascension declination samples
     and optionally distance samples,
@@ -43,6 +66,8 @@ def histogram_skymap(
             Minimum number of samples per pixel to
             calculate distance ansatz parameters.
             Otherwise, the default values are used.
+        metadata:
+            Extra metadata for the skymap header.
 
     Returns:
         astropy.table.Table: HEALPix histogram skymap
@@ -80,7 +105,13 @@ def histogram_skymap(
     sigma = np.ones(npix)
     norm = np.zeros(npix)
 
+    default_metadata = _DEFAULT_METADATA.copy()
+    if metadata:
+        default_metadata.update(metadata)
+
     if dist is not None:
+        default_metadata["DISTMEAN"] = np.mean(dist)
+        default_metadata["DISTSTD"] = np.std(dist)
         # compute distance ansatz for pixels containing
         # greater than a threshold number
         good_ipix = uniq[counts > min_samples_per_pix]
@@ -107,6 +138,7 @@ def histogram_skymap(
     table.add_columns(
         [mu, sigma, norm], names=["DISTMU", "DISTSIGMA", "DISTNORM"]
     )
+    table.meta = default_metadata
     return table
 
 
