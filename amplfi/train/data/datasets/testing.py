@@ -31,6 +31,14 @@ def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
     return phi
 
 
+def ra_from_phi(phi: np.ndarray, gpstime: float):
+    t = Time(gpstime, format="gps", scale="utc")
+    gmst = t.sidereal_time("mean", "greenwich").to("rad").value
+    ra = phi + gmst
+    ra = ra % (2 * np.pi)
+    return ra
+
+
 class StrainTestingDataset(FlowDataset):
     """
     Testing dataset for analyzing pre-made injections.
