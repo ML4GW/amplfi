@@ -18,6 +18,7 @@ from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
 from bilby.core.prior import PriorDict
+from ..data.datasets.testing import ra_from_phi
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -182,7 +183,9 @@ class FlowModel(AmplfiModel):
         if reweighted is not None:
             self.reweighted_results.append(reweighted)
 
-    def analyze_event(self, strain, asds, parameters=None, snr=None):
+    def analyze_event(
+        self, strain, asds, parameters=None, snr=None, gpstime=None
+    ):
         context = (strain, asds)
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
@@ -231,6 +234,15 @@ class FlowModel(AmplfiModel):
 
             if snr is not None:
                 injection_parameters["snr"] = snr[0].item()
+
+        # when predicting on real strain, convert
+        # phi to the physical ra value
+        if gpstime is not None:
+            phi_idx = self.hparams.inference_params.index("phi")
+            phis = descaled[:, phi_idx]
+            ras = ra_from_phi(phis, gpstime)
+            descaled[:, phi_idx] = ras
+
         result = self.cast_as_bilby_result(
             descaled.cpu().numpy(),
             log_probs.cpu().numpy(),
@@ -258,8 +270,8 @@ class FlowModel(AmplfiModel):
         return self.analyze_event(strain, asds, parameters, snr)
 
     def predict_step(self, batch, _):
-        strain, asds, _ = batch
-        return self.analyze_event(strain, asds, None, None)
+        strain, asds, gpstime = batch
+        return self.analyze_event(strain, asds, None, None, gpstime[0].cpu())
 
     def cast_as_bilby_result(
         self,
