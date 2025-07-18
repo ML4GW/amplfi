@@ -449,7 +449,7 @@ class RawStrainTestingDataset(FlowDataset):
 
     def predict_dataloader(self) -> torch.utils.data.DataLoader:
         dataset = torch.utils.data.TensorDataset(
-            self.background, torch.tensor(self.gpstimes)
+            self.background, torch.tensor(self.gpstimes, dtype=torch.float64)
         )
         dataloader = torch.utils.data.DataLoader(
             dataset,

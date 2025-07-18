@@ -746,4 +746,4 @@ class AmplfiDataset(pl.LightningDataModule):
                 strain = np.stack(strain, axis=0)
                 background.append(strain)
         background = np.stack(background, axis=0)
-        return torch.tensor(background), torch.tensor(analyzed_gpstimes)
+        return torch.tensor(background), analyzed_gpstimes
