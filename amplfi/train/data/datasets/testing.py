@@ -31,11 +31,11 @@ def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
     return phi
 
 
-def ra_from_phi(phi: np.ndarray, gpstime: float):
+def ra_from_phi(phi: torch.Tensor, gpstime: float):
     t = Time(gpstime, format="gps", scale="utc")
     gmst = t.sidereal_time("mean", "greenwich").to("rad").value
     ra = phi + gmst
-    ra = np.remainder(ra, 2 * np.pi)
+    ra = torch.remainder(ra, 2 * np.pi)
     return ra
 
 
