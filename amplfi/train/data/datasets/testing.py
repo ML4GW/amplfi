@@ -35,7 +35,7 @@ def ra_from_phi(phi: np.ndarray, gpstime: float):
     t = Time(gpstime, format="gps", scale="utc")
     gmst = t.sidereal_time("mean", "greenwich").to("rad").value
     ra = phi + gmst
-    ra = ra % (2 * np.pi)
+    ra = np.remainder(ra, 2 * np.pi)
     return ra
 
 
@@ -413,12 +413,14 @@ class RawStrainTestingDataset(FlowDataset):
     def __init__(
         self, *args, gpstimes: Union[float, list[float], Path], **kwargs
     ):
-        self.gpstimes = self.parse_gps_times(np.array(gpstimes))
+        self.gpstimes = self.parse_gps_times(gpstimes)
         super().__init__(*args, **kwargs)
 
     def parse_gps_times(self, gpstimes: Union[float, np.ndarray, Path]):
         if isinstance(gpstimes, (float, int)):
             gpstimes = np.array([gpstimes])
+        elif isinstance(gpstimes, list):
+            gpstimes = np.array(gpstimes)
         elif isinstance(gpstimes, Path):
             with h5py.File(gpstimes, "r") as f:
                 gpstimes = f["gpstimes"][:]
