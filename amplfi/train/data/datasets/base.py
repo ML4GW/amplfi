@@ -660,7 +660,10 @@ class AmplfiDataset(pl.LightningDataModule):
         raise NotImplementedError
 
     def background_from_gpstimes(
-        self, gpstimes: np.ndarray, fnames: List[Path]
+        self,
+        gpstimes: np.ndarray,
+        fnames: List[Path],
+        use_random_segment: bool = True,
     ) -> torch.Tensor:
         """
         Construct a Tensor of background segments corresponding
@@ -670,6 +673,7 @@ class AmplfiDataset(pl.LightningDataModule):
 
         # load in background segments corresponding to gpstimes
         background = []
+        analyzed_gpstimes = []
         segments = [
             tuple(map(float, f.name.split(".")[0].split("-")[1:]))
             for f in fnames
@@ -711,18 +715,27 @@ class AmplfiDataset(pl.LightningDataModule):
             file, start = find_file(time)
             # if none exists, use random segment
             if file is None:
-                self._logger.info(
-                    "No segment in testing directory containing "
-                    f"{time}. Using random segment"
-                )
-                file = random.choice(fnames)
-                start, length = list(
-                    map(float, file.name.split(".")[0].split("-")[1:])
-                )
-                time = start + random.randint(
-                    -int(pre // 1),
-                    int(length - post),
-                )
+                if use_random_segment:
+                    self._logger.info(
+                        "No segment in testing directory containing "
+                        f"{time}. Using random segment"
+                    )
+                    file = random.choice(fnames)
+                    start, length = list(
+                        map(float, file.name.split(".")[0].split("-")[1:])
+                    )
+                    time = start + random.randint(
+                        -int(pre // 1),
+                        int(length - post),
+                    )
+                else:
+                    self._logger.info(
+                        "No segment in testing directory containing "
+                        f"{time}. Not analyzing"
+                    )
+                    continue
+
+            analyzed_gpstimes.append(time)
             # convert from time to index in file
             middle_idx = int((time - start) * self.hparams.sample_rate)
             start_idx = middle_idx + num_pre
@@ -733,4 +746,4 @@ class AmplfiDataset(pl.LightningDataModule):
                 strain = np.stack(strain, axis=0)
                 background.append(strain)
         background = np.stack(background, axis=0)
-        return torch.tensor(background)
+        return torch.tensor(background), torch.tensor(analyzed_gpstimes)

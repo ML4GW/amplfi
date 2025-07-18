@@ -436,9 +436,10 @@ class RawStrainTestingDataset(FlowDataset):
                 "with `predict` stage"
             )
 
-        self.background = self.background_from_gpstimes(
-            self.gpstimes, self.get_test_fnames()
+        self.background, gpstimes = self.background_from_gpstimes(
+            self.gpstimes, self.get_test_fnames(), use_random_segment=False
         )
+        self.gpstimes = gpstimes
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
