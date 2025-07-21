@@ -31,6 +31,14 @@ def phi_from_ra(ra: np.ndarray, gpstimes: np.ndarray) -> float:
     return phi
 
 
+def ra_from_phi(phi: torch.Tensor, gpstime: float):
+    t = Time(gpstime, format="gps", scale="utc")
+    gmst = t.sidereal_time("mean", "greenwich").to("rad").value
+    ra = phi + gmst
+    ra = torch.remainder(ra, 2 * np.pi)
+    return ra
+
+
 class StrainTestingDataset(FlowDataset):
     """
     Testing dataset for analyzing pre-made injections.
@@ -405,12 +413,14 @@ class RawStrainTestingDataset(FlowDataset):
     def __init__(
         self, *args, gpstimes: Union[float, list[float], Path], **kwargs
     ):
-        self.gpstimes = self.parse_gps_times(np.array(gpstimes))
+        self.gpstimes = self.parse_gps_times(gpstimes)
         super().__init__(*args, **kwargs)
 
     def parse_gps_times(self, gpstimes: Union[float, np.ndarray, Path]):
         if isinstance(gpstimes, (float, int)):
             gpstimes = np.array([gpstimes])
+        elif isinstance(gpstimes, list):
+            gpstimes = np.array(gpstimes)
         elif isinstance(gpstimes, Path):
             with h5py.File(gpstimes, "r") as f:
                 gpstimes = f["gpstimes"][:]
@@ -426,9 +436,10 @@ class RawStrainTestingDataset(FlowDataset):
                 "with `predict` stage"
             )
 
-        self.background = self.background_from_gpstimes(
-            self.gpstimes, self.get_test_fnames()
+        self.background, gpstimes = self.background_from_gpstimes(
+            self.gpstimes, self.get_test_fnames(), use_random_segment=False
         )
+        self.gpstimes = gpstimes
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
@@ -438,7 +449,7 @@ class RawStrainTestingDataset(FlowDataset):
 
     def predict_dataloader(self) -> torch.utils.data.DataLoader:
         dataset = torch.utils.data.TensorDataset(
-            self.background, torch.tensor(self.gpstimes)
+            self.background, torch.tensor(self.gpstimes, dtype=torch.float64)
         )
         dataloader = torch.utils.data.DataLoader(
             dataset,
