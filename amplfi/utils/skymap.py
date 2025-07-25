@@ -139,6 +139,12 @@ def histogram_skymap(
         [mu, sigma, norm], names=["DISTMU", "DISTSIGMA", "DISTNORM"]
     )
     table.meta = default_metadata
+    # convert to 32-bit precision
+    table["PROBDENSITY"] = table["PROBDENSITY"].astype(np.float32)
+    table["DISTMU"] = table["DISTMU"].astype(np.float32)
+    table["DISTSIGMA"] = table["DISTSIGMA"].astype(np.float32)
+    table["DISTNORM"] = table["DISTNORM"].astype(np.float32)
+    table["UNIQ"] = table["UNIQ"].astype(np.int32)
     return table
 
 
