@@ -1,6 +1,6 @@
 [project]
 name = "amplfi"
-version = "0.5.3"
+dynamic = ["version"]
 description = "Accelerated Multi-messenger PE with Likelihood Free Inference"
 authors = [
     { name = "Ethan Marx" },
@@ -58,12 +58,16 @@ default-groups = [
     "docs",
 ]
 
+[tool.setuptools.packages.find]
+exclude = ["kubernetes", "etc"]
+
+[tool.setuptools-git-versioning]
+enabled = true
+dev_template = "{tag}.post{ccount}" 
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-
+requires = [ "setuptools>=77.0.3", "wheel", "setuptools-git-versioning>=2.0,<3",]
+build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 line-length = 79
