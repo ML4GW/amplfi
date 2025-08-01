@@ -5,4 +5,6 @@
 **/*.env
 **/*.sif
 **/*.hdf5
+amplfi.egg-info
+build
 _build
