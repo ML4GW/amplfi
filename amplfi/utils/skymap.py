@@ -25,6 +25,8 @@ _DEFAULT_METADATA = OrderedDict(
         "DISTMEAN": None,
         "DISTSTD": None,
         "VCSVERS": _PROGRAM_VERSION,
+        "MOCORDER": None,
+        "INDXSCHM": "EXPLICIT",
     }
 )
 
@@ -80,6 +82,7 @@ def histogram_skymap(
 
     # calculate number of samples in each pixel
     npix = hp.nside2npix(nside)
+    order = hp.pixelfunc.nside2order(nside)
     ipix = hp.ang2pix(nside, theta, ra, nest=True)
     uniq, counts = np.unique(ipix, return_counts=True)
 
@@ -106,6 +109,7 @@ def histogram_skymap(
     norm = np.zeros(npix)
 
     default_metadata = _DEFAULT_METADATA.copy()
+    default_metadata.update({"MOCORDER": order})
     if metadata:
         default_metadata.update(metadata)
 
