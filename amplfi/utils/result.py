@@ -2,7 +2,6 @@ import bilby
 from . import skymap
 from typing import Optional
 from pathlib import Path
-import healpy as hp
 from astropy import units as u
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
@@ -21,10 +20,9 @@ class AmplfiResult(bilby.result.Result):
 
     def to_crossmatch_result(
         self,
-        nside: int,
-        min_samples_per_pix: int = 5,
         use_distance: bool = True,
-        **crossmatch_kwargs,
+        min_samples_per_pix_dist: int = 5,
+        **kwargs,
     ) -> CrossmatchResult:
         """
         Calculate a `ligo.skymap.postprocess.crossmatch.CrossmatchResult`
@@ -34,9 +32,8 @@ class AmplfiResult(bilby.result.Result):
 
         """
         skymap = self.to_skymap(
-            nside=nside,
-            min_samples_per_pix=min_samples_per_pix,
             use_distance=use_distance,
+            min_samples_per_pix_dist=min_samples_per_pix_dist,
         )
 
         coordinates = SkyCoord(
@@ -44,78 +41,65 @@ class AmplfiResult(bilby.result.Result):
             self.injection_parameters["dec"] * u.rad,
             distance=self.injection_parameters["distance"] * u.Mpc,
         )
-        return crossmatch(skymap, coordinates, **crossmatch_kwargs)
+        return crossmatch(skymap, coordinates, contours=(50, 90))
 
-    def to_skymap(
-        self,
-        nside: int,
-        min_samples_per_pix: int = 5,
-        use_distance: bool = True,
-        metadata: Optional[dict] = None,
-    ) -> Table:
+    def to_skymap(self, use_distance: bool = True, **kwargs) -> Table:
         """
         Calculate a histogram skymap from posterior samples
         The posterior dataframe and injection_parameters dict
-           should have `ra` and `dec` entries
+        should have `ra` and `dec` entries
+
+        Args:
+            use_distance:
+                If `True`, estimate distance ansatz parameters
+            **kwargs:
+                Additional arguments passed to
+                `amplfi.utils.skymap.histogram_skymap`
         """
         distance = None
         if use_distance:
             distance = self.posterior["distance"]
 
         return skymap.histogram_skymap(
-            self.posterior["ra"],
-            self.posterior["dec"],
-            distance,
-            nside=nside,
-            min_samples_per_pix=min_samples_per_pix,
-            metadata=metadata,
+            self.posterior["ra"], self.posterior["dec"], distance, **kwargs
         )
 
-    def calculate_searched_area(
-        self, nside: int = 32
-    ) -> tuple[float, float, float]:
-        """
-        Calculate the searched area, and estimates
-        of 50% and 90% credible region.
-        The posterior dataframe and injection_parameters dict
-        should have `ra` and `dec` entries
-        """
-        smap = self.to_skymap(nside)["PROBDENSITY"]
-
-        return skymap.calculate_searched_area(
-            smap,
-            self.injection_parameters["ra"],
-            self.injection_parameters["dec"],
-            nside=nside,
-        )
-
-    def plot_mollview(
-        self, nside: int = 32, outpath: Optional[Path] = None
+    def plot_skymap(
+        self, outpath: Optional[Path] = None, **kwargs
     ) -> plt.Figure:
         """
         Plot a mollweide projection of the skymap.
-        The posterior dataframe and injection_parameters dict
-        should have `ra` and `dec` entries
+
+        Expected that the `self.posterior` pandas dataframe
+        `self.injection_parameters` dictionary have `
+        ra` and `dec` entries.
+
+        Args:
+            outpath:
+                Optional file path to save skymap
+            **kwargs:
+                Additional kwargs passed to `AmplfiResult.to_skymap`
         """
-        skymap = self.to_skymap(nside)["PROBDENSITY"]
 
-        # plot molleweide
-        plt.close()
-        fig = hp.mollview(skymap, nest=True)
+        skymap = self.to_skymap(**kwargs)
 
-        # plot true values if available
-        if self.injection_parameters is not None:
-            ra_inj = self.injection_parameters["phi"]
-            dec_inj = self.injection_parameters["dec"]
-            theta_inj = np.pi / 2 - dec_inj
-
-            hp.visufunc.projscatter(
-                theta_inj, ra_inj, marker="x", color="red", s=150
-            )
-
+        ax = plt.figure().add_subplot(projection="astro mollweide")
+        ax.grid()
+        ra_inj = self.injection_parameters["phi"]
+        dec_inj = self.injection_parameters["dec"]
+        ax.plot_coord(
+            SkyCoord(ra_inj, dec_inj, unit=u.rad),
+            "x",
+            markerfacecolor="red",
+            markeredgecolor="black",
+            markersize=5,
+        )
+        sr_to_deg2 = u.sr.to(u.deg**2)
+        skymap["PROBDENSITY"] *= 1 / sr_to_deg2
+        ax.imshow_hpx(
+            (skymap, "ICRS"), vmin=0, order="nearest-neighbor", cmap="cylon"
+        )
         plt.savefig(outpath)
-
-        return fig
 
     def reweight_to_prior(
         self,
