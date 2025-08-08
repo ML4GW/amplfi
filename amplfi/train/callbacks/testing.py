@@ -3,7 +3,6 @@ import torch
 from functools import partial
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing as mp
-from astropy import io
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 from gwpy.plot import Plot
@@ -16,6 +15,7 @@ import h5py
 import bilby
 from tqdm.auto import tqdm
 import ligo.skymap.plot  # noqa: F401
+from ligo.skymap.io import write_sky_map
 
 if TYPE_CHECKING:
     from ligo.skymap.postprocess.crossmatch import CrossmatchResult
@@ -227,8 +227,7 @@ class PlotMollview(pl.Callback):
         outdir = self.outdir / str(batch_idx)
         outdir.mkdir(exist_ok=True)
         skymap_filename = outdir / "mollview.png"
-        result.plot_mollview(
-            self.nside,
+        result.plot_skymap(
             outpath=skymap_filename,
         )
 
@@ -337,25 +336,24 @@ class PlotCorner(pl.Callback):
 class SaveFITS(pl.Callback):
     """ """
 
-    def __init__(self, outdir: Path, nside: int, min_samples_per_pix: int):
+    def __init__(
+        self, outdir: Path, nside: int, min_samples_per_pix_dist: int
+    ):
         self.outdir = outdir
         self.nside = nside
-        self.min_samples_per_pix = min_samples_per_pix
+        self.min_samples_per_pix_dist = min_samples_per_pix_dist
 
     def save_fits(
         self,
         result: "AmplfiResult",
         outdir: Path,
     ):
-        fits = io.fits.table_to_hdu(
-            result.to_skymap(
-                self.nside,
-                self.min_samples_per_pix,
-                use_distance=True,
-            )
+        skymap = result.to_skymap(
+            use_distance=True,
+            min_samples_per_pix_dist=self.min_samples_per_pix_dist,
         )
         outdir.mkdir(exist_ok=True)
-        fits.writeto(outdir / "amplfi.skymap.fits", overwrite=True)
+        write_sky_map(outdir / "amplfi.skymap.fits", skymap)
 
     def on_test_batch_end(
         self,
@@ -500,8 +498,7 @@ class ProbProbPlot(pl.Callback):
 
 def crossmatch_skymap(
     result: "AmplfiResult",
-    nside: int,
-    min_samples_per_pix: int,
+    min_samples_per_pix_dist: int,
     contours: tuple[float],
 ):
     """
@@ -509,9 +506,8 @@ def crossmatch_skymap(
     """
 
     crossmatch_result = result.to_crossmatch_result(
-        nside=nside,
-        min_samples_per_pix=min_samples_per_pix,
         use_distance=True,
+        min_samples_per_pix_dist=min_samples_per_pix_dist,
         contours=contours,
     )
     return crossmatch_result
@@ -583,13 +579,12 @@ class CrossMatchStatistics(pl.Callback):
         results: list["AmplfiResult"],
         outdir: Path,
         nside: int,
-        min_samples_per_pix: int,
+        min_samples_per_pix_dist: int,
     ) -> None:
         (outdir / "plots").mkdir(exist_ok=True)
         func = partial(
             crossmatch_skymap,
-            nside=nside,
-            min_samples_per_pix=min_samples_per_pix,
+            min_samples_per_pix_dist=min_samples_per_pix_dist,
             contours=self.contours,
         )
 
