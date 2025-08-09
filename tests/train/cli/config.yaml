@@ -1,0 +1,73 @@
+seed_everything: 42
+trainer:
+  accelerator: cpu
+  devices: 1
+  max_epochs: 2
+  check_val_every_n_epoch: 1
+  log_every_n_steps: 1
+  enable_checkpointing: false
+  enable_model_summary: false
+  logger: false
+  enable_progress_bar: false
+model:
+  class_path: amplfi.train.models.flow.FlowModel
+  init_args:
+    train_outdir: ${oc.env:AMPLFI_OUTDIR}
+    samples_per_event: 10
+    arch:
+      class_path: amplfi.train.architectures.NSF
+      init_args:
+        hidden_features: [8, 8]
+        transforms: 2
+        randperm: false
+        embedding_net: 
+          class_path: tests.conftest.SimpleTestEmbedding
+          init_args:
+            num_ifos: 2
+            context_dim: 4
+    learning_rate: 0.01
+    weight_decay: 0.0
+    pct_start: 0.5
+data:
+  class_path: amplfi.train.data.datasets.FlowDataset
+  init_args:
+    data_dir: ${oc.env:AMPLFI_DATADIR}
+    dec: 
+      class_path: ml4gw.distributions.Cosine
+    psi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0
+        high: 3.14159
+        validate_args: false
+    phi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0
+        high: 6.28318
+        validate_args: false
+    inference_params: ["chirp_mass", "mass_ratio", "dec", "psi", "phi"]
+    highpass: 25
+    sample_rate: 512
+    kernel_length: 1
+    fduration: 1
+    psd_length: 2
+    fftlength: 1
+    batches_per_epoch: 2
+    batch_size: 4
+    ifos: ["H1", "L1"]
+    min_valid_duration: 100.0
+    num_files_per_batch: 1
+    waveform_sampler: 
+      class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
+      init_args:
+        jitter: 0.0
+        num_fit_params: 10
+        training_prior: ./prior.yaml
+        testing_prior: null
+        num_val_waveforms: 8
+        num_test_waveforms: 4
+        approximant: ml4gw.waveforms.IMRPhenomPv2
+        f_min: 20
+        f_ref: 40
+        right_pad: 0.1

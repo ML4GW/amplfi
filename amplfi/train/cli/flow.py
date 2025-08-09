@@ -24,7 +24,7 @@ class AmplfiFlowCLI(AmplfiBaseCLI):
 
 
 def main(args=None):
-    cli = AmplfiFlowCLI(
+    AmplfiFlowCLI(
         AmplfiModel,
         AmplfiDataset,
         subclass_mode_model=True,
@@ -33,7 +33,6 @@ def main(args=None):
         seed_everything_default=101588,
         args=args,
     )
-    return cli
 
 
 if __name__ == "__main__":
