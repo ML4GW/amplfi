@@ -21,17 +21,23 @@ trainer:
 model:
   class_path: amplfi.train.models.flow.FlowModel
   init_args:
+    # AmplfiModel base class parameters
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
+    learning_rate: 0.00071444
+    pct_start: 0.1
     train_outdir: ${oc.env:AMPLFI_OUTDIR}
-    samples_per_event: 10000
+    test_outdir: null
+    weight_decay: 0.00042
+    verbose: false
+    
+    # FlowModel specific parameters
     arch:
       class_path: amplfi.train.architectures.NSF
       init_args:
         hidden_features: [512, 512, 512]
         transforms: 20
         randperm: true
-        # uncomment below to load 
-        # in pre-trained embedding weights
-        # embedding_weights: "path/to/embedding/weights"
+        # embedding_weights: null
         # freeze_embedding: false
         embedding_net: 
           class_path: amplfi.train.architectures.embeddings.MultiModalPsd
@@ -44,12 +50,19 @@ model:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
               init_args:
                 groups: 8
-    learning_rate: 0.00071444
-    pct_start: 0.1
-    weight_decay: 0.00042
+    filter_params: true
+    samples_per_event: 10000
+    min_samples_per_pix_dist: 5
+    max_samples_per_pixel: 20
+    target_prior: null
+    crossmatch: true
+    create_pp_plot: true
 data:
   class_path: amplfi.train.data.datasets.FlowDataset
   init_args:
+    # AmplfiDataset base class parameters
+    data_dir: ${oc.env:AMPLFI_DATADIR}
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
     dec: 
       class_path: ml4gw.distributions.Cosine
     psi: 
@@ -64,20 +77,14 @@ data:
         low: 0
         high: 6.28318
         validate_args: false
-    data_dir: ${oc.env:AMPLFI_DATADIR}
-    target_prior: null
-    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
     highpass: 25
     sample_rate: 2048
     kernel_length: 3
     fduration: 2
     psd_length: 10
-    fftlength: 2
     batches_per_epoch: 800
     batch_size: 512
     ifos: ["H1", "L1"]
-    min_valid_duration: 10000.0
-    num_files_per_batch: 10
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
       init_args:
@@ -91,3 +98,14 @@ data:
         f_min: 20
         f_ref: 40
         right_pad: 0.5
+    
+    # Optional parameters with defaults
+    parameter_transformer: null
+    fftlength: 2
+    train_val_range: null
+    test_range: null
+    min_valid_duration: 10000.0
+    num_files_per_batch: 10
+    max_num_workers: 6
+    verbose: false
+    seed: null

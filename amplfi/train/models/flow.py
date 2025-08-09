@@ -346,7 +346,11 @@ class FlowModel(AmplfiModel):
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
         if self.crossmatch:
-            callbacks.append(CrossMatchStatistics())
+            callbacks.append(
+                CrossMatchStatistics(
+                    self.min_samples_per_pix_dist, self.max_samples_per_pixel
+                )
+            )
         if self.create_pp_plot:
             callbacks.append(ProbProbPlot())
         return callbacks
