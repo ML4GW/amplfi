@@ -40,26 +40,38 @@ class AmplfiResult(bilby.result.Result):
         )
         return crossmatch(skymap, coordinates, contours=(50, 90))
 
-    def to_skymap(self, use_distance: bool = True, **kwargs) -> Table:
+    def to_skymap(
+        self, use_distance: bool = True, adaptive: bool = False, **kwargs
+    ) -> Table:
         """
         Calculate a histogram skymap from posterior samples
         The posterior dataframe and injection_parameters dict
-        should have `ra` and `dec` entries
+        should have `ra` and `dec` entries.
 
         Args:
             use_distance:
                 If `True`, estimate distance ansatz parameters
+            adaptive:
+                If `True`, use adaptive histogram based on
+                `ligo.skymap.healpix_tree.adaptive_healpix_histogram`
             **kwargs:
                 Additional arguments passed to
                 `amplfi.utils.skymap.histogram_skymap`
+                or `amplfi.utils.skymap.adaptive_histogram_skymap`
         """
         distance = None
         if use_distance:
             distance = self.posterior["distance"]
 
-        return skymap.histogram_skymap(
+        func = (
+            skymap.adaptive_histogram_skymap
+            if adaptive
+            else skymap.histogram_skymap
+        )
+        result = func(
             self.posterior["ra"], self.posterior["dec"], distance, **kwargs
         )
+        return result
 
     def reweight_to_prior(
         self,
