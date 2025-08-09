@@ -264,7 +264,7 @@ def histogram_skymap(
     table.meta = default_metadata
 
     # convert to 32-bit precision
-    columns = ["PROBDENSITY", "DISTMU", "DISTSIGMA", "DISTNORM", "UNIQ"]
+    columns = ["PROBDENSITY", "DISTMU", "DISTSIGMA", "DISTNORM"]
     for column in columns:
         table[column] = table[column].astype(np.float32)
     return table
