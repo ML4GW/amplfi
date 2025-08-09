@@ -1,11 +1,8 @@
 import bilby
 from . import skymap
-from typing import Optional
-from pathlib import Path
 from astropy import units as u
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
-import matplotlib.pyplot as plt
 import numpy as np
 from ligo.skymap.postprocess.crossmatch import crossmatch, CrossmatchResult
 from copy import copy
@@ -63,43 +60,6 @@ class AmplfiResult(bilby.result.Result):
         return skymap.histogram_skymap(
             self.posterior["ra"], self.posterior["dec"], distance, **kwargs
         )
-
-    def plot_skymap(
-        self, outpath: Optional[Path] = None, **kwargs
-    ) -> plt.Figure:
-        """
-        Plot a mollweide projection of the skymap.
-
-        Expected that the `self.posterior` pandas dataframe
-        `self.injection_parameters` dictionary have `
-        ra` and `dec` entries.
-
-        Args:
-            outpath:
-                Optional file path to save skymap
-            **kwargs:
-                Additional kwargs passed to `AmplfiResult.to_skymap`
-        """
-
-        skymap = self.to_skymap(**kwargs)
-
-        ax = plt.figure().add_subplot(projection="astro mollweide")
-        ax.grid()
-        ra_inj = self.injection_parameters["phi"]
-        dec_inj = self.injection_parameters["dec"]
-        ax.plot_coord(
-            SkyCoord(ra_inj, dec_inj, unit=u.rad),
-            "x",
-            markerfacecolor="red",
-            markeredgecolor="black",
-            markersize=5,
-        )
-        sr_to_deg2 = u.sr.to(u.deg**2)
-        skymap["PROBDENSITY"] *= 1 / sr_to_deg2
-        ax.imshow_hpx(
-            (skymap, "ICRS"), vmin=0, order="nearest-neighbor", cmap="cylon"
-        )
-        plt.savefig(outpath)
 
     def reweight_to_prior(
         self,

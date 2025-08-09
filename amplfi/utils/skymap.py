@@ -1,6 +1,6 @@
 from importlib.metadata import version, PackageNotFoundError
 from collections import OrderedDict
-
+from typing import TYPE_CHECKING
 import healpy as hp
 from typing import Optional
 import numpy as np
@@ -9,6 +9,13 @@ from astropy import units as u
 from ligo.skymap.healpix_tree import adaptive_healpix_histogram
 from ligo.skymap.bayestar import derasterize
 from . import distance
+import matplotlib.pyplot as plt
+import ligo.skymap.plot  # noqa
+from astropy.coordinates import SkyCoord
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 _PROGRAM_NAME = "amplfi"
 try:
@@ -34,6 +41,7 @@ def histogram_skymap(
     dec: np.ndarray,
     dist: Optional[np.ndarray] = None,
     max_nside: int = 2048,
+    dist_nside: int = 64,
     max_samples_per_pixel: int = 20,
     min_samples_per_pix_dist: int = 5,
     metadata: Optional[dict] = None,
@@ -58,8 +66,11 @@ def histogram_skymap(
             for each pixel containing more than `min_samples_per_pix`.
             If not provided, will use default values of
             `np.inf`, `1 Mpc`, and `0 / Mpc^2` respectively.
-        nside:
-            HEALPix nside parameter
+        max_nside:
+            Maximum HEALPix nside parameter for adaptive histogram
+        dist_nside:
+            Nside value to resample to after histogramming for distance
+            ansatz estimation
         max_samples_per_pix:
             Max samples per pixel when performing
             adaptive histogramming
@@ -73,9 +84,9 @@ def histogram_skymap(
     Returns:
         astropy.table.Table: HEALPix histogram skymap
     """
-
     _metadata = _DEFAULT_METADATA.copy()
 
+    dist_nside = dist_nside if dist is not None else -1
     # convert declination to theta (between 0 and pi)
     theta = np.pi / 2 - dec
     prob = adaptive_healpix_histogram(
@@ -83,6 +94,7 @@ def histogram_skymap(
         ra,
         max_samples_per_pixel=max_samples_per_pixel,
         max_nside=max_nside,
+        nside=dist_nside,
         nest=True,
     )
     skymap = Table({"PROB": prob})
@@ -140,3 +152,19 @@ def histogram_skymap(
     # finally derasterize to multiorder
     skymap = derasterize(skymap)
     return skymap
+
+
+def plot_skymap(skymap: Table, ra_inj: float, dec_inj: float, outpath: "Path"):
+    fig = plt.figure()
+    ax = fig.add_subplot(projection="astro mollweide")
+    ax.imshow_hpx(
+        (skymap, "ICRS"), vmin=0, order="nearest-neighbor", cmap="cylon"
+    )
+    ax.plot_coord(
+        SkyCoord(ra_inj, dec_inj, unit=u.rad),
+        "x",
+        markerfacecolor="white",
+        markeredgecolor="black",
+        markersize=10,
+    )
+    plt.savefig(outpath)

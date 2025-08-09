@@ -1,0 +1,72 @@
+# commonly used lightning callbacks.
+# those that are un-commented are recommended
+# uncomment any "optional" callbacks to utilize them 
+
+
+################
+### Training ### 
+################
+- class_path: amplfi.train.callbacks.ModelCheckpoint
+  init_args:
+    monitor: "valid_loss"
+    save_top_k: 5
+    save_last: true
+    auto_insert_metric_name : false
+    mode: "min"
+
+# save wandb url to disk
+- class_path: amplfi.train.callbacks.SaveWandbUrl
+
+# saves training batch to disk for inspection
+- class_path: amplfi.train.callbacks.SaveAugmentedBatch
+
+# - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+#  init_args:
+#    logging_interval: epoch
+
+# log estimate of gradients during training
+# - class_path: amplfi.train.callbacks.GradientTracker
+
+# - class_path: amplfi.train.callbacks.EstimateSamplingLatency
+#  init_args:
+#    logging_interval: epoch
+
+###############
+### Testing ### 
+###############
+
+# Note that `CrossMatchStatistics` and `ProbProbPlot` 
+# are enabled by default: see the `crossmatch` and `create_pp_plot`
+# boolean args in `FlowModel`
+
+
+# plot skymaps from amplfi posterior samples 
+- class_path: amplfi.train.callbacks.PlotSkymap
+  init_args:
+    max_samples_per_pixel: 20
+    min_samples_per_pix_dist: 5
+
+# create posterior corner plots
+- class_path: amplfi.train.callbacks.PlotCorner
+
+
+# save posterior samples to disk
+- class_path: amplfi.train.callbacks.SavePosterior
+
+# save fits files
+# - class_path: amplfi.train.callbacks.SaveFits
+
+# visualize strain data
+# - class_path: amplfi.train.callbacks.StrainVisualization
+#   init_args:
+#     num_plot: 10
+
+# - class_path: amplfi.train.callbacks.CrossMatchStatistics
+#  init_args:
+#    contours: [0.5, 0.9]
+
+# create probability probability plot
+# - class_path: amplfi.train.callbacks.ProbProbPlot
+
+
+     
