@@ -37,11 +37,11 @@ def test_histogram_skymap(n_side, n_samples):
     assert t.meta["ORDERING"] == "NUNIQ"
 
     # check if extra metadata is correctly added
-    skymap_content = skymap.histogram_skymap(
+    skymap_content = skymap.adaptive_histogram_skymap(
         ra_samples,
         dec_samples,
         dist_samples,
-        nside=n_side,
+        dist_nside=n_side,
         metadata={"INSTRUME": "H1,L1,V1"},
     )
     with NamedTemporaryFile(mode="w+", suffix=".multiorder.fits") as fits_file:
