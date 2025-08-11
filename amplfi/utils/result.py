@@ -1,12 +1,8 @@
 import bilby
 from . import skymap
-from typing import Optional
-from pathlib import Path
-import healpy as hp
 from astropy import units as u
 from astropy.table import Table
 from astropy.coordinates import SkyCoord
-import matplotlib.pyplot as plt
 import numpy as np
 from ligo.skymap.postprocess.crossmatch import crossmatch, CrossmatchResult
 from copy import copy
@@ -21,10 +17,9 @@ class AmplfiResult(bilby.result.Result):
 
     def to_crossmatch_result(
         self,
-        nside: int,
-        min_samples_per_pix: int = 5,
         use_distance: bool = True,
-        **crossmatch_kwargs,
+        min_samples_per_pix_dist: int = 5,
+        **kwargs,
     ) -> CrossmatchResult:
         """
         Calculate a `ligo.skymap.postprocess.crossmatch.CrossmatchResult`
@@ -34,9 +29,8 @@ class AmplfiResult(bilby.result.Result):
 
         """
         skymap = self.to_skymap(
-            nside=nside,
-            min_samples_per_pix=min_samples_per_pix,
             use_distance=use_distance,
+            min_samples_per_pix_dist=min_samples_per_pix_dist,
         )
 
         coordinates = SkyCoord(
@@ -44,78 +38,40 @@ class AmplfiResult(bilby.result.Result):
             self.injection_parameters["dec"] * u.rad,
             distance=self.injection_parameters["distance"] * u.Mpc,
         )
-        return crossmatch(skymap, coordinates, **crossmatch_kwargs)
+        return crossmatch(skymap, coordinates, contours=(50, 90))
 
     def to_skymap(
-        self,
-        nside: int,
-        min_samples_per_pix: int = 5,
-        use_distance: bool = True,
-        metadata: Optional[dict] = None,
+        self, use_distance: bool = True, adaptive: bool = False, **kwargs
     ) -> Table:
         """
         Calculate a histogram skymap from posterior samples
         The posterior dataframe and injection_parameters dict
-           should have `ra` and `dec` entries
+        should have `ra` and `dec` entries.
+
+        Args:
+            use_distance:
+                If `True`, estimate distance ansatz parameters
+            adaptive:
+                If `True`, use adaptive histogram based on
+                `ligo.skymap.healpix_tree.adaptive_healpix_histogram`
+            **kwargs:
+                Additional arguments passed to
+                `amplfi.utils.skymap.histogram_skymap`
+                or `amplfi.utils.skymap.adaptive_histogram_skymap`
         """
         distance = None
         if use_distance:
             distance = self.posterior["distance"]
 
-        return skymap.histogram_skymap(
-            self.posterior["ra"],
-            self.posterior["dec"],
-            distance,
-            nside=nside,
-            min_samples_per_pix=min_samples_per_pix,
-            metadata=metadata,
+        func = (
+            skymap.adaptive_histogram_skymap
+            if adaptive
+            else skymap.histogram_skymap
         )
-
-    def calculate_searched_area(
-        self, nside: int = 32
-    ) -> tuple[float, float, float]:
-        """
-        Calculate the searched area, and estimates
-        of 50% and 90% credible region.
-        The posterior dataframe and injection_parameters dict
-        should have `ra` and `dec` entries
-        """
-        smap = self.to_skymap(nside)["PROBDENSITY"]
-
-        return skymap.calculate_searched_area(
-            smap,
-            self.injection_parameters["ra"],
-            self.injection_parameters["dec"],
-            nside=nside,
+        result = func(
+            self.posterior["ra"], self.posterior["dec"], distance, **kwargs
         )
-
-    def plot_mollview(
-        self, nside: int = 32, outpath: Optional[Path] = None
-    ) -> plt.Figure:
-        """
-        Plot a mollweide projection of the skymap.
-        The posterior dataframe and injection_parameters dict
-        should have `ra` and `dec` entries
-        """
-        skymap = self.to_skymap(nside)["PROBDENSITY"]
-
-        # plot molleweide
-        plt.close()
-        fig = hp.mollview(skymap, nest=True)
-
-        # plot true values if available
-        if self.injection_parameters is not None:
-            ra_inj = self.injection_parameters["phi"]
-            dec_inj = self.injection_parameters["dec"]
-            theta_inj = np.pi / 2 - dec_inj
-
-            hp.visufunc.projscatter(
-                theta_inj, ra_inj, marker="x", color="red", s=150
-            )
-
-        plt.savefig(outpath)
-
-        return fig
+        return result
 
     def reweight_to_prior(
         self,

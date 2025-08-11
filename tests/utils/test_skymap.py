@@ -1,6 +1,6 @@
 from tempfile import NamedTemporaryFile
 import pytest
-
+from ligo.skymap.io.fits import write_sky_map
 import numpy as np
 
 from amplfi.utils import skymap
@@ -27,27 +27,28 @@ def test_histogram_skymap(n_side, n_samples):
     )
     # check FITS format
     with NamedTemporaryFile(mode="w+", suffix=".multiorder.fits") as fits_file:
-        skymap_content.write(fits_file.name, format="fits", overwrite=True)
+        write_sky_map(fits_file.name, skymap_content)
         from astropy.table import QTable
 
         t = QTable.read(fits_file.name)
+
     # do basic checks on the format
     assert t.meta["PIXTYPE"] == "HEALPIX"
     assert t.meta["ORDERING"] == "NUNIQ"
 
     # check if extra metadata is correctly added
-    skymap_content = skymap.histogram_skymap(
+    skymap_content = skymap.adaptive_histogram_skymap(
         ra_samples,
         dec_samples,
         dist_samples,
-        nside=n_side,
+        dist_nside=n_side,
         metadata={"INSTRUME": "H1,L1,V1"},
     )
     with NamedTemporaryFile(mode="w+", suffix=".multiorder.fits") as fits_file:
-        skymap_content.write(fits_file.name, format="fits", overwrite=True)
-        from astropy.table import QTable
+        write_sky_map(fits_file.name, skymap_content)
 
         t = QTable.read(fits_file.name)
+
     # do basic checks on the format
     assert t.meta["PIXTYPE"] == "HEALPIX"
     assert t.meta["ORDERING"] == "NUNIQ"

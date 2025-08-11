@@ -167,7 +167,7 @@ class GradientTracker(pl.Callback):
 
 class SaveWandbUrl(pl.Callback):
     def on_train_start(self, trainer, pl_module):
-        if trainer.global_rank == 0:
+        if trainer.global_rank == 0 and trainer.logger is not None:
             pl_module._logger.info("Saving Wandb Url")
             save_dir = trainer.logger.save_dir
             maybe_wandb_logger = trainer.loggers[-1]

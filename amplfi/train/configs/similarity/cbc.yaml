@@ -30,15 +30,16 @@ trainer:
 model:
   class_path: amplfi.train.models.similarity.SimilarityModel
   init_args:
-    outdir: ${oc.env:AMPLFI_OUTDIR}
-    similarity_loss: 
-      class_path: amplfi.train.losses.VICRegLoss
-      init_args:
-        lambda_param: 25.0
-        mu_param: 25.0
-        nu_param: 1.0
-    # add path below when running `trainer.test` to load in a checkpoint
-    checkpoint: null
+    # AmplfiModel base class parameters
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
+    learning_rate: 0.00071444
+    pct_start: 0.1
+    train_outdir: ${oc.env:AMPLFI_OUTDIR}
+    test_outdir: null
+    weight_decay: 0.0042
+    verbose: false
+    
+    # SimilarityModel specific parameters
     arch:
       class_path: amplfi.train.architectures.embeddings.SimilarityEmbedding
       init_args:
@@ -54,24 +55,52 @@ model:
               init_args:
                 groups: 8
         expander_factor: 3
-    learning_rate: 0.00071444
-    pct_start: 0.1
-    weight_decay: 0.0042
+    similarity_loss: 
+      class_path: amplfi.train.losses.VICRegLoss
+      init_args:
+        lambda_param: 25.0
+        mu_param: 25.0
+        nu_param: 1.0
 data:
   class_path: amplfi.train.data.datasets.SimilarityDataset
   init_args:
+    # AmplfiDataset base class parameters
     data_dir: ${oc.env:AMPLFI_DATADIR}
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
+    dec: 
+      class_path: ml4gw.distributions.Cosine
+    psi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0
+        high: 3.14159
+        validate_args: false
+    phi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0
+        high: 6.28318
+        validate_args: false
     highpass: 25
     sample_rate: 2048
     kernel_length: 3
     fduration: 1
     psd_length: 10
-    fftlength: 2
     batches_per_epoch: 800
     batch_size: 512
     ifos: ["H1", "L1"]
+    
+    # Optional parameters with defaults
+    parameter_transformer: null
+    fftlength: 2
+    train_val_range: null
+    test_range: null
     min_valid_duration: 10000.0
+    num_files_per_batch: null
+    max_num_workers: 6
+    verbose: false
+    seed: null
+    
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
       init_args:

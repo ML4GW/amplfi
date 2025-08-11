@@ -26,6 +26,7 @@ TRAIN_CONFIGS = {
 
 # corresponds to default CBC waveform
 DEFAULT_PRIOR = root / "amplfi" / "train" / "configs" / "prior.yaml"
+CALLBACKS = root / "amplfi" / "train" / "configs" / "callbacks.yaml"
 
 
 def fill_kubernetes_template(output: Path, s3_bucket):
@@ -250,6 +251,7 @@ def main():
         configs.extend(data_config)
 
     configs.append(DEFAULT_PRIOR)
+    configs.append(CALLBACKS)
 
     copy_configs(directory / args.name, configs)
 

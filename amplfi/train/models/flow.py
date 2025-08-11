@@ -4,21 +4,12 @@ import numpy as np
 import pandas as pd
 import torch
 from ..architectures.flows import FlowArchitecture
-from ..callbacks import (
-    StrainVisualization,
-    SavePosterior,
-    CrossMatchStatistics,
-    ProbProbPlot,
-    PlotMollview,
-    PlotCorner,
-    SaveFITS,
-    SaveInjectionParameters,
-)
 from ...utils.result import AmplfiResult
 from .base import AmplfiModel
 from typing import Optional
 from bilby.core.prior import PriorDict
 from ..data.datasets.testing import ra_from_phi
+from amplfi.train.callbacks import ProbProbPlot, CrossMatchStatistics
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -83,34 +74,21 @@ class FlowModel(AmplfiModel):
         arch: FlowArchitecture,
         filter_params: bool = True,
         samples_per_event: int = 10000,
-        nside: int = 32,
-        min_samples_per_pix: int = 5,
-        num_plot: int = 10,
-        plot_data: bool = False,
-        plot_corner: bool = True,
-        plot_mollview: bool = True,
-        cross_match: bool = True,
-        save_fits: bool = True,
-        save_posterior: bool = False,
-        save_injection_parameters: bool = True,
+        min_samples_per_pix_dist: int = 5,
+        max_samples_per_pixel: int = 20,
         target_prior: Optional["Path"] = None,
+        crossmatch: bool = True,
+        create_pp_plot: bool = True,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.model = arch
         self.samples_per_event = samples_per_event
-        self.num_plot = num_plot
-        self.nside = nside
-        self.min_samples_per_pix = min_samples_per_pix
-        self.plot_data = plot_data
-        self.plot_corner = plot_corner
-        self.plot_mollview = plot_mollview
-        self.save_fits = save_fits
-        self.save_posterior = save_posterior
-        self.cross_match = cross_match
-        self.save_injection_parameters = save_injection_parameters
+        self.min_samples_per_pix_dist = min_samples_per_pix_dist
+        self.max_samples_per_pixel = max_samples_per_pixel
         self.filter_params = filter_params
-
+        self.crossmatch = crossmatch
+        self.create_pp_plot = create_pp_plot
         if target_prior is not None:
             target_prior = PriorDict(filename=str(target_prior))
         self.target_prior: Optional[PriorDict] = target_prior
@@ -156,6 +134,7 @@ class FlowModel(AmplfiModel):
 
     def on_test_epoch_start(self):
         self.test_outdir.mkdir(exist_ok=True, parents=True)
+        (self.test_outdir / "events").mkdir(exist_ok=True, parents=True)
         self.test_results: list[AmplfiResult] = []
         self.reweighted_results: list[AmplfiResult] = []
 
@@ -366,32 +345,12 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
-        callbacks += [ProbProbPlot()]
-
-        event_outdir = self.test_outdir / "events"
-        event_outdir.mkdir(parents=True, exist_ok=True)
-
-        if self.plot_data:
-            callbacks.append(StrainVisualization(event_outdir, self.num_plot))
-
-        if self.save_injection_parameters:
-            callbacks.append(SaveInjectionParameters(self.test_outdir))
-
-        if self.save_fits:
+        if self.crossmatch:
             callbacks.append(
-                SaveFITS(event_outdir, self.nside, self.min_samples_per_pix)
+                CrossMatchStatistics(
+                    self.min_samples_per_pix_dist, self.max_samples_per_pixel
+                )
             )
-
-        if self.plot_mollview:
-            callbacks.append(PlotMollview(event_outdir, self.nside))
-
-        if self.plot_corner:
-            callbacks.append(PlotCorner(event_outdir))
-
-        if self.save_posterior:
-            callbacks.append(SavePosterior(event_outdir))
-
-        if self.cross_match:
-            callbacks.append(CrossMatchStatistics())
-
+        if self.create_pp_plot:
+            callbacks.append(ProbProbPlot())
         return callbacks
