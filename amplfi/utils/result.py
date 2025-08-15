@@ -41,7 +41,7 @@ class AmplfiResult(bilby.result.Result):
         return crossmatch(skymap, coordinates, contours=(50, 90))
 
     def to_skymap(
-        self, use_distance: bool = True, adaptive: bool = False, **kwargs
+        self, use_distance: bool = True, adaptive: bool = True, **kwargs
     ) -> Table:
         """
         Calculate a histogram skymap from posterior samples
