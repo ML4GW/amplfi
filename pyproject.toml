@@ -71,6 +71,9 @@ dev_template = "{tag}.post{ccount}+git.{sha}"
 requires = [ "setuptools>=77.0.3", "wheel", "setuptools-git-versioning>=2.0,<3",]
 build-backend = "setuptools.build_meta"
 
+[tool.uv.sources]
+ml4gw = { git = "https://github.com/ethanmarx/ml4gw", branch="attention" }
+
 [tool.ruff]
 line-length = 79
 extend-exclude = ["docs"]
