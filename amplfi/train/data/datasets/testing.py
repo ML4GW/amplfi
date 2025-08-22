@@ -75,7 +75,11 @@ class StrainTestingDataset(FlowDataset):
                 "StrainTestingDataset should only be used for testing"
             )
 
-        parameters = pd.read_hdf(self.dataset_path, key="parameters")
+        parameters = pd.read_hdf(self.dataset_path, key="parameters")[:3]
+        # store dataframe indices to later save with outputs;
+        # helpful for, e.g., cross-referencing with an injection set
+        # that has been filtered so that indices are not just 0...N
+        self.indices = parameters.index
 
         keys = self.hparams.inference_params.copy()
         keys.remove("phi")
@@ -91,7 +95,7 @@ class StrainTestingDataset(FlowDataset):
         with h5py.File(self.dataset_path, "r") as f:
             for ifo in self.hparams.ifos:
                 strain.append(
-                    torch.tensor(f["strain"][ifo][:], dtype=torch.float32)
+                    torch.tensor(f["strain"][ifo][:3], dtype=torch.float32)
                 )
         strain = torch.stack(strain, dim=1)
 
@@ -233,6 +237,10 @@ class ParameterTestingDataset(FlowDataset):
             )
 
         parameters = pd.read_hdf(self.dataset_path, key="parameters")
+        # store dataframe indices to later save with outputs;
+        # helpful for, e.g., cross-referencing with an injection set
+        # that has been filtered
+        self.indices = parameters.index
 
         load_keys = self.hparams.inference_params + [
             "ra",
