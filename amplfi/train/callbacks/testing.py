@@ -17,6 +17,7 @@ from amplfi.utils.skymap import plot_skymap
 from tqdm.auto import tqdm
 import ligo.skymap.plot  # noqa: F401
 from ligo.skymap.io.fits import write_sky_map
+import pandas as pd
 
 if TYPE_CHECKING:
     from ligo.skymap.postprocess.crossmatch import CrossmatchResult
@@ -574,37 +575,29 @@ class CrossMatchStatistics(pl.Callback):
         self.max_samples_per_pixel = max_samples_per_pixel
 
     def write_skymap_statistics(
-        self, outdir: Path, results: list["CrossmatchResult"]
+        self,
+        outdir: Path,
+        results: list["CrossmatchResult"],
+        index: pd.Index,
     ):
-        """
-        Write skymap statistics to file
-        """
+        outdir.mkdir(exist_ok=True, parents=True)
+        df = pd.DataFrame(index=index)
+        for attr in self.crossmatch_attributes:
+            if attr == "contour_areas":
+                for i, contour in enumerate(self.contours):
+                    data = [result.contour_areas[i] for result in results]
+                    df[f"{attr}_{int(contour * 100)}"] = data
+            else:
+                df[attr] = [getattr(result, attr) for result in results]
+        df.to_hdf(outdir / "skymap_stats.hdf5", key="stats", mode="w")
 
-        outdir.mkdir(exist_ok=True)
-        with h5py.File(outdir / "skymap_stats.hdf5", "w") as f:
-            for attr in self.crossmatch_attributes:
-                if attr == "contour_areas":
-                    for i, contour in enumerate(self.contours):
-                        f.create_dataset(
-                            f"contour_areas_{int(contour * 100)}",
-                            data=np.array(
-                                [result.contour_areas[i] for result in results]
-                            ),
-                        )
-                else:
-                    f.create_dataset(
-                        attr,
-                        data=np.array(
-                            [getattr(result, attr) for result in results]
-                        ),
-                    )
-
-    def on_test_epoch_end(self, _, pl_module: "FlowModel"):
+    def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         self.crossmatch(
             pl_module.test_results,
             pl_module.test_outdir,
             self.min_samples_per_pix_dist,
             self.max_samples_per_pixel,
+            trainer.datamodule.indices,
         )
 
         if pl_module.reweighted_results:
@@ -613,6 +606,7 @@ class CrossMatchStatistics(pl.Callback):
                 pl_module.test_outdir / "reweighted",
                 self.min_samples_per_pix_dist,
                 self.max_samples_per_pixel,
+                trainer.datamodule.indices,
             )
 
     def crossmatch(
@@ -621,6 +615,7 @@ class CrossMatchStatistics(pl.Callback):
         outdir: Path,
         min_samples_per_pix_dist: int,
         max_samples_per_pixel: int,
+        index: pd.Index,
     ) -> None:
         (outdir / "plots").mkdir(exist_ok=True)
         func = partial(
@@ -645,7 +640,7 @@ class CrossMatchStatistics(pl.Callback):
                 idx = future_to_index[future]
                 crossmatch_results[idx] = future.result()
 
-        self.write_skymap_statistics(outdir, crossmatch_results)
+        self.write_skymap_statistics(outdir, crossmatch_results, index)
 
         # searched area cum hist
         searched_areas = [

@@ -5,7 +5,7 @@ amplfi models across various usecases
 
 from pathlib import Path
 from typing import Optional, Union
-
+import pandas as pd
 import h5py
 import numpy as np
 import torch
@@ -51,13 +51,14 @@ class StrainTestingDataset(FlowDataset):
         dataset_path:
             Path to hdf5 file containing premade injections.
             For each interferometer being analyzed, the strain
-            data should be stored in an hdf5 dataset named
-            after that interferometer. The dataset should be
-            of shape (batch, time). It is assumed that the coalescence
+            data should be stored in an hdf5 group named `strain` with
+            each dataset within named after the interferometer.
+            The dataset should be of shape (batch, time).
+            It is assumed that the coalescence
             time of the injection is placed in the middle of each sample
             of the array. In addition, each inference parameter
-            should be stored in a dataset with the same name as the
-            parameter, e.g. `chirp_mass`, `mass_ratio`, etc.
+            should be saved in a group name `parameters` using pandas:
+            `dataframe.to_hdf(path, key='parameters')`.
 
     """
 
@@ -74,30 +75,28 @@ class StrainTestingDataset(FlowDataset):
                 "StrainTestingDataset should only be used for testing"
             )
 
+        parameters = pd.read_hdf(self.dataset_path, key="parameters")[:3]
+        # store dataframe indices to later save with outputs;
+        # helpful for, e.g., cross-referencing with an injection set
+        # that has been filtered so that indices are not just 0...N
+        self.indices = parameters.index
+
+        keys = self.hparams.inference_params.copy()
+        keys.remove("phi")
+        keys += ["ra", "gpstime"]
+        parameters = parameters[keys]
+        parameters["phi"] = phi_from_ra(
+            parameters["ra"], parameters["gpstime"]
+        )
+
         # load in the strain data and parameters
         strain = []
-        parameters = {}
+
         with h5py.File(self.dataset_path, "r") as f:
             for ifo in self.hparams.ifos:
-                strain.append(torch.tensor(f[ifo][:], dtype=torch.float32))
-
-            for parameter in self.hparams.inference_params + ["ra", "gpstime"]:
-                # skip phi since these are proper injections
-                # where we'll need to convert ra to phi
-                # given the gpstime
-                if parameter == "phi":
-                    continue
-
-                parameters[parameter] = torch.tensor(
-                    f[parameter][:], dtype=torch.float32
+                strain.append(
+                    torch.tensor(f["strain"][ifo][:3], dtype=torch.float32)
                 )
-
-        # convert ra to phi
-        parameters["phi"] = torch.tensor(
-            phi_from_ra(
-                parameters["ra"].numpy(), parameters["gpstime"].numpy()
-            )
-        )
         strain = torch.stack(strain, dim=1)
 
         # based on psd length, fduration and kernel length, and padding,
@@ -117,11 +116,10 @@ class StrainTestingDataset(FlowDataset):
 
         start, stop = middle + pre, middle + post
         strain = strain[..., start:stop]
+
         # convert parameters to a tensor
-        parameters = [
-            torch.Tensor(parameters[k]) for k in self.hparams.inference_params
-        ]
-        parameters = torch.vstack(parameters).T
+        parameters = parameters[self.hparams.inference_params]
+        parameters = torch.tensor(parameters.values)
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
@@ -238,20 +236,25 @@ class ParameterTestingDataset(FlowDataset):
                 "ParameterTestingDataset should only be used for testing"
             )
 
-        parameters = {}
-        load = self.hparams.inference_params + ["ra", "dec", "psi", "gpstime"]
+        parameters = pd.read_hdf(self.dataset_path, key="parameters")
+        # store dataframe indices to later save with outputs;
+        # helpful for, e.g., cross-referencing with an injection set
+        # that has been filtered
+        self.indices = parameters.index
+
+        load_keys = self.hparams.inference_params + [
+            "ra",
+            "dec",
+            "psi",
+            "gpstime",
+        ]
+        load_keys.remove("phi")
         if self.waveform_generation_parameters is not None:
-            load += self.waveform_generation_parameters
+            load_keys += self.waveform_generation_parameters
 
-        with h5py.File(self.dataset_path) as f:
-            for parameter in load:
-                if parameter == "phi":
-                    continue
-
-                parameters[parameter] = torch.tensor(
-                    f[parameter], dtype=torch.float32
-                )
-
+        parameters = parameters[load_keys]
+        parameters = parameters.to_dict(orient="list")
+        parameters = {k: torch.tensor(v) for k, v in parameters.items()}
         # apply conversion function to parameters
         # if we're generating from
         if self.convert:
@@ -268,20 +271,18 @@ class ParameterTestingDataset(FlowDataset):
             parameters["chirp_mass"], parameters["mass_ratio"]
         )
         # convert ra to phi
-        parameters["phi"] = torch.tensor(
-            phi_from_ra(
-                parameters["ra"].numpy(), parameters["gpstime"].numpy()
-            )
+        parameters["phi"] = phi_from_ra(
+            parameters["ra"], parameters["gpstime"]
         )
-
         # generate cross and plus using our infrastructure
+
         cross, plus = self.waveform_sampler(**parameters)
 
         # convert back to tensor
         params = []
         for k in self.hparams.inference_params:
             if k in parameters.keys():
-                params.append(torch.Tensor(parameters[k]))
+                params.append(parameters[k])
 
         # torch tensor of inference parameters
         # that the model will draw samples for
@@ -290,7 +291,7 @@ class ParameterTestingDataset(FlowDataset):
         self.test_parameters: dict[str, torch.tensor] = parameters
         self.test_waveforms = torch.stack([cross, plus], dim=0)
 
-        self.background = self.background_from_gpstimes(
+        self.background, _ = self.background_from_gpstimes(
             parameters["gpstime"], self.get_test_fnames()
         )
 
