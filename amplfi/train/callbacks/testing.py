@@ -591,12 +591,13 @@ class CrossMatchStatistics(pl.Callback):
                 df[attr] = [getattr(result, attr) for result in results]
         df.to_hdf(outdir / "skymap_stats.hdf5", key="stats", mode="w")
 
-    def on_test_epoch_end(self, _, pl_module: "FlowModel"):
+    def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         self.crossmatch(
             pl_module.test_results,
             pl_module.test_outdir,
             self.min_samples_per_pix_dist,
             self.max_samples_per_pixel,
+            trainer.datamodule.indices,
         )
 
         if pl_module.reweighted_results:
@@ -605,6 +606,7 @@ class CrossMatchStatistics(pl.Callback):
                 pl_module.test_outdir / "reweighted",
                 self.min_samples_per_pix_dist,
                 self.max_samples_per_pixel,
+                trainer.datamodule.indices,
             )
 
     def crossmatch(
@@ -613,6 +615,7 @@ class CrossMatchStatistics(pl.Callback):
         outdir: Path,
         min_samples_per_pix_dist: int,
         max_samples_per_pixel: int,
+        index: pd.Index,
     ) -> None:
         (outdir / "plots").mkdir(exist_ok=True)
         func = partial(
@@ -637,7 +640,7 @@ class CrossMatchStatistics(pl.Callback):
                 idx = future_to_index[future]
                 crossmatch_results[idx] = future.result()
 
-        self.write_skymap_statistics(outdir, crossmatch_results)
+        self.write_skymap_statistics(outdir, crossmatch_results, index)
 
         # searched area cum hist
         searched_areas = [
