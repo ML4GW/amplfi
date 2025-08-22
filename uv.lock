@@ -168,11 +168,9 @@ dependencies = [
     { name = "mldatafind" },
     { name = "numpy" },
     { name = "omegaconf" },
-    { name = "pandas" },
+    { name = "pandas", extra = ["hdf5"] },
     { name = "ray", extra = ["default", "tune"] },
     { name = "s3fs" },
-    { name = "tables", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "tables", version = "3.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "torch" },
     { name = "urllib3" },
     { name = "wandb" },
@@ -208,14 +206,13 @@ requires-dist = [
     { name = "lightray", specifier = ">=0.2.4" },
     { name = "ligo-skymap", specifier = ">=2.2.2" },
     { name = "luigi", specifier = ">=3.5.1,<4" },
-    { name = "ml4gw", git = "https://github.com/ethanmarx/ml4gw?branch=attention" },
+    { name = "ml4gw", specifier = ">=0.7.1" },
     { name = "mldatafind", specifier = ">=0.1.8" },
     { name = "numpy", specifier = "<2.0.0" },
     { name = "omegaconf", specifier = ">=2.3.0,<3" },
-    { name = "pandas", specifier = ">=2.3.1" },
+    { name = "pandas", extras = ["hdf5"], specifier = ">=2.3.1" },
     { name = "ray", extras = ["default", "tune"], specifier = ">=2.38.0,<3" },
     { name = "s3fs", specifier = ">=2024.12.0,<2025" },
-    { name = "tables", specifier = ">=3.10.1" },
     { name = "torch", specifier = ">=2.5.0" },
     { name = "urllib3", specifier = ">=1.25.4,<1.27" },
     { name = "wandb", specifier = ">=0.18.5,<0.19" },
@@ -2940,14 +2937,18 @@ wheels = [
 
 [[package]]
 name = "ml4gw"
-version = "0.7.6"
-source = { git = "https://github.com/ethanmarx/ml4gw?branch=attention#746d82efbaafc5f710a903adb06a551f9df2b0b7" }
+version = "0.7.7"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jaxtyping" },
     { name = "numpy" },
     { name = "scipy" },
     { name = "torch" },
     { name = "torchaudio" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3a/50/c4a36b1bdf7fdd99405d9c2643da087a848603bdc64875f5f76824ad897f/ml4gw-0.7.7.tar.gz", hash = "sha256:80223a40b9a36e6cb11883924a95e5bf1b52d39c906cb3c1da5c0812a9f2afd8", size = 115393, upload-time = "2025-08-22T17:24:53.959Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/a9/5f8648cce66b07481da4d58a91ba16143ebfcf97d31b2929745910a4f1b7/ml4gw-0.7.7-py3-none-any.whl", hash = "sha256:0ca8c36afa45ca84a249070027ab89c73ab99b681ae6d7eda25de4643728dcc9", size = 125625, upload-time = "2025-08-22T17:24:53.08Z" },
 ]
 
 [[package]]
@@ -3677,6 +3678,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f6/61/1bce4129f93ab66f1c68b7ed1c12bac6a70b1b56c5dab359c6bbcd480b52/pandas-2.3.2-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:df4df0b9d02bb873a106971bb85d448378ef14b86ba96f035f50bbd3688456b4", size = 12766345, upload-time = "2025-08-21T10:27:26.6Z" },
     { url = "https://files.pythonhosted.org/packages/8e/46/80d53de70fee835531da3a1dae827a1e76e77a43ad22a8cd0f8142b61587/pandas-2.3.2-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:213a5adf93d020b74327cb2c1b842884dbdd37f895f42dcc2f09d451d949f811", size = 13439314, upload-time = "2025-08-21T10:27:29.213Z" },
     { url = "https://files.pythonhosted.org/packages/28/30/8114832daff7489f179971dbc1d854109b7f4365a546e3ea75b6516cea95/pandas-2.3.2-cp312-cp312-win_amd64.whl", hash = "sha256:8c13b81a9347eb8c7548f53fd9a4f08d4dfe996836543f805c987bafa03317ae", size = 10983326, upload-time = "2025-08-21T10:27:31.901Z" },
+]
+
+[package.optional-dependencies]
+hdf5 = [
+    { name = "tables", version = "3.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "tables", version = "3.10.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
 
 [[package]]
