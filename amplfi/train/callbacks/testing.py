@@ -791,7 +791,7 @@ class SaveInjectionParameters(pl.Callback):
             trainer.datamodule.test_parameters[param] = np.zeros(num_test)
 
     def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
-        outdir = self.pl_module.test_outdir
+        outdir = pl_module.test_outdir
         # save parameters of randomly sampled injections
         with h5py.File(outdir / "parameters.hdf5", "w") as f:
             for param, data in trainer.datamodule.test_parameters.items():
