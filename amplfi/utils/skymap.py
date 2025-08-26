@@ -284,3 +284,4 @@ def plot_skymap(skymap: Table, ra_inj: float, dec_inj: float, outpath: "Path"):
         markersize=10,
     )
     plt.savefig(outpath)
+    plt.close()
