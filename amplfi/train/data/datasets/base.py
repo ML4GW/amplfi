@@ -18,6 +18,7 @@ import numpy as np
 from pathlib import Path
 import random
 from tqdm.auto import tqdm
+import pandas as pd
 
 Tensor = torch.Tensor
 Distribution = torch.distributions.Distribution
@@ -464,9 +465,9 @@ class AmplfiDataset(pl.LightningDataModule):
                     params.append(torch.Tensor(parameters[k]))
 
             self.test_inference_params = torch.column_stack(params)
-            self.test_parameters: dict[str, torch.tensor] = parameters
+            self.test_parameters: pd.DataFrame = pd.DataFrame(parameters)
             self.test_waveforms = torch.stack([cross, plus], dim=0)
-
+            self.indices = self.test_parameters.index
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
         # and transfer them to appropiate device

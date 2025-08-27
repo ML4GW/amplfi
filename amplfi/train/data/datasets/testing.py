@@ -75,7 +75,7 @@ class StrainTestingDataset(FlowDataset):
                 "StrainTestingDataset should only be used for testing"
             )
 
-        parameters = pd.read_hdf(self.dataset_path, key="parameters")
+        parameters = pd.read_hdf(self.dataset_path, key="parameters")[:4]
         # store dataframe indices to later save with outputs;
         # helpful for, e.g., cross-referencing with an injection set
         # that has been filtered so that indices are not just 0...N
@@ -95,7 +95,7 @@ class StrainTestingDataset(FlowDataset):
         with h5py.File(self.dataset_path, "r") as f:
             for ifo in self.hparams.ifos:
                 strain.append(
-                    torch.tensor(f["strain"][ifo][:], dtype=torch.float32)
+                    torch.tensor(f["strain"][ifo][:4], dtype=torch.float32)
                 )
         strain = torch.stack(strain, dim=1)
 
@@ -117,18 +117,21 @@ class StrainTestingDataset(FlowDataset):
         start, stop = middle + pre, middle + post
         strain = strain[..., start:stop]
 
-        # convert parameters to a tensor
+        # the whole set of parameters used to generate the waveforms
+        self.test_parameters: dict[str, torch.tensor] = parameters
+
+        # torch tensor of just requested inference parameters
+        # that the model is trained to draw samples for
         parameters = parameters[self.hparams.inference_params]
         parameters = torch.tensor(parameters.values)
+        self.test_inference_params = parameters
+        self.test_strain = strain
 
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
         # and transfer them to appropiate device
         self.build_transforms(stage)
         self.transforms_to_device()
-
-        self.test_inference_params = parameters
-        self.test_strain = strain
 
     def test_dataloader(self) -> torch.utils.data.DataLoader:
         # build dataset and dataloader that will
@@ -236,11 +239,7 @@ class ParameterTestingDataset(FlowDataset):
                 "ParameterTestingDataset should only be used for testing"
             )
 
-        parameters = pd.read_hdf(self.dataset_path, key="parameters")
-        # store dataframe indices to later save with outputs;
-        # helpful for, e.g., cross-referencing with an injection set
-        # that has been filtered
-        self.indices = parameters.index
+        parameters = pd.read_hdf(self.dataset_path, key="parameters")[:4]
 
         load_keys = self.hparams.inference_params + [
             "ra",
@@ -287,6 +286,7 @@ class ParameterTestingDataset(FlowDataset):
         # torch tensor of inference parameters
         # that the model will draw samples for
         self.test_inference_params = torch.column_stack(params)
+
         # the whole set of parameters used to generate the waveforms
         self.test_parameters: dict[str, torch.tensor] = parameters
         self.test_waveforms = torch.stack([cross, plus], dim=0)
