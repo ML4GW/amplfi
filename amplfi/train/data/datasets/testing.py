@@ -94,10 +94,9 @@ class StrainTestingDataset(FlowDataset):
 
         with h5py.File(self.dataset_path, "r") as f:
             for ifo in self.hparams.ifos:
-                strain.append(
-                    torch.tensor(f["strain"][ifo], dtype=torch.float32)
-                )
-        strain = torch.stack(strain, dim=1)
+                strain.append(np.array(f["strain"][ifo]))
+        strain = np.stack(strain, axis=1)
+        strain = torch.tensor(strain, dtype=torch.float32)
 
         # based on psd length, fduration and kernel length, and padding,
         # determine slice indices. It is assumed the coalescence
@@ -239,7 +238,7 @@ class ParameterTestingDataset(FlowDataset):
                 "ParameterTestingDataset should only be used for testing"
             )
 
-        parameters = pd.read_hdf(self.dataset_path, key="parameters")[:4]
+        parameters = pd.read_hdf(self.dataset_path, key="parameters")
         index = parameters.index
 
         load_keys = self.hparams.inference_params + [
