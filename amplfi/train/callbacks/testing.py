@@ -11,7 +11,6 @@ import lightning.pytorch as pl
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-import h5py
 import bilby
 from amplfi.utils.skymap import plot_skymap
 from tqdm.auto import tqdm
@@ -597,7 +596,7 @@ class CrossMatchStatistics(pl.Callback):
             pl_module.test_outdir,
             self.min_samples_per_pix_dist,
             self.max_samples_per_pixel,
-            trainer.datamodule.indices,
+            trainer.datamodule.test_parameters.index,
         )
 
         if pl_module.reweighted_results:
@@ -606,7 +605,7 @@ class CrossMatchStatistics(pl.Callback):
                 pl_module.test_outdir / "reweighted",
                 self.min_samples_per_pix_dist,
                 self.max_samples_per_pixel,
-                trainer.datamodule.indices,
+                trainer.datamodule.test_parameters.index,
             )
 
     def crossmatch(
@@ -776,43 +775,25 @@ class CrossMatchStatistics(pl.Callback):
 
 class SaveInjectionParameters(pl.Callback):
     """
-    Save randomly sampled injection parameters to a file
-    at the end of each test epoch.
+    Save injection parameters to an hdf5 file.
     """
-
-    # TODO: should these parameters be saved
-    # regardless of whether this callback is activated?
-    # i.e. should `on_test_epoch_start` and `on_test_batch_end`
-    # be moved to the base dataset?
-    def on_test_epoch_start(self, trainer, pl_module: "FlowModel"):
-        # initialize field in test parameters for snr
-        num_test = len(trainer.datamodule.test_dataloader())
-        for param in ["snr", "dec", "psi", "phi", "ra"]:
-            trainer.datamodule.test_parameters[param] = np.zeros(num_test)
 
     def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         outdir = pl_module.test_outdir
-        # save parameters of randomly sampled injections
-        with h5py.File(outdir / "parameters.hdf5", "w") as f:
-            for param, data in trainer.datamodule.test_parameters.items():
-                f.create_dataset(param, data=data)
-
-    def on_test_batch_end(
-        self,
-        trainer,
-        pl_module: "FlowModel",
-        outputs,
-        batch,
-        batch_idx,
-        dataloader_idx=0,
-    ):
-        result: "AmplfiResult"
-        _: Optional["AmplfiResult"]
-        result, _ = outputs
-        for param in ["snr", "dec", "psi", "phi", "ra"]:
-            trainer.datamodule.test_parameters[param][batch_idx] = (
-                result.injection_parameters[param]
+        results = pl_module.test_results
+        # try to get snrs; Some testing datasets
+        # (e.g. base FlowDataset and ParameterTestingDataset)
+        # which generate injections on the fly calculate snrs
+        # while others (e.g. StrainTestingDataset) don't
+        try:
+            trainer.datamodule.test_parameters["snr"] = np.array(
+                [result.injection_parameters["snr"] for result in results]
             )
+        except KeyError:
+            pass
+        trainer.datamodule.test_parameters.to_hdf(
+            outdir / "parameters.hdf5", key="parameters"
+        )
 
 
 class EstimateSamplingLatency(pl.Callback):

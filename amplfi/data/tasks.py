@@ -6,7 +6,6 @@ from ligo.skymap.postprocess.crossmatch import crossmatch
 from ligo.skymap.tool import ligo_skymap_plot
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-import h5py
 from mldatafind.law.parameters import PathParameter
 from mldatafind.law.tasks import Fetch
 from mldatafind.law.tasks import Query as _Query
@@ -17,6 +16,7 @@ from luigi.util import inherits
 from ligo.skymap.io.fits import read_sky_map
 from tqdm.auto import tqdm
 import multiprocessing as mp
+import pandas as pd
 
 
 # add mixin for appending amplfi specific
@@ -142,13 +142,12 @@ CROSSMATCH_ATTRS = [
 def process_skymap(skymap_item, parameter_file, plot, data_dir):
     i, skymap_target = skymap_item
     skymap = read_sky_map(skymap_target.path, moc=True, distances=True)
-
-    with h5py.File(parameter_file, "r") as f:
-        ra = f["phi"][i] * u.rad
-        dec = f["dec"][i] * u.rad
-        dist = f["distance"][i] * u.Mpc
-
-    coord = SkyCoord(ra=ra, dec=dec, distance=dist)
+    row = pd.read_hdf(parameter_file, key="parameters", start=i, stop=i + 1)
+    idx = row.index[0]
+    ra = row.at[idx, "phi"] * u.rad
+    dec = row.at[idx, "dec"] * u.rad
+    distance = row.at[idx, "distance"] * u.Mpc
+    coord = SkyCoord(ra=ra, dec=dec, distance=distance)
 
     if plot:
         ligo_skymap_plot.main(
@@ -191,6 +190,9 @@ class AggregateLigoSkymap(
         "example, this can be the output of the "
         "`SaveInjectionParameters` lightning callback",
     )
+    out_dir = luigi.PathParameter(
+        description="Path to directory where skymap stats will be saved"
+    )
     plot = luigi.BoolParameter(
         default=False,
         description="If True, will generate a plot using "
@@ -210,7 +212,7 @@ class AggregateLigoSkymap(
         )
 
     def output(self):
-        return law.LocalFileTarget(self.data_dir / "ligo_skymap_stats.hdf5")
+        return law.LocalFileTarget(self.out_dir / "ligo_skymap_stats.hdf5")
 
     def run(self):
         func = partial(
@@ -235,6 +237,6 @@ class AggregateLigoSkymap(
             for attr in CROSSMATCH_ATTRS:
                 data[attr][i] = result[attr]
 
-        with h5py.File(self.output().path, "w") as f:
-            for attr, values in data.items():
-                f.create_dataset(attr, data=values)
+        index = pd.read_hdf(self.parameter_file, key="parameters").index
+        data = pd.DataFrame(data, index=index)
+        data.to_hdf(self.output().path, key="stats")
