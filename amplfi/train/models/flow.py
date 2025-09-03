@@ -9,7 +9,11 @@ from .base import AmplfiModel
 from typing import Optional
 from bilby.core.prior import PriorDict
 from ..data.datasets.testing import ra_from_phi
-from amplfi.train.callbacks import ProbProbPlot, CrossMatchStatistics
+from amplfi.train.callbacks import (
+    ProbProbPlot,
+    CrossMatchStatistics,
+    SaveInjectionParameters,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,36 +37,12 @@ class FlowModel(AmplfiModel):
             to keep only valid samples within the prior boundaries.
         samples_per_event:
             Number of samples to draw per event for testing
-        nside:
-            Healpix nside used when creating skymaps
-        min_samples_per_pix:
-        num_plot:
-            Number of testing events to plot skymaps, corner
-            plots and, if `plot_data` is `True`, strain data
-            visualizations.
-        plot_data:
-            If `True`, plot strain visualization for `num_plot`
-            of the testing set events
-        plot_corner:
-            If `True`, plot corner plots for
-            testing set events
-        plot_mollview:
-            If `True`, plot mollview plots for
-            testing set events
-        cross_match:
+        min_samples_per_pix_dist:
+        max_samples_per_pixel:
+        crossmatch:
             If `True`, run ligo.skymap.postprocess.crossmatch
             on result objects at the end of testing epoch
             and produce searched area and volume cdfs
-        save_fits:
-            If `True`, save skymaps as FITS files
-            for testing set events
-        save_posterior:
-            If `True`, save bilby Result objects and posterior samples
-        save_injection_parameters:
-            If `True`, save the injection parameters for each event
-            in the testing set to a an hdf5 file. Useful for
-            testing datasets where the injection parameters are randomly
-            sampled.
         target_prior:
             Path to a bilby prior file for reweighting posterior samples to
             a new prior.
@@ -164,7 +144,7 @@ class FlowModel(AmplfiModel):
 
     def analyze_event(
         self, strain, asds, parameters=None, snr=None, gpstime=None
-    ):
+    ) -> tuple[AmplfiResult, Optional[AmplfiResult]]:
         context = (strain, asds)
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
@@ -244,11 +224,15 @@ class FlowModel(AmplfiModel):
 
         return result, reweighted_result
 
-    def test_step(self, batch, _) -> AmplfiResult:
+    def test_step(
+        self, batch, _
+    ) -> tuple[AmplfiResult, Optional[AmplfiResult]]:
         strain, asds, parameters, snr = batch
         return self.analyze_event(strain, asds, parameters, snr)
 
-    def predict_step(self, batch, _):
+    def predict_step(
+        self, batch, _
+    ) -> tuple[AmplfiResult, Optional[AmplfiResult]]:
         strain, asds, gpstime = batch
         return self.analyze_event(strain, asds, None, None, gpstime[0].cpu())
 
@@ -303,7 +287,9 @@ class FlowModel(AmplfiModel):
         r.posterior["log_prior"] = log_prior_probs
         return r
 
-    def filter_parameters(self, parameters: torch.Tensor):
+    def filter_parameters(
+        self, parameters: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Filter the descaled parameters to keep only valid samples
         within their boundaries.
@@ -345,6 +331,9 @@ class FlowModel(AmplfiModel):
 
     def configure_callbacks(self):
         callbacks = super().configure_callbacks()
+        # automatically add since now
+        # supported by all test datasets
+        callbacks += [SaveInjectionParameters()]
         if self.crossmatch:
             callbacks.append(
                 CrossMatchStatistics(

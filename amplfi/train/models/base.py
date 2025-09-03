@@ -116,7 +116,7 @@ class AmplfiModel(pl.LightningModule):
             },
         }
 
-    def scale(self, parameters, reverse: bool = False):
+    def scale(self, parameters, reverse: bool = False) -> Tensor:
         """
         Apply standard scaling to transformed parameters
         """

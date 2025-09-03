@@ -3,23 +3,38 @@ import torch
 from .base import AmplfiDataset
 from ml4gw import gw
 
+Tensor = torch.Tensor
+
 
 class FlowDataset(AmplfiDataset):
     """
     Lightning DataModule for training normalizing flow networks
     """
 
-    def inject(self, X, cross, plus, parameters):
+    def inject(
+        self,
+        X: Tensor,
+        cross: Tensor,
+        plus: Tensor,
+        parameters: dict[str, Tensor],
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         self.projector.to(self.device)
         self.whitener.to(self.device)
 
         X, psds = self.psd_estimator(X)
         dec, psi, phi = self.sample_extrinsic(X)
-
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
 
         # append extrinsic parameters to parameters
         parameters.update({"dec": dec, "psi": psi, "phi": phi})
+
+        if self.trainer.testing:
+            # save randomly sampled extrinisic parameters
+            # used for saving to disk;
+            # TODO: this is a bit hacky, but would require some
+            # refactoring to address
+            for key in ["dec", "psi", "phi"]:
+                self.test_extrinsic[key].extend(parameters[key].tolist())
 
         # downselect to requested inference parameters
         parameters = {
