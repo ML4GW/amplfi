@@ -465,9 +465,10 @@ class AmplfiDataset(pl.LightningDataModule):
                     params.append(torch.Tensor(parameters[k]))
 
             self.test_inference_params = torch.column_stack(params)
-            self.test_parameters: pd.DataFrame = pd.DataFrame(parameters)
+            self.test_parameters = pd.DataFrame(parameters)
+            self.test_extrinsic = {key: [] for key in ["dec", "psi", "phi"]}
             self.test_waveforms = torch.stack([cross, plus], dim=0)
-            self.indices = self.test_parameters.index
+
         # once we've generated validation/testing waveforms on cpu,
         # build data augmentation modules
         # and transfer them to appropiate device
@@ -486,7 +487,7 @@ class AmplfiDataset(pl.LightningDataModule):
             background.append(data)
         return background
 
-    def load_val_background(self, N: int) -> List[Tensor]:
+    def load_val_background(self, N: int) -> list[Tensor]:
         """
         Sample `N` background segments from the set of validation files.
         """
@@ -501,7 +502,9 @@ class AmplfiDataset(pl.LightningDataModule):
         background = next(iter(dataset))
         return background
 
-    def on_after_batch_transfer(self, batch, _):
+    def on_after_batch_transfer(
+        self, batch, _
+    ) -> tuple[Tensor, Tensor, dict[str, Tensor], Tensor]:
         """
         This is a Lightning `hook` that gets called after
         data returned by a dataloader gets put on the local device,
@@ -540,7 +543,6 @@ class AmplfiDataset(pl.LightningDataModule):
             strain, asds, parameters, snrs = self.inject(
                 background, cross, plus, parameters
             )
-
         return strain, asds, parameters, snrs
 
     # ================================================ #
@@ -650,7 +652,13 @@ class AmplfiDataset(pl.LightningDataModule):
             background_dataloader,
         )
 
-    def inject(self, *args, **kwargs):
+    def inject(
+        self,
+        X: Tensor,
+        cross: Tensor,
+        plus: Tensor,
+        parameters: dict[str, Tensor],
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         """
         Subclasses should implement this method
         for different training use cases,

@@ -144,7 +144,7 @@ class FlowModel(AmplfiModel):
 
     def analyze_event(
         self, strain, asds, parameters=None, snr=None, gpstime=None
-    ):
+    ) -> tuple[AmplfiResult, Optional[AmplfiResult]]:
         context = (strain, asds)
         samples = self.model.sample(
             self.hparams.samples_per_event, context=context
@@ -224,11 +224,15 @@ class FlowModel(AmplfiModel):
 
         return result, reweighted_result
 
-    def test_step(self, batch, _) -> AmplfiResult:
+    def test_step(
+        self, batch, _
+    ) -> tuple[AmplfiResult, Optional[AmplfiResult]]:
         strain, asds, parameters, snr = batch
         return self.analyze_event(strain, asds, parameters, snr)
 
-    def predict_step(self, batch, _):
+    def predict_step(
+        self, batch, _
+    ) -> tuple[AmplfiResult, Optional[AmplfiResult]]:
         strain, asds, gpstime = batch
         return self.analyze_event(strain, asds, None, None, gpstime[0].cpu())
 
@@ -283,7 +287,9 @@ class FlowModel(AmplfiModel):
         r.posterior["log_prior"] = log_prior_probs
         return r
 
-    def filter_parameters(self, parameters: torch.Tensor):
+    def filter_parameters(
+        self, parameters: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Filter the descaled parameters to keep only valid samples
         within their boundaries.

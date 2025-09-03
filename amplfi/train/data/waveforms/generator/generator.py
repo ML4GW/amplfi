@@ -50,18 +50,24 @@ class WaveformGenerator(WaveformSampler):
         self.num_test_waveforms = num_test_waveforms
         self.num_fit_params = num_fit_params
 
-    def get_val_waveforms(self, _, world_size):
+    def get_val_waveforms(
+        self, _, world_size
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
         num_waveforms = self.num_val_waveforms // world_size
         parameters = self.training_prior(num_waveforms, device="cpu")
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
-    def get_test_waveforms(self):
+    def get_test_waveforms(
+        self,
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
         parameters = self.testing_prior(self.num_test_waveforms)
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
-    def sample(self, X):
+    def sample(
+        self, X
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
         N = len(X)
         parameters = self.training_prior(N, device=X.device)
         hc, hp = self(**parameters)
@@ -71,5 +77,5 @@ class WaveformGenerator(WaveformSampler):
         parameters = self.training_prior(self.num_fit_params)
         return parameters
 
-    def forward(self):
+    def forward(self) -> tuple[torch.Tensor, torch.Tensor]:
         raise NotImplementedError

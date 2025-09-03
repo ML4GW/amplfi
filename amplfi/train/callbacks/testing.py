@@ -781,19 +781,27 @@ class SaveInjectionParameters(pl.Callback):
     def on_test_epoch_end(self, trainer, pl_module: "FlowModel"):
         outdir = pl_module.test_outdir
         results = pl_module.test_results
+        test_parameters: pd.DataFrame = trainer.datamodule.test_parameters
         # try to get snrs; Some testing datasets
         # (e.g. base FlowDataset and ParameterTestingDataset)
         # which generate injections on the fly calculate snrs
         # while others (e.g. StrainTestingDataset) don't
         try:
-            trainer.datamodule.test_parameters["snr"] = np.array(
+            test_parameters["snr"] = np.array(
                 [result.injection_parameters["snr"] for result in results]
             )
         except KeyError:
             pass
-        trainer.datamodule.test_parameters.to_hdf(
-            outdir / "parameters.hdf5", key="parameters"
-        )
+
+        # for FlowDataset, extrinsic parameters
+        # are randomly sampled, so append them to dataframe here
+        # TODO: hacky, but more robust solutions would require refactoring.
+        try:
+            for key in ["dec", "psi", "phi"]:
+                test_parameters[key] = trainer.datamodule.test_extrinsic[key]
+        except AttributeError:
+            pass
+        test_parameters.to_hdf(outdir / "parameters.hdf5", key="parameters")
 
 
 class EstimateSamplingLatency(pl.Callback):
