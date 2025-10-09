@@ -1,7 +1,11 @@
 import pytest
 import torch
 
-from amplfi.train.architectures.embeddings import MultiModal, ResNet
+from amplfi.train.architectures.embeddings import (
+    MultiModal,
+    ResNet,
+    MultiModalPsdEmbeddingWithDecimator,
+)
 from amplfi.train.architectures.embeddings.dense import DenseEmbedding
 
 
@@ -32,6 +36,11 @@ def out_features(request):
 
 @pytest.fixture(params=[32, 64, 128])
 def time_out_features(request):
+    return request.param
+
+
+@pytest.fixture(params=[True, False])
+def split_by_schedule(request):
     return request.param
 
 
@@ -70,3 +79,32 @@ def test_multimodal(
     x = (torch.randn(100, n_ifos, length), None)
     y = embedding(x)
     assert y.shape == (100, time_out_features + freq_out_features)
+
+
+def test_multimodal_with_decimator(n_ifos, kernel_size, split_by_schedule):
+    sample_rate = 2048
+    length = sample_rate * 60
+    decimator_schedule = torch.tensor(
+        [[0, 40, 256], [40, 58, 512], [58, 60, 2048]],
+        dtype=torch.int,
+    )
+    time_context_dim = 8
+    freq_context_dim = 12
+
+    embedding = MultiModalPsdEmbeddingWithDecimator(
+        n_ifos,
+        sample_rate,
+        decimator_schedule,
+        time_context_dim,
+        freq_context_dim,
+        [3, 3],
+        [3, 3],
+        split_by_schedule=split_by_schedule,
+        time_kernel_size=kernel_size,
+        freq_kernel_size=kernel_size,
+    )
+    psds = torch.randn(100, n_ifos, sample_rate)
+    x = (torch.randn(100, n_ifos, length), psds)
+
+    y = embedding(x)
+    assert y.shape == (100, embedding.context_dim)
