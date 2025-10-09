@@ -171,6 +171,11 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
         **kwargs,
     ):
         super().__init__()
+        decimator_schedule = (
+            decimator_schedule
+            if isinstance(decimator_schedule, torch.Tensor)
+            else torch.tensor(decimator_schedule, device=self.device)
+        )
         self.decimator = Decimator(
             strain_sample_rate, schedule=decimator_schedule
         )
