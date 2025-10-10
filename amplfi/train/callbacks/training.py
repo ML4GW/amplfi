@@ -37,7 +37,7 @@ class SaveAugmentedBatch(pl.Callback):
             X = X.to(device)
 
             cross, plus, parameters = datamodule.waveform_sampler.sample(X)
-            strain, asds, parameters = datamodule.inject(
+            strain, asds, parameters, snrs = datamodule.inject(
                 X, cross, plus, parameters
             )
 
@@ -60,7 +60,7 @@ class SaveAugmentedBatch(pl.Callback):
             val_parameters = {
                 k: val_parameters[:, i] for i, k in enumerate(keys)
             }
-            val_strain, val_asds, val_parameters = datamodule.inject(
+            val_strain, val_asds, val_parameters, val_snrs = datamodule.inject(
                 background, val_cross, val_plus, val_parameters
             )
 
@@ -74,6 +74,7 @@ class SaveAugmentedBatch(pl.Callback):
                             h5file["strain"] = strain.cpu().numpy()
                             h5file["asds"] = asds.cpu().numpy()
                             h5file["parameters"] = parameters.cpu().numpy()
+                            h5file["snrs"] = snrs.cpu().numpy()
                         s3_file.write(f.getvalue())
 
                 with s3.open(f"{save_dir}/val-batch.h5", "wb") as s3_file:
@@ -82,6 +83,7 @@ class SaveAugmentedBatch(pl.Callback):
                             h5file["strain"] = val_strain.cpu().numpy()
                             h5file["asds"] = val_asds.cpu().numpy()
                             h5file["parameters"] = val_parameters.cpu().numpy()
+                            h5file["snrs"] = val_snrs.cpu().numpy()
                         s3_file.write(f.getvalue())
             else:
                 with h5py.File(
@@ -90,6 +92,7 @@ class SaveAugmentedBatch(pl.Callback):
                     f["strain"] = strain.cpu().numpy()
                     f["asds"] = asds.cpu().numpy()
                     f["parameters"] = parameters.cpu().numpy()
+                    f["snrs"] = snrs.cpu().numpy()
 
                 with h5py.File(
                     os.path.join(save_dir, "val-batch.h5"), "w"
@@ -97,6 +100,7 @@ class SaveAugmentedBatch(pl.Callback):
                     f["strain"] = val_strain.cpu().numpy()
                     f["asds"] = val_asds.cpu().numpy()
                     f["parameters"] = val_parameters.cpu().numpy()
+                    f["snrs"] = val_snrs.cpu().numpy()
 
 
 class SaveAugmentedSimilarityBatch(pl.Callback):
