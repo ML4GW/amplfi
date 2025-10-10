@@ -236,13 +236,18 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
             strain_split, self.freq_psd_resnets, strict=False
         ):
             _split_fft = torch.fft.rfft(_split)
-            _inv_asd = inv_asds[..., : _split_fft.shape[-1]]
+            # limit to minimum of asd/fft size
+            _idx = min(_split_fft.shape[-1], inv_asds.shape[-1])
+            _split_fft = _split_fft[..., :_idx]
+            _inv_asd = inv_asds[..., :_idx]
+
             _split_fft = torch.cat(
                 (_split_fft.real, _split_fft.imag, _inv_asd), dim=1
             )
 
             _split_embedded = _resnet(_split_fft)
             freq_domain_embedded.append(_split_embedded)
+
         freq_domain_embedded = torch.hstack(freq_domain_embedded)
 
         embedding = torch.concat(
