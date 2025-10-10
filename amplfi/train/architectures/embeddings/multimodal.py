@@ -174,14 +174,15 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
         decimator_schedule = (
             decimator_schedule
             if isinstance(decimator_schedule, torch.Tensor)
-            else torch.tensor(decimator_schedule, device=self.device)
+            else torch.tensor(decimator_schedule)
         )
+        self.register_buffer("decimator_schedule", decimator_schedule)
         self.decimator = Decimator(
-            strain_sample_rate, schedule=decimator_schedule
+            strain_sample_rate, schedule=self.decimator_schedule
         )
         self.split_by_schedule = split_by_schedule
         self.context_dim = time_context_dim + freq_context_dim * (
-            len(decimator_schedule) if split_by_schedule else 1
+            len(self.decimator_schedule) if split_by_schedule else 1
         )
 
         self.time_domain_resnet = ResNet1D(
@@ -195,9 +196,9 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
             stride_type=stride_type,
             norm_layer=norm_layer,
         )
-        self.freq_psd_resnets = []
+        freq_psd_resnets = []
         for _ in range(len(decimator_schedule) if split_by_schedule else 1):
-            self.freq_psd_resnets.append(
+            freq_psd_resnets.append(
                 ResNet1D(
                     # the number 3 is for real and imag parts of fft,
                     # and the psd arrays
@@ -212,6 +213,7 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
                     norm_layer=norm_layer,
                 )
             )
+        self.freq_psd_resnets = torch.nn.ModuleList(freq_psd_resnets)
 
     def forward(self, X):
         strain, asds = X
@@ -234,9 +236,9 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
             strain_split, self.freq_psd_resnets, strict=False
         ):
             _split_fft = torch.fft.rfft(_split)
-            _split_fft = _split_fft[..., -asds.shape[-1] :]
+            _inv_asd = inv_asds[..., : _split_fft.shape[-1]]
             _split_fft = torch.cat(
-                (_split_fft.real, _split_fft.imag, inv_asds), dim=1
+                (_split_fft.real, _split_fft.imag, _inv_asd), dim=1
             )
 
             _split_embedded = _resnet(_split_fft)
