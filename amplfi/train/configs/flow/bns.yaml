@@ -6,7 +6,7 @@ trainer:
   profiler: "simple"
   enable_progress_bar: true
   logger:
-    - class_path: lightning.pytorch.loggers.TensorboardLogger
+    - class_path: lightning.pytorch.loggers.TensorBoardLogger
       init_args:
         save_dir: ${oc.env:AMPLFI_OUTDIR}/train_logs
         # project: amplfi
@@ -16,7 +16,7 @@ trainer:
   check_val_every_n_epoch: 1
   log_every_n_steps: 50
   benchmark: false
-  callbacks: ./callbacks.yaml
+  callbacks: ../callbacks.yaml
 model:
   class_path: amplfi.train.models.flow.FlowModel
   init_args:
@@ -43,8 +43,8 @@ model:
           init_args:
             time_context_dim: 8
             freq_context_dim: 12
-            strain_sample_rate: 
-            decimator_schedule: [[0, 40, 256], [40, 58, 512], [58, 60, 2048]]
+            strain_sample_rate: 2048
+            decimator_schedule: [[0, 10, 256], [10, 28, 512], [28, 30, 2048]]
             time_layers: [5, 3, 3]
             freq_layers: [5, 3, 3]
             norm_layer:
@@ -83,30 +83,30 @@ data:
     kernel_length: 30
     fduration: 2
     psd_length: 10
-    batches_per_epoch: 800
-    batch_size: 128
+    batches_per_epoch: 100
+    batch_size: 200
     ifos: ["H1", "L1"]
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
       init_args:
         jitter: 0.1
-        num_fit_params: 100000
-        training_prior: ./bns-prior.yaml
+        num_fit_params: 10000
+        training_prior: ../bns-prior.yaml
         testing_prior: null
-        num_val_waveforms: 10000
+        num_val_waveforms: 500
         num_test_waveforms: 200
         approximant: ml4gw.waveforms.IMRPhenomPv2
         f_min: 20
         f_ref: 40
         right_pad: 0.5
-    
+
     # Optional parameters with defaults
     parameter_transformer: null
     fftlength: 2
     train_val_range: null
     test_range: null
     min_valid_duration: 10000.0
-    num_files_per_batch: 10
+    num_files_per_batch: 1
     max_num_workers: 6
     verbose: false
     seed: null
