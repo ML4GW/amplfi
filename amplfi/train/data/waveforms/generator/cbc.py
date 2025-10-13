@@ -56,6 +56,18 @@ class CBCGenerator(WaveformGenerator):
         )
 
     def forward(self, **parameters) -> torch.Tensor:
+        # Define reference mass (adjust as needed)
+        M0 = 1.0  # solar masses
+        # Extract chirp mass and chirp distance
+        chirp_mass = parameters.get("chirp_mass")
+        chirp_distance = parameters.get("chirp_distance")
+        if chirp_mass is not None and chirp_distance is not None:
+            # Compute the physical distance
+            distance = (chirp_mass / M0) ** (5/6) * chirp_distance
+            # Update dictionary
+            parameters["distance"] = distance
+            del parameters["chirp_distance"]  # remove old key to avoid duplication
+        # Generate waveform
         hc, hp = self.waveform_generator(**parameters)
         waveforms = torch.stack([hc, hp], dim=1)
         if self.time_translator is not None:
