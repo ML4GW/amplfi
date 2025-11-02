@@ -1,0 +1,112 @@
+seed_everything: 123456
+trainer:
+  accelerator: auto
+  strategy: auto
+  devices: auto
+  profiler: "simple"
+  enable_progress_bar: true
+  logger:
+    - class_path: lightning.pytorch.loggers.TensorBoardLogger
+      init_args:
+        save_dir: ${oc.env:AMPLFI_OUTDIR}/train_logs
+        # project: amplfi
+        # uncomment and set to name your run
+        name: my-bns-run 
+  max_epochs: 800
+  check_val_every_n_epoch: 1
+  log_every_n_steps: 50
+  benchmark: false
+  callbacks: ../callbacks.yaml
+model:
+  class_path: amplfi.train.models.flow.FlowModel
+  init_args:
+    # AmplfiModel base class parameters
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
+    learning_rate: 0.00071444
+    pct_start: 0.1
+    train_outdir: ${oc.env:AMPLFI_OUTDIR}
+    test_outdir: null
+    weight_decay: 0.00042
+    verbose: false
+    
+    # FlowModel specific parameters
+    arch:
+      class_path: amplfi.train.architectures.NSF
+      init_args:
+        hidden_features: [512, 512, 512]
+        transforms: 20
+        randperm: true
+        # embedding_weights: null
+        # freeze_embedding: false
+        embedding_net: 
+          class_path: amplfi.train.architectures.embeddings.MultiModalPsdEmbeddingWithDecimator
+          init_args:
+            time_context_dim: 8
+            freq_context_dim: 12
+            strain_sample_rate: 2048
+            decimator_schedule: [[0, 10, 256], [10, 28, 512], [28, 30, 2048]]
+            time_layers: [5, 3, 3]
+            freq_layers: [5, 3, 3]
+            norm_layer:
+              class_path: ml4gw.nn.norm.GroupNorm1DGetter
+              init_args:
+                groups: 8
+    filter_params: true
+    samples_per_event: 10000
+    min_samples_per_pix_dist: 5
+    max_samples_per_pixel: 20
+    target_prior: null
+    crossmatch: true
+    create_pp_plot: true
+data:
+  class_path: amplfi.train.data.datasets.FlowDataset
+  init_args:
+    # AmplfiDataset base class parameters
+    data_dir: ${oc.env:AMPLFI_DATADIR}
+    inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
+    dec: 
+      class_path: ml4gw.distributions.Cosine
+    psi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0
+        high: 3.14159
+        validate_args: false
+    phi: 
+      class_path: torch.distributions.Uniform
+      init_args:
+        low: 0
+        high: 6.28318
+        validate_args: false
+    highpass: 25
+    sample_rate: 2048
+    kernel_length: 30
+    fduration: 2
+    psd_length: 10
+    batches_per_epoch: 100
+    batch_size: 200
+    ifos: ["H1", "L1"]
+    waveform_sampler: 
+      class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
+      init_args:
+        jitter: 0.1
+        num_fit_params: 10000
+        training_prior: ../bns-prior.yaml
+        testing_prior: null
+        num_val_waveforms: 500
+        num_test_waveforms: 200
+        approximant: ml4gw.waveforms.IMRPhenomPv2
+        f_min: 20
+        f_ref: 40
+        right_pad: 0.5
+
+    # Optional parameters with defaults
+    parameter_transformer: null
+    fftlength: 2
+    train_val_range: null
+    test_range: null
+    min_valid_duration: 10000.0
+    num_files_per_batch: 1
+    max_num_workers: 6
+    verbose: false
+    seed: null
