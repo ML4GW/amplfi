@@ -2,7 +2,6 @@ from typing import Callable
 
 import torch
 from ml4gw.waveforms.generator import TimeDomainCBCWaveformGenerator
-from amplfi.train.data.utils.transforms import rescaled_distance_to_distance, chirp_distance_to_distance
 
 from .generator import WaveformGenerator
 
@@ -10,7 +9,6 @@ from .generator import WaveformGenerator
 class CBCGenerator(WaveformGenerator):
     def __init__(
         self,
-        M0 = None
         *args,
         approximant: Callable,
         f_min: float,
@@ -48,7 +46,6 @@ class CBCGenerator(WaveformGenerator):
         super().__init__(*args, **kwargs)
         self.right_pad = right_pad
         self.approximant = approximant
-        self.M0 = M0
         self.waveform_generator = TimeDomainCBCWaveformGenerator(
             approximant,
             self.sample_rate,
@@ -58,7 +55,7 @@ class CBCGenerator(WaveformGenerator):
             right_pad + self.fduration / 2,
         )
 
-    def forward(self, ifos=["H1", "L1", "V1"], **parameters) -> torch.Tensor:
+    def forward(self, **parameters) -> torch.Tensor:
         # Generate waveform
         hc, hp = self.waveform_generator(**parameters)
         waveforms = torch.stack([hc, hp], dim=1)

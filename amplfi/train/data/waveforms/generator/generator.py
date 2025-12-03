@@ -4,6 +4,7 @@ import torch
 
 from ....prior import AmplfiPrior
 from ..sampler import WaveformSampler
+from amplfi.train.data.utils.transforms import rescaled_distance_to_distance, chirp_distance_to_distance
 
 if TYPE_CHECKING:
     pass
