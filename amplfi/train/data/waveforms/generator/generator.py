@@ -18,6 +18,7 @@ class WaveformGenerator(WaveformSampler):
         training_prior: AmplfiPrior,
         testing_prior: Optional[AmplfiPrior] = None,
         num_fit_params: int,
+        M0: float = None,
         **kwargs,
     ):
         """
@@ -49,33 +50,60 @@ class WaveformGenerator(WaveformSampler):
         self.num_val_waveforms = num_val_waveforms
         self.num_test_waveforms = num_test_waveforms
         self.num_fit_params = num_fit_params
+        self.M0 = M0
+
+    def sample_extrinsic(self, X: torch.Tensor):
+        """
+        Sample extrinsic parameters used to project waveforms
+        """
+        N = len(X)
+        dec = self.dec.sample((N,)).to(X.device)
+        psi = self.psi.sample((N,)).to(X.device)
+        phi = self.phi.sample((N,)).to(X.device)
+        return dec, psi, phi
+
+    def get_parameters(self, num, **kwargs):
+        parameters = self.testing_prior(num, **kwargs)
+        keys = list(parameters.keys())
+        dec, psi, phi = self.sample_extrinsic(parameters[keys[0]])
+        parameters["dec"] = dec
+        parameters["psi"] = psi
+        parameters["phi"] = phi
+
+        if self.M0 is not None and "rescaled_distance" in keys:
+            parameters["distance"] = rescaled_distance_to_distance(self.M0, **parameters)
+            del parameters["rescaled_distance"]
+        if self.M0 is not None and "chirp_distance" in keys:
+            parameters["distance"] = chirp_distance_to_distance(self.M0, ifos=["H1", "L1", "V1"], **parameters)
+            del parameters["chirp_distance"]
+        return parameters
+
+    def get_waveforms(
+        self, num, **kwargs
+    ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
+        parameters = get_parameters(num, **kwargs)
+        hc, hp = self(**parameters)
+        return hc, hp, parameters
 
     def get_val_waveforms(
         self, _, world_size
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
         num_waveforms = self.num_val_waveforms // world_size
-        parameters = self.training_prior(num_waveforms, device="cpu")
-        hc, hp = self(**parameters)
-        return hc, hp, parameters
+        return self.get_waveforms(num_test_waveforms, device="cpu")
 
     def get_test_waveforms(
         self,
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
-        parameters = self.testing_prior(self.num_test_waveforms)
-        hc, hp = self(**parameters)
-        return hc, hp, parameters
+        return self.get_waveforms(self.num_test_waveforms)     
 
     def sample(
         self, X
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
         N = len(X)
-        parameters = self.training_prior(N, device=X.device)
-        hc, hp = self(**parameters)
-        return hc, hp, parameters
+        return self.get_waveforms(N, device=X.device)
 
     def get_fit_parameters(self) -> torch.Tensor:
-        parameters = self.training_prior(self.num_fit_params)
-        return parameters
+        return get_parameters(self.num_fit_params)
 
     def forward(self) -> tuple[torch.Tensor, torch.Tensor]:
         raise NotImplementedError

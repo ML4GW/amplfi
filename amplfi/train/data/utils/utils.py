@@ -1,6 +1,5 @@
 import torch
 
-
 class ZippedDataset(torch.utils.data.IterableDataset):
     def __init__(self, *datasets):
         super().__init__()

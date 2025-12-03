@@ -22,11 +22,8 @@ class FlowDataset(AmplfiDataset):
         self.whitener.to(self.device)
 
         X, psds = self.psd_estimator(X)
-        dec, psi, phi = self.sample_extrinsic(X)
+        dec, psi, phi = parameters["dec"], parameters["psi"], parameters["phi"]
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
-
-        # append extrinsic parameters to parameters
-        parameters.update({"dec": dec, "psi": psi, "phi": phi})
 
         if self.trainer.testing:
             # save randomly sampled extrinisic parameters

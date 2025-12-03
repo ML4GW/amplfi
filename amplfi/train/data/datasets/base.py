@@ -379,24 +379,9 @@ class AmplfiDataset(pl.LightningDataModule):
             self.hparams.ifos, self.hparams.sample_rate
         )
 
-    def sample_extrinsic(self, X: torch.Tensor):
-        """
-        Sample extrinsic parameters used to project waveforms
-        """
-        N = len(X)
-        dec = self.dec.sample((N,)).to(X.device)
-        psi = self.psi.sample((N,)).to(X.device)
-        phi = self.phi.sample((N,)).to(X.device)
-        return dec, psi, phi
-
     def fit_scaler(self):
         scaler = ChannelWiseScaler(self.num_params)
         parameters = self.waveform_sampler.get_fit_parameters()
-        key = list(parameters.keys())[0]
-        dec, psi, phi = self.sample_extrinsic(parameters[key])
-        parameters["dec"] = dec
-        parameters["psi"] = psi
-        parameters["phi"] = phi
 
         transformed = self.parameter_transformer(parameters)
         fit = []
@@ -437,6 +422,8 @@ class AmplfiDataset(pl.LightningDataModule):
         # get_val_waveforms should be implemented by waveform_sampler object
         if stage in ["fit", "validate"]:
             self._logger.info("Loading waveforms for validation")
+            
+            dec, psi, phi = self.
             cross, plus, parameters = self.waveform_sampler.get_val_waveforms(
                 rank, world_size
             )

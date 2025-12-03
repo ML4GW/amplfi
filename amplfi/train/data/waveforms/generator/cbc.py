@@ -2,6 +2,7 @@ from typing import Callable
 
 import torch
 from ml4gw.waveforms.generator import TimeDomainCBCWaveformGenerator
+from amplfi.train.data.utils.transforms import rescaled_distance_to_distance, chirp_distance_to_distance
 
 from .generator import WaveformGenerator
 
@@ -9,6 +10,7 @@ from .generator import WaveformGenerator
 class CBCGenerator(WaveformGenerator):
     def __init__(
         self,
+        M0 = None
         *args,
         approximant: Callable,
         f_min: float,
@@ -46,6 +48,7 @@ class CBCGenerator(WaveformGenerator):
         super().__init__(*args, **kwargs)
         self.right_pad = right_pad
         self.approximant = approximant
+        self.M0 = M0
         self.waveform_generator = TimeDomainCBCWaveformGenerator(
             approximant,
             self.sample_rate,
@@ -55,23 +58,11 @@ class CBCGenerator(WaveformGenerator):
             right_pad + self.fduration / 2,
         )
 
-    def forward(self, **parameters) -> torch.Tensor:
-        # Define reference mass (adjust as needed)
-        M0 = 1.0  # solar masses
-        # Extract chirp mass and chirp distance
-        chirp_mass = parameters.get("chirp_mass")
-        chirp_distance = parameters.get("chirp_distance")
-        if chirp_mass is not None and chirp_distance is not None:
-            # Compute the physical distance
-            distance = (chirp_mass / M0) ** (5/6) * chirp_distance
-            # Update dictionary
-            parameters["distance"] = distance
-            del parameters["chirp_distance"]  # remove old key to avoid duplication
+    def forward(self, ifos=["H1", "L1", "V1"], **parameters) -> torch.Tensor:
         # Generate waveform
         hc, hp = self.waveform_generator(**parameters)
         waveforms = torch.stack([hc, hp], dim=1)
         if self.time_translator is not None:
             waveforms = self.time_translator(waveforms)
         hc, hp = waveforms.transpose(1, 0)
-
         return hc.float(), hp.float()
