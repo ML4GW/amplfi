@@ -422,8 +422,6 @@ class AmplfiDataset(pl.LightningDataModule):
         # get_val_waveforms should be implemented by waveform_sampler object
         if stage in ["fit", "validate"]:
             self._logger.info("Loading waveforms for validation")
-            
-            dec, psi, phi = self.
             cross, plus, parameters = self.waveform_sampler.get_val_waveforms(
                 rank, world_size
             )
