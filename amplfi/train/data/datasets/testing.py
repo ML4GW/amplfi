@@ -56,9 +56,11 @@ class StrainTestingDataset(FlowDataset):
             The dataset should be of shape (batch, time).
             It is assumed that the coalescence
             time of the injection is placed in the middle of each sample
-            of the array. In addition, each inference parameter
-            should be saved in a group name `parameters` using pandas:
-            `dataframe.to_hdf(path, key='parameters')`.
+            of the array. If this is not the case, supply appropriate offset
+            using `middle_offset` keyword argument in seconds that is added
+            to the middle to reach the coalescence time. In addition,
+            each inference parameter should be saved in a group name `parameters`
+            using pandas: `dataframe.to_hdf(path, key='parameters')`.
 
     """
 
@@ -66,6 +68,7 @@ class StrainTestingDataset(FlowDataset):
         super().__init__(*args, **kwargs)
         self.dataset_path = dataset_path
         self.i = 0
+        self.middle_offset = kwargs.get("middle_offset", 0.0)
 
     def setup(self, stage):
         world_size, rank = self.get_world_size_and_rank()
@@ -96,8 +99,9 @@ class StrainTestingDataset(FlowDataset):
 
         # based on psd length, fduration and kernel length, and padding,
         # determine slice indices. It is assumed the coalescence
-        # time of the waveform is in the middle
-        middle = strain.shape[-1] // 2
+        # time of the waveform is in the middle unless `middle_offset` is set
+        middle_offset = int(self.middle_offset * self.hparams.sample_rate)
+        middle = strain.shape[-1] // 2 + middle_offset
         post = self.waveform_sampler.right_pad + self.hparams.fduration / 2
         pre = (
             post
