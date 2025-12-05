@@ -59,8 +59,9 @@ class StrainTestingDataset(FlowDataset):
             of the array. If this is not the case, supply appropriate offset
             using `middle_offset` keyword argument in seconds that is added
             to the middle to reach the coalescence time. In addition,
-            each inference parameter should be saved in a group name `parameters`
-            using pandas: `dataframe.to_hdf(path, key='parameters')`.
+            each inference parameter should be saved in a group name
+            `parameters` using pandas
+            `dataframe.to_hdf(path, key='parameters')`.
 
     """
 
