@@ -64,7 +64,9 @@ class StrainTestingDataset(FlowDataset):
 
     """
 
-    def __init__(self, dataset_path: Path, *args, middle_offset: float = 0.0, **kwargs):
+    def __init__(
+        self, dataset_path: Path, *args, middle_offset: float = 0.0, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.dataset_path = dataset_path
         self.i = 0
