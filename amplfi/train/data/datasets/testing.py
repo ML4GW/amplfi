@@ -64,11 +64,11 @@ class StrainTestingDataset(FlowDataset):
 
     """
 
-    def __init__(self, dataset_path: Path, *args, **kwargs):
+    def __init__(self, dataset_path: Path, *args, middle_offset: float = 0.0, **kwargs):
         super().__init__(*args, **kwargs)
         self.dataset_path = dataset_path
         self.i = 0
-        self.middle_offset = kwargs.get("middle_offset", 0.0)
+        self.middle_offset = middle_offset
 
     def setup(self, stage):
         world_size, rank = self.get_world_size_and_rank()
