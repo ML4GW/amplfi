@@ -94,7 +94,7 @@ class AmplfiModel(pl.LightningModule):
             )
             self._logger.info(
                 "Attempting to restore model weights. "
-                "Note that this overrides checkpoint provided"
+                "Note that this overrides checkpoint provided "
                 "using --ckpt_path to the Lightning CLI."
             )
             checkpoint = torch.load(
