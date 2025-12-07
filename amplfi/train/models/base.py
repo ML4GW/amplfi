@@ -88,19 +88,20 @@ class AmplfiModel(pl.LightningModule):
     def setup(self, stage):
         if self.hparams.pretrained_path and stage == "fit":
             self._logger.info(
-                "Pretrained path provided as {}".format(self.hparams.pretrained_path))
+                "Pretrained path provided as {}".format(
+                    self.hparams.pretrained_path
+                )
+            )
             self._logger.info(
                 "Attempting to restore model weights. "
                 "Note that this overrides checkpoint provided"
                 "using --ckpt_path to the Lightning CLI."
             )
             checkpoint = torch.load(
-                self.hparams.pretrained_path,
-                map_location=self.device
+                self.hparams.pretrained_path, map_location=self.device
             )
             self.load_state_dict(
-                checkpoint['state_dict'],
-                strict=self.hparams.strict_loading
+                checkpoint["state_dict"], strict=self.hparams.strict_loading
             )
             self._logger.info("Model weights restored from pretrained path.")
         self.scaler = self.trainer.datamodule.scaler
