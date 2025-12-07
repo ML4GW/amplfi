@@ -21,7 +21,6 @@ from tqdm.auto import tqdm
 import pandas as pd
 
 Tensor = torch.Tensor
-Distribution = torch.distributions.Distribution
 
 SECONDS_PER_DAY = 86400
 
@@ -102,9 +101,6 @@ class AmplfiDataset(pl.LightningDataModule):
         self,
         data_dir: str,
         inference_params: list[str],
-        dec: Distribution,
-        psi: Distribution,
-        phi: Distribution,
         highpass: float,
         sample_rate: float,
         kernel_length: float,
@@ -134,8 +130,7 @@ class AmplfiDataset(pl.LightningDataModule):
         self.init_logging(verbose)
         self.waveform_sampler = waveform_sampler
         self.max_num_workers = max_num_workers
-
-        self.dec, self.psi, self.phi = dec, psi, phi
+        
         self.parameter_transformer = parameter_transformer or (lambda x: x)
 
         # generate our local node data directory

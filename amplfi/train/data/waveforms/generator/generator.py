@@ -9,6 +9,8 @@ from amplfi.train.data.utils.transforms import rescaled_distance_to_distance, ch
 if TYPE_CHECKING:
     pass
 
+Distribution = torch.distributions.Distribution
+
 
 class WaveformGenerator(WaveformSampler):
     def __init__(
@@ -20,6 +22,9 @@ class WaveformGenerator(WaveformSampler):
         testing_prior: Optional[AmplfiPrior] = None,
         num_fit_params: int,
         M0: float = None,
+        dec: Distribution,
+        psi: Distribution,
+        phi: Distribution,
         **kwargs,
     ):
         """
@@ -52,6 +57,7 @@ class WaveformGenerator(WaveformSampler):
         self.num_test_waveforms = num_test_waveforms
         self.num_fit_params = num_fit_params
         self.M0 = M0
+        self.dec, self.psi, self.phi = dec, psi, phi
 
     def sample_extrinsic(self, X: torch.Tensor):
         """
@@ -82,7 +88,7 @@ class WaveformGenerator(WaveformSampler):
     def get_waveforms(
         self, num, **kwargs
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
-        parameters = get_parameters(num, **kwargs)
+        parameters = self.get_parameters(num, **kwargs)
         hc, hp = self(**parameters)
         return hc, hp, parameters
 
@@ -90,7 +96,7 @@ class WaveformGenerator(WaveformSampler):
         self, _, world_size
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
         num_waveforms = self.num_val_waveforms // world_size
-        return self.get_waveforms(num_test_waveforms, device="cpu")
+        return self.get_waveforms(num_waveforms, device="cpu")
 
     def get_test_waveforms(
         self,
@@ -104,7 +110,7 @@ class WaveformGenerator(WaveformSampler):
         return self.get_waveforms(N, device=X.device)
 
     def get_fit_parameters(self) -> torch.Tensor:
-        return get_parameters(self.num_fit_params)
+        return self.get_parameters(self.num_fit_params)
 
     def forward(self) -> tuple[torch.Tensor, torch.Tensor]:
         raise NotImplementedError
