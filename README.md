@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./docs/amplfi-avatar.png" width="300" alt="AMPLFI">
+  <img src="./docs/_static/amplfi-avatar.png" width="300" alt="AMPLFI">
 </div>
 
 # AMPLFI
