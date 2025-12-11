@@ -15,4 +15,3 @@ amplfi.train module
 
 .. toctree::
     amplfi.train.cli
-
