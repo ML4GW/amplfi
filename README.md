@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="./docs/amplfi-avatar.png" width="300" alt="AMPLFI">
+</div>
+
 # AMPLFI
 **Accelerated Multi-messenger Parameter estimation with Likelihood Free Inference**
 

@@ -23,7 +23,7 @@ dist = distribution("amplfi")
 
 project = dist.metadata["Name"]
 author = dist.metadata["Author"]
-copyright = f"2024, {author}"
+copyright = f"2025, {author}"
 release = dist.metadata["Version"]
 
 # -- General configuration ---------------------------------------------------

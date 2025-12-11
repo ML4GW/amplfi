@@ -29,14 +29,6 @@ we recommend.
         $ cd amplfi
         $ uv sync
 
-  .. tab:: Poetry
-
-      .. code-block:: console
-
-        $ git clone git@git.ligo.org:ml4gw/amplfi.git
-        $ cd amplfi
-        $ poetry install
-
   .. tab:: venv
 
       .. code-block:: console
@@ -46,7 +38,7 @@ we recommend.
         $ python -m venv ./venv 
         $ source ./venv/bin/activate 
 
-      Supported python versions: 3.9-3.12.
+      Supported python versions: 3.10-3.12.
 ```
 
 ## Data Generation

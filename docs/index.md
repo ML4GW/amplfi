@@ -1,3 +1,11 @@
+```{eval-rst}
+.. image:: amplfi-avatar.png
+   :width: 500px
+   :align: center
+
+```
+
+>>>>>>> e3e0439... resize image
 AMPLFI
 ======
 **Accelerated Multi-messenger Parameter estimation with Likelihood Free Inference**
