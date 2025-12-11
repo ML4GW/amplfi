@@ -72,14 +72,14 @@ def chirp_distance_to_distance(M0, ifos, **parameters):
 
     f_plus, f_cross = antenna_responses[:, 0], antenna_responses[:, 1]
 
-    distances = []
+    d_effs = []
 
     for i, ifo in enumerate(ifos):
-        factor = (f_plus[:, i]*(1+torch.cos(inclination)**2))**2 + (f_cross[:, i]*torch.cos(inclination)**2)**2
-        rescaled_distance = chirp_distance/torch.sqrt(factor)
-        distances.append(rescaled_distance)
+        factor = (f_plus[:, i]*(1+torch.cos(inclination)**2))**2/4 + (f_cross[:, i]*torch.cos(inclination)**2)**2
+        d_eff = chirp_distance/torch.sqrt(factor)
+        d_effs.append(d_eff)
 
-    distances = torch.vstack(distances)
+    distances = torch.vstack(d_effs)
     distances, _ = torch.max(distances, dim=0)
     parameters["rescaled_distance"] = distances
     del parameters["chirp_distance"]
