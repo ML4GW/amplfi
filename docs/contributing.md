@@ -27,13 +27,7 @@ Now, install `AMPLFI` editably. It is recommended to do so in a virtual environm
 
           $ uv sync
 
-   .. tab:: Poetry
-
-      .. code-block:: console
-
-          $ poetry install
-
-      Supported python versions: 3.9-3.12.
+      Supported python versions: 3.10-3.12.
 ```
 
 ## Contribution guidelines
