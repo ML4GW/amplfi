@@ -5,7 +5,6 @@
 
 ```
 
->>>>>>> e3e0439... resize image
 AMPLFI
 ======
 **Accelerated Multi-messenger Parameter estimation with Likelihood Free Inference**
