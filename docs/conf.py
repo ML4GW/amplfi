@@ -36,10 +36,10 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
-    "sphinx_tabs.tabs",
     "sphinx_autodoc_typehints",
     "sphinx.ext.githubpages",
     "myst_parser",
+    "sphinx_design"
 ]
 
 extlinks = {

@@ -4,31 +4,29 @@ Running in Containers
 
 You can pull the container locally with either docker or apptainer
 
-```{eval-rst}
-.. tabs::
+::::{tab-set}
 
-  .. tab:: apptainer
-
-    .. code-block:: console
-
-        $ apptainer pull $AMPLFI_CONTAINER_ROOT/amplfi.sif docker://ghcr.io/ml4gw/amplfi/amplfi:main
-
-    Supported python versions: 3.9-3.12.
-
-  .. tab:: docker
-
-    .. code-block:: console
-
-      $ docker pull ghcr.io/ml4gw/amplfi/amplfi:main
-
-    Supported python versions: 3.9-3.12.
+:::{tab-item} apptainer
+```console
+$ apptainer pull ${AMPLFI_CONTAINER_ROOT}/amplfi.sif docker://ghcr.io/ml4gw/amplfi/amplfi:main
 ```
+Supported python versions: 3.10-3.12.
+:::
+
+:::{tab-item} docker
+```console
+$ docker pull ghcr.io/ml4gw/amplfi/amplfi:main
+```
+Supported python versions: 3.10-3.12.
+:::
+
+::::
 
 `AMPLFI` train and tune commands can now be run inside the container. For example, 
 to train a flow inside the container, you can run 
 
 ```console
-APPTAINERENV_AMPLFI_OUTDIR=/path/to/outdir APPTAINERENV_AMPLFI_OUTDIR=/path/to/datadir/ \
+$ APPTAINERENV_AMPLFI_OUTDIR=/path/to/outdir APPTAINERENV_AMPLFI_OUTDIR=/path/to/datadir/ \
     apptainer run $AMPLFI_CONTAINER_ROOT/amplfi.sif --nv \ 
     amplfi-flow-cli fit --config /path/to/config.yaml
 ```
@@ -57,8 +55,6 @@ APPTAINERENV_AMPLFI_OUTDIR=/path/to/outdir APPTAINERENV_AMPLFI_OUTDIR=/path/to/d
     --config /path/to/config.yaml
 ```
 
-```{eval-rst}
-.. note::
-   If you make modifications the the environment like adding python dependencies you will
-   have to rebuild the containers!
-```
+:::{note}
+If you make modifications the the environment like adding python dependencies you will have to rebuild the containers!
+:::

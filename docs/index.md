@@ -1,9 +1,8 @@
-```{eval-rst}
-.. image:: amplfi-avatar.png
-   :width: 500px
-   :align: center
-
-```
+:::{image} _static/amplfi-avatar.png
+:width: 500px
+:align: center
+:alt: AMPLFI Avatar
+:::
 
 AMPLFI
 ======
@@ -11,23 +10,23 @@ AMPLFI
 
 Framework for performing rapid (~ 1s) parameter estimation of gravitational wave events using likelihood free inference.
 
-```{eval-rst}
-.. toctree::
-   :caption: Getting started
-   :maxdepth: 1
+:::{toctree}
+:caption: Getting started
+:maxdepth: 1
 
-   Installation <installation>
-   First pipeline <first_pipeline>
-   Contributing <contributing>
-   amplfi
+Installation <installation>
+First pipeline <first_pipeline>
+Contributing <contributing>
+amplfi
+:::
 
-.. toctree::
-   :caption: Advanced
-   :maxdepth: 1
+:::{toctree}
+:caption: Advanced
+:maxdepth: 1
 
-   Running in containers <containers>
-   Remote Training <remote_training>
-   Hyperparameter Tuning <tuning>
-```
+Running in containers <containers>
+Remote Training <remote_training>
+Hyperparameter Tuning <tuning>
+:::
 
 Please cite https://arxiv.org/abs/2407.19048 if you have benefited from `AMPLFI` in your work

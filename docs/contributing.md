@@ -13,22 +13,21 @@ git remote add upstream git@github.com:ML4GW/amplfi.git
 
 Now, install `AMPLFI` editably. It is recommended to do so in a virtual environment.
 
-```{eval-rst}
-.. tabs::
-   .. tab:: Pip
+::::{tab-set}
 
-      .. code-block:: console
-
-          $ pip install -e .
-
-   .. tab:: uv
-      
-      .. code-block:: console
-
-          $ uv sync
-
-      Supported python versions: 3.10-3.12.
+:::{tab-item} Pip
+```console
+$ pip install -e .
 ```
+:::
+
+:::{tab-item} uv
+```console
+$ uv sync
+```
+Supported python versions: 3.10-3.12.
+:::
+::::
 
 ## Contribution guidelines
 
