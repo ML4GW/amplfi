@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.10, <3.13"
 resolution-markers = [
     "python_full_version >= '3.12' and sys_platform == 'linux'",
@@ -158,14 +158,11 @@ dependencies = [
     { name = "h5py" },
     { name = "healpy" },
     { name = "jsonargparse", extra = ["signatures"] },
-    { name = "law" },
     { name = "lightning" },
     { name = "lightray" },
     { name = "ligo-skymap", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "ligo-skymap", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "luigi" },
     { name = "ml4gw" },
-    { name = "mldatafind" },
     { name = "numpy" },
     { name = "omegaconf" },
     { name = "pandas", extra = ["hdf5"] },
@@ -178,6 +175,11 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
+data = [
+    { name = "law" },
+    { name = "luigi" },
+    { name = "mldatafind" },
+]
 dev = [
     { name = "conda-lock" },
     { name = "jupyter" },
@@ -201,13 +203,10 @@ requires-dist = [
     { name = "h5py", specifier = ">=3.10.0,<4" },
     { name = "healpy", specifier = ">=1.16.6,<2" },
     { name = "jsonargparse", extras = ["signatures"], specifier = ">=4.27.1,<5" },
-    { name = "law", specifier = ">=0.1.19" },
     { name = "lightning", specifier = ">=2.5.0" },
     { name = "lightray", specifier = ">=0.2.4" },
     { name = "ligo-skymap", specifier = ">=2.2.2" },
-    { name = "luigi", specifier = ">=3.5.1,<4" },
     { name = "ml4gw", specifier = ">=0.7.8" },
-    { name = "mldatafind", specifier = ">=0.1.8" },
     { name = "numpy", specifier = "<2.0.0" },
     { name = "omegaconf", specifier = ">=2.3.0,<3" },
     { name = "pandas", extras = ["hdf5"], specifier = ">=2.3.1" },
@@ -220,6 +219,11 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
+data = [
+    { name = "law", specifier = ">=0.1.19" },
+    { name = "luigi", specifier = ">=3.5.1,<4" },
+    { name = "mldatafind", specifier = ">=0.1.8" },
+]
 dev = [
     { name = "conda-lock", specifier = ">=2.5.7,<3" },
     { name = "jupyter", specifier = ">=1.0.0,<2" },
