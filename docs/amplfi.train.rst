@@ -4,8 +4,7 @@ amplfi.train module
 .. automodule:: amplfi.train.augmentations
 .. automodule:: amplfi.train.callbacks
 .. automodule:: amplfi.train.losses
-.. automodule:: amplfi.train.priors
-.. automodule:: amplfi.train.distance
+.. automodule:: amplfi.train.prior
 
 
 .. toctree::
@@ -17,5 +16,3 @@ amplfi.train module
 .. toctree::
     amplfi.train.cli
 
-.. toctree::
-    amplfi.train.configs

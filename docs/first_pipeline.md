@@ -1,10 +1,9 @@
 First Pipeline
 ==============
 
-```{eval-rst}
-.. note::
-    Running AMPLFI out-of-the-box requires access to an enterprise-grade GPU(s) (e.g. P100, V100, T4, A[30,40,100], etc.). There are several nodes on the LIGO Data Grid which meet these requirements.
-```
+:::{note}
+Running AMPLFI out-of-the-box requires access to an enterprise-grade GPU(s) (e.g. P100, V100, T4, A[30,40,100], H[100,200] etc.). There are several nodes on the LIGO Data Grid which meet these requirements.
+:::
 
 After [installing](./installation.md) `AMPLFI`, you will have access to the `amplfi-init` command for initializing experiment directories:
 
@@ -57,18 +56,17 @@ amplfi-flow-cli fit --config cbc.yaml
 ```
 
 This bash script consists of two steps:
-1. Querying gravitational wave strain data using a [law](github.com/riga/law) workflow
+1. Querying gravitational wave strain data using a [law](https://github.com/riga/law) workflow
 2. Training a normalizing flow using [Pytorch Lightning](https://lightning.ai/docs/pytorch/stable/)
 
 The data querying step is controlled by the `datagen.cfg` file configuration. This will query segments of science-mode strain data,
 and save them in the directory specified by the `AMPLFI_DATADIR` environment variable. This step uses htcondor for parallelization,
 and will save any condor log files to `AMPLFI_CONDORDIR`.
 
-```{eval-rst}
-.. note::
-   If you already have a data directory consistent with the settings in :code:`datagen.cfg`, you can point :code:`AMPLFI_DATADIR` to it and the data generation
-   step will automatically be skipped.
-```
+:::{note}
+If you already have a data directory consistent with the settings in :code:`datagen.cfg`, you can point :code:`AMPLFI_DATADIR` to it and the data generation
+step will automatically be skipped.
+:::
 
 Once data querying is complete, training will begin. Training configuration is controlled by the `train.yaml` file. It's imporant to get familiar with the training parameters, but the defaults should suffice for your first run. The training job will look in `AMPLFI_DATADIR` for strain data, and will save checkpoints and other training artifacts in `AMPLFI_OUTDIR`.
 

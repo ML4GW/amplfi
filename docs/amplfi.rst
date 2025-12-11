@@ -4,8 +4,8 @@ API Reference
 .. automodule:: amplfi
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     amplfi.data
     amplfi.train
-    amplfi.tune
+    amplfi.utils
