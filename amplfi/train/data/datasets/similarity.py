@@ -17,12 +17,15 @@ class SimilarityDataset(AmplfiDataset):
             A torch module that transforms waveforms according to some
             symmetry that is meant to be marginalized over.
         noiseless_view:
-            If True, the augmented view is not injected into the background.
+            If True, the augmentor is applied to the waveform first.
+            For the reference view, this is then injected into background.
+            The augmented view is just the augmented waveform alone.
             However, the augmented signal is still whitened with the same
             PSD as the reference view.
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         *args,
         augmentor: torch.nn.Module,
         noiseless_view: Optional[bool] = False,
@@ -66,8 +69,7 @@ class SimilarityDataset(AmplfiDataset):
             [X_ref, X_aug], asds, parameters = self.inject(
                 background, cross, plus, parameters
             )
-        # FIXME: only works for multimodal- archs
-        return (X_ref, asds), (X_aug, asds)
+        return (X_ref, X_aug), asds, parameters
 
     def inject(self, X, cross, plus, parameters):
         X, psds = self.psd_estimator(X)
@@ -92,8 +94,12 @@ class SimilarityDataset(AmplfiDataset):
             torch.Tensor(parameters[k]) for k in self.hparams.inference_params
         ]
         parameters = torch.vstack(parameters).T
-        X_ref = X + waveforms
-        X_aug = augmented if self.noiseless_view else X + augmented
+        if self.noiseless_view:
+            X_ref = X + augmented
+            X_aug = augmented
+        else:
+            X_ref = X + waveforms
+            X_aug = X + augmented
         X_ref = self.whitener(X_ref, psds)
         X_aug = self.whitener(X_aug, psds)
 

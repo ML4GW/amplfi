@@ -6,6 +6,7 @@ class IdentityAugmentor(torch.nn.Module):
     """
     A placeholder augmentor that returns the input unchanged.
     """
+
     def forward(self, X: torch.Tensor):
         return X
 
