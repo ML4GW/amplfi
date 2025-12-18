@@ -22,6 +22,7 @@ dependencies = [
     "gwpy>=3.0.12",
     "wandb>=0.18.5,<0.19",
     "torch>=2.5.0",
+    "pytorch-tcn",
     "s3fs>=2024.12.0,<2025",
     "ligo-skymap>=2.2.2",
     "zuko>=1.4.0",

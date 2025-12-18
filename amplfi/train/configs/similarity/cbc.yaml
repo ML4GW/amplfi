@@ -64,6 +64,11 @@ model:
 data:
   class_path: amplfi.train.data.datasets.SimilarityDataset
   init_args:
+    augmentor:
+      class_path: amplfi.train.data.augmentors.TimeTranslator
+      init_args:
+        jitter: 0.1
+        sample_rate: 2048
     # AmplfiDataset base class parameters
     data_dir: ${oc.env:AMPLFI_DATADIR}
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
@@ -89,7 +94,19 @@ data:
     batches_per_epoch: 800
     batch_size: 512
     ifos: ["H1", "L1"]
-    
+    waveform_sampler:
+      class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
+      init_args:
+        jitter: 0.1
+        num_fit_params: 10000
+        training_prior: ../bns-uniform-prior.yaml
+        testing_prior: null
+        num_val_waveforms: 500
+        num_test_waveforms: 200
+        approximant: ml4gw.waveforms.IMRPhenomPv2
+        f_min: 20
+        f_ref: 40
+        right_pad: 0.5
     # Optional parameters with defaults
     parameter_transformer: null
     fftlength: 2
@@ -100,35 +117,4 @@ data:
     max_num_workers: 6
     verbose: false
     seed: null
-    
-    waveform_sampler: 
-      class_path: amplfi.train.data.waveforms.generator.cbc.FrequencyDomainCBCGenerator
-      init_args:
-        num_fit_params: 100000
-        parameter_sampler: 
-          class_path: amplfi.train.priors.cbc_prior
-        dec: 
-          class_path: ml4gw.distributions.Cosine
-        psi: 
-          class_path: torch.distributions.Uniform
-          init_args:
-            low: 0
-            high: 3.14 
-        phi: 
-          class_path: torch.distributions.Uniform
-          init_args:
-            low: 0
-            high: 6.28
-        num_val_waveforms: 10000
-        num_test_waveforms: 200
-        approximant: ml4gw.waveforms.IMRPhenomD
-        f_min: 20
-        f_max: 1024
-        ringdown_duration: 1.0
-        waveform_arguments:
-          f_ref: 40
-    augmentor: 
-      class_path: amplfi.train.data.augmentors.TimeTranslator
-      init_args:
-        jitter: 0.1
-        sample_rate: 2048
+    noiseless_view: false
