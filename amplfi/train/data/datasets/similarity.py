@@ -6,8 +6,8 @@ from .base import AmplfiDataset, Tensor
 
 class SimilarityDataset(AmplfiDataset):
     """
-    Lightning DataModule that returns two views of the same
-    data decided by the augmentor. The augmentor is applied
+    Lightning DataModule that returns two views of the underlying signal
+    decided by the augmentor. The augmentor is applied
     to the signal (waveform), and maybe be injected to the
     background. This is useful for
     self-supervised learning methods.
