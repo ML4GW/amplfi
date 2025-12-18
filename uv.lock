@@ -166,6 +166,7 @@ dependencies = [
     { name = "numpy" },
     { name = "omegaconf" },
     { name = "pandas", extra = ["hdf5"] },
+    { name = "pytorch-tcn" },
     { name = "ray", extra = ["default", "tune"] },
     { name = "s3fs" },
     { name = "torch" },
@@ -211,6 +212,7 @@ requires-dist = [
     { name = "numpy", specifier = "<2.0.0" },
     { name = "omegaconf", specifier = ">=2.3.0,<3" },
     { name = "pandas", extras = ["hdf5"], specifier = ">=2.3.1" },
+    { name = "pytorch-tcn" },
     { name = "ray", extras = ["default", "tune"], specifier = ">=2.38.0,<3" },
     { name = "s3fs", specifier = ">=2024.12.0,<2025" },
     { name = "torch", specifier = ">=2.5.0" },
@@ -4340,6 +4342,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/32/a8/31fe79bf96dab33cee5537ed6f08230ed6f032834bb4ff529cc487fb40e8/pytorch_lightning-2.5.3.tar.gz", hash = "sha256:65f4eee774ee1adba181aacacffb9f677fe5c5f9fd3d01a95f603403f940be6a", size = 639897, upload-time = "2025-08-13T20:29:39.161Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/a2/5f2b7b40ec5213db5282e98dd32fd419fe5b73b5b53895dfff56fe12fed0/pytorch_lightning-2.5.3-py3-none-any.whl", hash = "sha256:7476bd36282d9253dda175b9263b07942489d70ad90bbd1bc0a59c46e012f353", size = 828186, upload-time = "2025-08-13T20:29:37.41Z" },
+]
+
+[[package]]
+name = "pytorch-tcn"
+version = "1.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c1/8c/28f0a2bb34ff3a8095481990fc85d7836703e39b7d24fd4b6152a06119a9/pytorch_tcn-1.2.3.tar.gz", hash = "sha256:41e16600aae72691b2af82c87b56b18fd8c46bd98e0a2af8f109c0de1fc6da9b", size = 21754, upload-time = "2025-04-07T18:11:20.904Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/81/9b72e375a4c5b12d5fb3fffad2fa78d61807e4579b2ec586f9c0b1f530e5/pytorch_tcn-1.2.3-py3-none-any.whl", hash = "sha256:949dd478c7a7c04e2ba0d79e19afe4a34f083141ef908019d19e9edd729ea2ec", size = 18776, upload-time = "2025-04-07T18:11:19.2Z" },
 ]
 
 [[package]]
