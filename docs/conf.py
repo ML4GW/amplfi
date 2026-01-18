@@ -23,7 +23,7 @@ dist = distribution("amplfi")
 
 project = dist.metadata["Name"]
 author = dist.metadata["Author"]
-copyright = f"2024, {author}"
+copyright = f"2025, {author}"
 release = dist.metadata["Version"]
 
 # -- General configuration ---------------------------------------------------
@@ -36,10 +36,10 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
-    "sphinx_tabs.tabs",
     "sphinx_autodoc_typehints",
     "sphinx.ext.githubpages",
     "myst_parser",
+    "sphinx_design"
 ]
 
 extlinks = {

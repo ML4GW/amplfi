@@ -2,6 +2,15 @@ import torch
 import torch.nn.functional as F
 
 
+class IdentityAugmentor(torch.nn.Module):
+    """
+    A placeholder augmentor that returns the input unchanged.
+    """
+
+    def forward(self, X: torch.Tensor):
+        return X
+
+
 class TimeTranslator(torch.nn.Module):
     """
     A torch.nn.Module that shifts waveforms in time

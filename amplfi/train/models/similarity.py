@@ -37,7 +37,7 @@ class SimilarityModel(AmplfiModel):
         return loss, (inv_loss, var_loss, cov_loss)
 
     def validation_step(self, batch, _):
-        [ref, aug], asds, _ = batch
+        [ref, aug], asds, *_ = batch
         loss, (inv_loss, var_loss, cov_loss) = self((ref, asds), (aug, asds))
         self.log(
             "valid_loss", loss, on_epoch=True, prog_bar=True, sync_dist=True
@@ -51,7 +51,7 @@ class SimilarityModel(AmplfiModel):
 
     def training_step(self, batch, _):
         # unpack batch - can ignore parameters
-        [ref, aug], asds, _ = batch
+        [ref, aug], asds, *_ = batch
 
         # pass reference and augmented data contexts
         # through embedding and calculate similarity loss
