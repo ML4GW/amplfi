@@ -38,9 +38,9 @@ class FlowArchitecture(torch.nn.Module):
             checkpoint = torch.load(embedding_weights)
             state_dict = checkpoint["state_dict"]
             state_dict = {
-                k.removeprefix("model.embedding"): v
+                k.removeprefix("model.embedding."): v
                 for k, v in state_dict.items()
-                if k.startswith("model.embedding")
+                if k.startswith("model.embedding.")
             }
             self.embedding_net.load_state_dict(state_dict)
 
