@@ -76,14 +76,7 @@ class WaveformGenerator(WaveformSampler):
         parameters["dec"] = dec
         parameters["psi"] = psi
         parameters["phi"] = phi
-
-        if self.M0 is not None and "rescaled_distance" in keys:
-            parameters["distance"] = rescaled_distance_to_distance(self.M0, **parameters)
-            del parameters["rescaled_distance"]
-        if self.M0 is not None and "chirp_distance" in keys:
-            parameters["distance"] = chirp_distance_to_distance(self.M0, ifos=["H1", "L1", "V1"], **parameters)
-            del parameters["chirp_distance"]
-        return parameters
+        parameters = self.parameter_transformer(parameters)
 
     def get_waveforms(
         self, num, **kwargs

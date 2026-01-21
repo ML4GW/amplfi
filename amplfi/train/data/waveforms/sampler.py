@@ -3,6 +3,7 @@ from typing import Optional
 import torch
 
 from ..augmentors import TimeTranslator
+from amplfi.train.prior import ParameterTransformer
 
 Distribution = torch.distributions.Distribution
 
@@ -41,6 +42,8 @@ class WaveformSampler(torch.nn.Module):
         sample_rate: float,
         inference_params: list[str],
         jitter: Optional[float] = None,
+        parameter_transformer: Optional[ParameterTransformer] = None,
+        
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -52,6 +55,7 @@ class WaveformSampler(torch.nn.Module):
         self.time_translator = (
             TimeTranslator(jitter, sample_rate) if jitter is not None else None
         )
+        self.parameter_transformer = parameter_transformer or (lambda x: x)
 
     @property
     def duration(self):

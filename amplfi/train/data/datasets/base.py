@@ -12,7 +12,6 @@ from ml4gw.transforms import ChannelWiseScaler, Whiten
 from ...augmentations import PsdEstimator, WaveformProjector
 from ..utils import fs as fs_utils
 from ..utils.utils import ZippedDataset
-from amplfi.train.prior import ParameterTransformer
 from ..waveforms.sampler import WaveformSampler
 import numpy as np
 from pathlib import Path
@@ -70,10 +69,6 @@ class AmplfiDataset(pl.LightningDataModule):
             for training, validation and testing.
             See `train.data.waveforms.sampler`
             for methods this object should define.
-        parameter_transformer:
-            A `ParameterTransformer` object that applies any
-            additional transformations to parameters before
-            they are scaled and passed to the neural network.
         train_val_range:
             Tuple of gpstimes that specify time range of
             training and validation data.
@@ -110,7 +105,6 @@ class AmplfiDataset(pl.LightningDataModule):
         batch_size: int,
         ifos: List[str],
         waveform_sampler: WaveformSampler,
-        parameter_transformer: Optional[ParameterTransformer] = None,
         fftlength: Optional[int] = None,
         train_val_range: Optional[tuple[float, float]] = None,
         test_range: Optional[tuple[float, float]] = None,
@@ -131,8 +125,6 @@ class AmplfiDataset(pl.LightningDataModule):
         self.waveform_sampler = waveform_sampler
         self.max_num_workers = max_num_workers
         
-        self.parameter_transformer = parameter_transformer or (lambda x: x)
-
         # generate our local node data directory
         # if our specified data source is remote
         self.data_dir = fs_utils.get_data_dir(self.hparams.data_dir)
@@ -190,13 +182,6 @@ class AmplfiDataset(pl.LightningDataModule):
     # Helper utilities for preprocessing
     # ================================================ #
 
-    def transform(self, parameters: Dict[str, Tensor]):
-        """
-        Make transforms to parameters before scaling
-        and performing training/inference.
-        For example, taking logarithm of hrss
-        """
-        return self.parameter_transformer(parameters)
 
     def scale(self, parameters, reverse: bool = False):
         """
@@ -378,7 +363,6 @@ class AmplfiDataset(pl.LightningDataModule):
         scaler = ChannelWiseScaler(self.num_params)
         parameters = self.waveform_sampler.get_fit_parameters()
 
-        transformed = self.parameter_transformer(parameters)
         fit = []
         for key in self.hparams.inference_params:
             fit.append(transformed[key])

@@ -64,13 +64,16 @@ class AmplfiPrior:
         return log_probs
 
 
-class ParameterTransformer(torch.nn.Module):
+class ParameterTransformer:
     """
     Helper class for applying preprocessing
     transformations to inference parameters
     """
 
-    def __init__(self, **transforms: Callable):
+    def __init__(
+        self, 
+        transforms: dict[str, Callable],
+    ):
         super().__init__()
         self.transforms = transforms
 
@@ -78,8 +81,17 @@ class ParameterTransformer(torch.nn.Module):
         self,
         parameters: dict[str, torch.Tensor],
     ):
-        # transform parameters
-        transformed = {k: v(parameters[k]) for k, v in self.transforms.items()}
+
+        transformed = {}
+        for k, v in self.transforms.items():
+
+            if k == "distance":
+                transformed[k] = {k: v(parameters) for k, v in self.transforms.items()}
+            else:
+                transformed[k] = {k: v(parameters[k]) for k, v in self.transforms.items()}
         # update parameter dict
         parameters.update(transformed)
         return parameters
+        
+
+

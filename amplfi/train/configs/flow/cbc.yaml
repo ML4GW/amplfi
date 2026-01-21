@@ -98,9 +98,13 @@ data:
         f_min: 20
         f_ref: 40
         right_pad: 0.5
+        parameter_transformer: 
+            class_path: amplfi.train.prior.ParameterTransformer
+            init_args:
+                transforms:
+                    distance: amplfi.train.data.utils.transforms.sample_rescaled_distance
     
     # Optional parameters with defaults
-    parameter_transformer: null
     fftlength: 2
     train_val_range: null
     test_range: null
