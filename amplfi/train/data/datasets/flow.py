@@ -41,7 +41,6 @@ class FlowDataset(AmplfiDataset):
         }
 
         # make any requested parameter transforms
-        parameters = self.transform(parameters)
         parameters = [
             torch.Tensor(parameters[k]) for k in self.hparams.inference_params
         ]
