@@ -43,7 +43,6 @@ class WaveformSampler(torch.nn.Module):
         inference_params: list[str],
         jitter: Optional[float] = None,
         parameter_transformer: Optional[ParameterTransformer] = None,
-        
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)

@@ -71,7 +71,7 @@ class ParameterTransformer:
     """
 
     def __init__(
-        self, 
+        self,
         transforms: dict[str, Callable],
     ):
         super().__init__()
@@ -81,17 +81,16 @@ class ParameterTransformer:
         self,
         parameters: dict[str, torch.Tensor],
     ):
-
         transformed = {}
         for k, v in self.transforms.items():
-
             if k == "distance":
-                transformed[k] = {k: v(parameters) for k, v in self.transforms.items()}
+                transformed[k] = {
+                    k: v(parameters) for k, v in self.transforms.items()
+                }
             else:
-                transformed[k] = {k: v(parameters[k]) for k, v in self.transforms.items()}
+                transformed[k] = {
+                    k: v(parameters[k]) for k, v in self.transforms.items()
+                }
         # update parameter dict
         parameters.update(transformed)
         return parameters
-        
-
-

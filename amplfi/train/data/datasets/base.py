@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import h5py
 import lightning.pytorch as pl
@@ -124,7 +124,7 @@ class AmplfiDataset(pl.LightningDataModule):
         self.init_logging(verbose)
         self.waveform_sampler = waveform_sampler
         self.max_num_workers = max_num_workers
-        
+
         # generate our local node data directory
         # if our specified data source is remote
         self.data_dir = fs_utils.get_data_dir(self.hparams.data_dir)
@@ -181,7 +181,6 @@ class AmplfiDataset(pl.LightningDataModule):
     # ================================================ #
     # Helper utilities for preprocessing
     # ================================================ #
-
 
     def scale(self, parameters, reverse: bool = False):
         """
@@ -365,7 +364,7 @@ class AmplfiDataset(pl.LightningDataModule):
 
         fit = []
         for key in self.hparams.inference_params:
-            fit.append(transformed[key])
+            fit.append(parameters[key])
 
         fit = torch.row_stack(fit)
         scaler.fit(fit)

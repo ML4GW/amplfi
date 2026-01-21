@@ -4,7 +4,6 @@ import torch
 
 from ....prior import AmplfiPrior
 from ..sampler import WaveformSampler
-from amplfi.train.data.utils.transforms import rescaled_distance_to_distance, chirp_distance_to_distance
 
 if TYPE_CHECKING:
     pass
@@ -94,7 +93,7 @@ class WaveformGenerator(WaveformSampler):
     def get_test_waveforms(
         self,
     ) -> tuple[torch.Tensor, torch.Tensor, dict[str, torch.Tensor]]:
-        return self.get_waveforms(self.num_test_waveforms)     
+        return self.get_waveforms(self.num_test_waveforms)
 
     def sample(
         self, X
