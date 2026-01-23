@@ -76,6 +76,7 @@ class WaveformGenerator(WaveformSampler):
         parameters["psi"] = psi
         parameters["phi"] = phi
         parameters = self.parameter_transformer(parameters)
+        return parameters
 
     def get_waveforms(
         self, num, **kwargs

@@ -64,7 +64,7 @@ class AmplfiPrior:
         return log_probs
 
 
-class ParameterTransformer:
+class ParameterTransformer(torch.nn.Module):
     """
     Helper class for applying preprocessing
     transformations to inference parameters
