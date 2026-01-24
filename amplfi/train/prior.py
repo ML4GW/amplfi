@@ -84,13 +84,9 @@ class ParameterTransformer(torch.nn.Module):
         transformed = {}
         for k, v in self.transforms.items():
             if k == "distance":
-                transformed[k] = {
-                    k: v(parameters) for k, v in self.transforms.items()
-                }
+                transformed[k] = v(parameters)
             else:
-                transformed[k] = {
-                    k: v(parameters[k]) for k, v in self.transforms.items()
-                }
+                transformed[k] = v(parameters[k])
         # update parameter dict
         parameters.update(transformed)
         return parameters
