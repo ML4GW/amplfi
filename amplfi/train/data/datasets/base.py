@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 import h5py
 import lightning.pytorch as pl
@@ -12,7 +12,6 @@ from ml4gw.transforms import ChannelWiseScaler, Whiten
 from ...augmentations import PsdEstimator, WaveformProjector
 from ..utils import fs as fs_utils
 from ..utils.utils import ZippedDataset
-from amplfi.train.prior import ParameterTransformer
 from ..waveforms.sampler import WaveformSampler
 import numpy as np
 from pathlib import Path
@@ -21,7 +20,6 @@ from tqdm.auto import tqdm
 import pandas as pd
 
 Tensor = torch.Tensor
-Distribution = torch.distributions.Distribution
 
 SECONDS_PER_DAY = 86400
 
@@ -71,10 +69,6 @@ class AmplfiDataset(pl.LightningDataModule):
             for training, validation and testing.
             See `train.data.waveforms.sampler`
             for methods this object should define.
-        parameter_transformer:
-            A `ParameterTransformer` object that applies any
-            additional transformations to parameters before
-            they are scaled and passed to the neural network.
         train_val_range:
             Tuple of gpstimes that specify time range of
             training and validation data.
@@ -102,9 +96,6 @@ class AmplfiDataset(pl.LightningDataModule):
         self,
         data_dir: str,
         inference_params: list[str],
-        dec: Distribution,
-        psi: Distribution,
-        phi: Distribution,
         highpass: float,
         sample_rate: float,
         kernel_length: float,
@@ -114,7 +105,6 @@ class AmplfiDataset(pl.LightningDataModule):
         batch_size: int,
         ifos: List[str],
         waveform_sampler: WaveformSampler,
-        parameter_transformer: Optional[ParameterTransformer] = None,
         fftlength: Optional[int] = None,
         train_val_range: Optional[tuple[float, float]] = None,
         test_range: Optional[tuple[float, float]] = None,
@@ -134,9 +124,6 @@ class AmplfiDataset(pl.LightningDataModule):
         self.init_logging(verbose)
         self.waveform_sampler = waveform_sampler
         self.max_num_workers = max_num_workers
-
-        self.dec, self.psi, self.phi = dec, psi, phi
-        self.parameter_transformer = parameter_transformer or (lambda x: x)
 
         # generate our local node data directory
         # if our specified data source is remote
@@ -194,14 +181,6 @@ class AmplfiDataset(pl.LightningDataModule):
     # ================================================ #
     # Helper utilities for preprocessing
     # ================================================ #
-
-    def transform(self, parameters: Dict[str, Tensor]):
-        """
-        Make transforms to parameters before scaling
-        and performing training/inference.
-        For example, taking logarithm of hrss
-        """
-        return self.parameter_transformer(parameters)
 
     def scale(self, parameters, reverse: bool = False):
         """
@@ -379,29 +358,13 @@ class AmplfiDataset(pl.LightningDataModule):
             self.hparams.ifos, self.hparams.sample_rate
         )
 
-    def sample_extrinsic(self, X: torch.Tensor):
-        """
-        Sample extrinsic parameters used to project waveforms
-        """
-        N = len(X)
-        dec = self.dec.sample((N,)).to(X.device)
-        psi = self.psi.sample((N,)).to(X.device)
-        phi = self.phi.sample((N,)).to(X.device)
-        return dec, psi, phi
-
     def fit_scaler(self):
         scaler = ChannelWiseScaler(self.num_params)
         parameters = self.waveform_sampler.get_fit_parameters()
-        key = list(parameters.keys())[0]
-        dec, psi, phi = self.sample_extrinsic(parameters[key])
-        parameters["dec"] = dec
-        parameters["psi"] = psi
-        parameters["phi"] = phi
 
-        transformed = self.parameter_transformer(parameters)
         fit = []
         for key in self.hparams.inference_params:
-            fit.append(transformed[key])
+            fit.append(parameters[key])
 
         fit = torch.row_stack(fit)
         scaler.fit(fit)
