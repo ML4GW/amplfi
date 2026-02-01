@@ -485,11 +485,7 @@ class AmplfiDataset(pl.LightningDataModule):
         elif self.trainer.validating or self.trainer.sanity_checking:
             [cross, plus, parameters], [background] = batch
             background = background[: len(cross)]
-            keys = [
-                k
-                for k in self.hparams.inference_params
-                if k not in ["dec", "psi", "phi"]
-            ]
+            keys = self.hparams.inference_params
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
             strain, asds, parameters, snrs = self.inject(
                 background, cross, plus, parameters
@@ -497,11 +493,7 @@ class AmplfiDataset(pl.LightningDataModule):
 
         elif self.trainer.testing:
             [cross, plus, parameters], [background] = batch
-            keys = [
-                k
-                for k in self.hparams.inference_params
-                if k not in ["dec", "psi", "phi"]
-            ]
+            keys = self.hparams.inference_params
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
             strain, asds, parameters, snrs = self.inject(
                 background, cross, plus, parameters
