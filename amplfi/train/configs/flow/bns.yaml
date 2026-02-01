@@ -12,7 +12,7 @@ trainer:
         # project: amplfi
         # uncomment and set to name your run
         name: my-bns-run 
-  max_epochs: 800
+  max_epochs: 2000
   check_val_every_n_epoch: 1
   log_every_n_steps: 50
   benchmark: false
@@ -22,18 +22,18 @@ model:
   init_args:
     # AmplfiModel base class parameters
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
-    learning_rate: 0.00071444
+    learning_rate: 0.0005
     pct_start: 0.1
     train_outdir: ${oc.env:AMPLFI_OUTDIR}
     test_outdir: null
-    weight_decay: 0.00042
+    weight_decay: 0.00001
     verbose: false
     
     # FlowModel specific parameters
     arch:
       class_path: amplfi.train.architectures.NSF
       init_args:
-        hidden_features: [512, 512, 512]
+        hidden_features: [512, 512, 512, 512, 512]
         transforms: 20
         randperm: true
         # embedding_weights: null
@@ -41,12 +41,15 @@ model:
         embedding_net: 
           class_path: amplfi.train.architectures.embeddings.MultiModalPsdEmbeddingWithDecimator
           init_args:
-            time_context_dim: 8
-            freq_context_dim: 12
+            time_context_dim: 20
+            freq_context_dim: 48
             strain_sample_rate: 2048
             decimator_schedule: [[0, 10, 256], [10, 28, 512], [28, 30, 2048]]
             time_layers: [5, 3, 3]
             freq_layers: [5, 3, 3]
+            time_kernel_size: 5
+            freq_kernel_size: 3
+            zero_init_residual: true
             norm_layer:
               class_path: ml4gw.nn.norm.GroupNorm1DGetter
               init_args:
@@ -83,16 +86,16 @@ data:
     kernel_length: 30
     fduration: 2
     psd_length: 10
-    batches_per_epoch: 100
-    batch_size: 200
-    ifos: ["H1", "L1"]
+    batches_per_epoch: 300
+    batch_size: 1400
+    ifos: ["H1", "L1", "V1"]
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
       init_args:
         jitter: 0.1
         num_fit_params: 10000
-        training_prior: ../bns-prior.yaml
-        testing_prior: null
+        training_prior: ../bns-uniform-prior.yaml
+        testing_prior: ../bns-prior.yaml
         num_val_waveforms: 500
         num_test_waveforms: 200
         approximant: ml4gw.waveforms.IMRPhenomPv2
@@ -105,8 +108,8 @@ data:
     fftlength: 2
     train_val_range: null
     test_range: null
-    min_valid_duration: 10000.0
-    num_files_per_batch: 1
+    min_valid_duration: 20000.0
+    num_files_per_batch: 2
     max_num_workers: 6
     verbose: false
     seed: null
