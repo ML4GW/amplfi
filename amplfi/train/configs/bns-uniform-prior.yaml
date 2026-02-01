@@ -1,4 +1,4 @@
-# default prior for use with `IMRPhenomPv2`
+# same as bns-prior.yaml except uniform sampling in distance
 class_path: amplfi.train.prior.AmplfiPrior
 init_args:
   conversion_function: amplfi.train.conversion.precessing_to_lalsimulation_parameters
