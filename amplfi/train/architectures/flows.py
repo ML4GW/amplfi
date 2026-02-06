@@ -37,12 +37,34 @@ class FlowArchitecture(torch.nn.Module):
             logging.info(f"Loading embedding weights from {embedding_weights}")
             checkpoint = torch.load(embedding_weights)
             state_dict = checkpoint["state_dict"]
-            state_dict = {
-                k.removeprefix("model.embedding."): v
+            # FIXME: extracting embedding net parameter is fragile
+            # the keys start with "embedding." if the architecture is pretrained
+            # separately. But if we pass the checkpoint of a pretrained flow
+            # architecture, it is saved as "embedding_net."
+            embedding_net_state_dict = {
+                k.removeprefix("model.embedding_net."): v
                 for k, v in state_dict.items()
-                if k.startswith("model.embedding.")
+                if k.startswith("model.embedding_net.")
             }
-            self.embedding_net.load_state_dict(state_dict)
+            try:
+                self.embedding_net.load_state_dict(embedding_net_state_dict)
+            except RuntimeError:
+                logging.warning("Failed to extract model.embedding_net "
+                                "from loaded state dict. Attempting to "
+                                " extract model.embedding")
+                embedding_net_state_dict = {
+                    k.removeprefix("model.embedding."): v
+                    for k, v in state_dict.items()
+                    if k.startswith("model.embedding.")
+                }
+                try:
+                    self.embedding_net.load_state_dict(embedding_net_state_dict)
+                except RuntimeError:
+                    logging.error(
+                        "Failed to match keys. Double check the embedding net "
+                        "keys in the checkpoint file"
+                    )
+                    raise
 
     def build_flow(self) -> zuko.lazy.Flow:
         raise NotImplementedError
