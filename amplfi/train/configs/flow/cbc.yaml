@@ -98,11 +98,7 @@ data:
             low: 0
             high: 6.28318
             validate_args: false
-        parameter_transformer: 
-            class_path: amplfi.train.prior.ParameterTransformer
-            init_args:
-                transforms:
-                    distance: amplfi.train.data.utils.transforms.sample_rescaled_distance
+        parameter_transformer: null
     
     # Optional parameters with defaults
     fftlength: 2

@@ -68,6 +68,13 @@ class ParameterTransformer(torch.nn.Module):
     """
     Helper class for applying preprocessing
     transformations to inference parameters
+
+    Args:
+        transforms:
+            Dictionary where key is the parameter and
+            value is a conversion function e.g.
+            amplfi.train.data.utils.transforms.sample_rescaled_distance,
+            amplfi.train.data.utils.transforms.sample_chirp_distance
     """
 
     def __init__(
