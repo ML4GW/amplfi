@@ -277,9 +277,11 @@ class ParameterTestingDataset(FlowDataset):
             parameters["ra"], parameters["gpstime"]
         )
         # generate cross and plus using our infrastructure
-        self._logger.info(f"Generating {len(parameters)} waveforms using ml4gw infra.")
+        self._logger.info(
+            f"Generating {len(parameters)} waveforms using ml4gw infra."
+        )
         cross, plus = self.waveform_sampler(**parameters)
-        self._logger.info(f"Done generating waveforms.")
+        self._logger.info("Done generating waveforms.")
         # convert back to tensor
         params = []
         for k in self.hparams.inference_params:

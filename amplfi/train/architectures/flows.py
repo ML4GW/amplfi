@@ -38,8 +38,9 @@ class FlowArchitecture(torch.nn.Module):
             checkpoint = torch.load(embedding_weights)
             state_dict = checkpoint["state_dict"]
             # FIXME: extracting embedding net parameter is fragile
-            # the keys start with "embedding." if the architecture is pretrained
-            # separately. But if we pass the checkpoint of a pretrained flow
+            # the keys start with "embedding." for separate arch
+            # pretraining, like similarity loss. But if we pass the
+            # checkpoint of a pretrained flow
             # architecture, it is saved as "embedding_net."
             embedding_net_state_dict = {
                 k.removeprefix("model.embedding_net."): v
@@ -49,16 +50,20 @@ class FlowArchitecture(torch.nn.Module):
             try:
                 self.embedding_net.load_state_dict(embedding_net_state_dict)
             except RuntimeError:
-                logging.warning("Failed to extract model.embedding_net "
-                                "from loaded state dict. Attempting to "
-                                " extract model.embedding")
+                logging.warning(
+                    "Failed to extract model.embedding_net "
+                    "from loaded state dict. Attempting to "
+                    " extract model.embedding"
+                )
                 embedding_net_state_dict = {
                     k.removeprefix("model.embedding."): v
                     for k, v in state_dict.items()
                     if k.startswith("model.embedding.")
                 }
                 try:
-                    self.embedding_net.load_state_dict(embedding_net_state_dict)
+                    self.embedding_net.load_state_dict(
+                        embedding_net_state_dict
+                    )
                 except RuntimeError:
                     logging.error(
                         "Failed to match keys. Double check the embedding net "
