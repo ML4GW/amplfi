@@ -16,7 +16,6 @@ def sample_chirp_distance(parameters):
     """
     Rescale Distance only with Chirp Mass
     """
-    M_ref = 1.0
     ifos = ["H1", "L1", "V1"]  ## TODO: change to config inputs
     detector_tensors, _ = get_ifo_geometry(*ifos)
 
@@ -44,4 +43,4 @@ def sample_chirp_distance(parameters):
     distances = torch.vstack(d_effs)
     distances, _ = torch.max(distances, dim=0)
     parameters["distance"] = distances
-    return sample_rescaled_distance(M_ref, parameters)
+    return sample_rescaled_distance(parameters)
