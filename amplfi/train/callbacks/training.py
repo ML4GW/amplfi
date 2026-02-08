@@ -52,11 +52,7 @@ class SaveAugmentedBatch(pl.Callback):
                 val_parameters.to(device),
             )
             background = background.to(device)
-            keys = [
-                k
-                for k in datamodule.hparams.inference_params
-                if k not in ["dec", "psi", "phi"]
-            ]
+            keys = datamodule.hparams.inference_params
             val_parameters = {
                 k: val_parameters[:, i] for i, k in enumerate(keys)
             }
@@ -137,11 +133,7 @@ class SaveAugmentedSimilarityBatch(pl.Callback):
                 parameters.to(device),
             )
             background = background.to(device)
-            keys = [
-                k
-                for k in datamodule.hparams.inference_params
-                if k not in ["dec", "psi", "phi"]
-            ]
+            keys = datamodule.hparams.inference_params
             parameters = {k: parameters[:, i] for i, k in enumerate(keys)}
             [ref, aug], asds, parameters = datamodule.inject(
                 background, cross, plus, parameters

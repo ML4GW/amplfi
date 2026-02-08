@@ -63,20 +63,6 @@ data:
     # AmplfiDataset base class parameters
     data_dir: ${oc.env:AMPLFI_DATADIR}
     inference_params: ["chirp_mass", "mass_ratio", "distance", "phic", "inclination", "dec", "psi", "phi"]
-    dec: 
-      class_path: ml4gw.distributions.Cosine
-    psi: 
-      class_path: torch.distributions.Uniform
-      init_args:
-        low: 0
-        high: 3.14159
-        validate_args: false
-    phi: 
-      class_path: torch.distributions.Uniform
-      init_args:
-        low: 0
-        high: 6.28318
-        validate_args: false
     highpass: 25
     sample_rate: 2048
     kernel_length: 3
@@ -98,9 +84,23 @@ data:
         f_min: 20
         f_ref: 40
         right_pad: 0.5
+        dec: 
+          class_path: ml4gw.distributions.Cosine
+        psi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: 0
+            high: 3.14159
+            validate_args: false
+        phi: 
+          class_path: torch.distributions.Uniform
+          init_args:
+            low: 0
+            high: 6.28318
+            validate_args: false
+        parameter_transformer: null
     
     # Optional parameters with defaults
-    parameter_transformer: null
     fftlength: 2
     train_val_range: null
     test_range: null
