@@ -16,8 +16,10 @@ def sample_chirp_distance(parameters):
     """
     Rescale Distance only with Chirp Mass
     """
+    device = list(parameters.values())[0]
     ifos = ["H1", "L1", "V1"]  ## TODO: change to config inputs
     detector_tensors, _ = get_ifo_geometry(*ifos)
+    detector_tensors = detector_tensors.to(device)
 
     dec = parameters["dec"]
     phi = parameters["phi"]
