@@ -278,7 +278,7 @@ class ParameterTestingDataset(FlowDataset):
         )
         # generate cross and plus using our infrastructure
         self._logger.info(
-            f"Generating {len(parameters['ra'])} waveforms using ml4gw infra."
+            f"Generating {len(next(iter(parameters.values())))} waveforms using ml4gw infra."
         )
         cross, plus = self.waveform_sampler(**parameters)
         self._logger.info("Done generating waveforms.")
