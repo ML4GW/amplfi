@@ -278,7 +278,8 @@ class ParameterTestingDataset(FlowDataset):
         )
         # generate cross and plus using our infrastructure
         self._logger.info(
-            f"Generating {len(parameters)} waveforms using ml4gw infra."
+            f"Generating {len(next(iter(parameters.values())))} "
+            "waveforms using ml4gw infra."
         )
         cross, plus = self.waveform_sampler(**parameters)
         self._logger.info("Done generating waveforms.")
@@ -308,9 +309,10 @@ class ParameterTestingDataset(FlowDataset):
 
     def test_dataloader(self) -> torch.utils.data.DataLoader:
         cross, plus = self.test_waveforms
+        waveform_parameters = torch.from_numpy(self.test_parameters.values)
 
         waveform_dataset = torch.utils.data.TensorDataset(
-            cross, plus, self.test_inference_params
+            cross, plus, waveform_parameters
         )
 
         waveform_dataloader = torch.utils.data.DataLoader(
@@ -344,17 +346,19 @@ class ParameterTestingDataset(FlowDataset):
 
         [cross, plus, parameters], [X] = batch
 
-        parameters = {
-            k: parameters[:, i]
-            for i, k in enumerate(self.hparams.inference_params)
-        }
-
         dec, psi, phi = (
-            parameters["dec"].float(),
-            parameters["psi"].float(),
-            parameters["phi"].float(),
+            parameters[:, self.test_parameters.columns.get_loc("dec")].float(),
+            parameters[:, self.test_parameters.columns.get_loc("psi")].float(),
+            parameters[:, self.test_parameters.columns.get_loc("phi")].float(),
         )
         waveforms = self.projector(dec, psi, phi, cross=cross, plus=plus)
+        # restrict to inference parameters after waveforms have been
+        # projected. Note that projection parameters may not be in the
+        # inference parameters
+        parameters = {
+            k: parameters[:, self.test_parameters.columns.get_loc(k)]
+            for k in self.hparams.inference_params
+        }
 
         # make any requested parameter transforms
         parameters = self.transform(parameters)
