@@ -67,7 +67,9 @@ class HeterodynedEmbedding(Embedding):
             norm_layer=norm_layer,
         )
         self.frequency_domain_resnet = ResNet1D(
-            in_channels=int(num_ifos * 2 * num_chirp_masses + num_ifos),  # the number 2 is for real and imag parts of fft, the number num_ifos is for the psd arrays
+            in_channels=int(
+                num_ifos * 2 * num_chirp_masses + num_ifos
+            ),  # 2 is for real and imag parts of fft, add num_ifos for asd
             layers=freq_layers,
             classes=freq_context_dim,
             kernel_size=freq_kernel_size,
@@ -77,7 +79,9 @@ class HeterodynedEmbedding(Embedding):
             stride_type=stride_type,
             norm_layer=norm_layer,
         )
-        self.keep_last_n_samples = int(keep_last_n_seconds * strain_sample_rate)
+        self.keep_last_n_samples = int(
+            keep_last_n_seconds * strain_sample_rate
+        )
         self.context_dim = time_context_dim + freq_context_dim
 
     def _create_chirp_mass_grid(
@@ -117,7 +121,9 @@ class HeterodynedEmbedding(Embedding):
         X_heterodyned_time = X_heterodyned_time.view(_B, _C_time * _M, _T)
         # optionally, for time array, restrict to last n_seconds
         if self.keep_last_n_samples > 0:
-            X_heterodyned_time = X_heterodyned_time[..., -self.keep_last_n_samples:]
+            X_heterodyned_time = X_heterodyned_time[
+                ..., -self.keep_last_n_samples :
+            ]
 
         # for frequency array, restrict last dimension to the length of the asd
         X_heterodyned_freq = X_heterodyned_freq[..., -asds.shape[-1] :]
