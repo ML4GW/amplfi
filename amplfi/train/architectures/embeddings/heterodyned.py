@@ -1,5 +1,5 @@
 import math
-from typing import Literal, List, Optional
+from typing import Literal, List
 import torch
 
 from ml4gw.transforms import Heterodyne
@@ -52,11 +52,11 @@ class HeterodynedEmbedding(Embedding):
             sample_rate=strain_sample_rate,
             kernel_length=strain_kernel_length,
             chirp_mass=self.chirp_mass_grid,
-            return_type="both"
+            return_type="both",
         )
 
         self.time_domain_resnet = ResNet1D(
-            in_channels=num_ifos*num_chirp_masses,
+            in_channels=num_ifos * num_chirp_masses,
             layers=time_layers,
             classes=time_context_dim,
             kernel_size=time_kernel_size,
@@ -86,7 +86,9 @@ class HeterodynedEmbedding(Embedding):
         chirp_mass_spacing: Literal["linear", "log"],
     ) -> torch.Tensor:
         if chirp_mass_spacing == "linear":
-            return torch.linspace(chirp_mass_low, chirp_mass_high, num_chirp_masses)
+            return torch.linspace(
+                chirp_mass_low, chirp_mass_high, num_chirp_masses
+            )
         elif chirp_mass_spacing == "log":
             return torch.logspace(
                 math.log10(chirp_mass_low),
@@ -94,8 +96,10 @@ class HeterodynedEmbedding(Embedding):
                 num_chirp_masses,
             )
         else:
-            raise ValueError(f"Invalid chirp mass spacing: {chirp_mass_spacing}")
-    
+            raise ValueError(
+                f"Invalid chirp mass spacing: {chirp_mass_spacing}"
+            )
+
     def forward(self, x):
         strain, asds = x
         asds *= 1e23
@@ -103,14 +107,21 @@ class HeterodynedEmbedding(Embedding):
         inv_asds = 1 / asds
 
         # heterodyned time, frequency arrays have shapes (B, C, M, [T, F])
-        X_heterodyned_time, X_heterodyned_freq = self.heterodyne_transform(strain)
+        X_heterodyned_time, X_heterodyned_freq = self.heterodyne_transform(
+            strain
+        )
         # for frequency array, restrict last dimension to the length of the asd
-        X_heterodyned_freq = X_heterodyned_freq[..., -asds.shape[-1]:]
-        # then concat the real, imaginary and inv asd for the frequency domain view
-        X_heterodyned_freq = torch.cat((X_heterodyned_freq.real, X_heterodyned_freq.imag, inv_asds), dim=1)
+        X_heterodyned_freq = X_heterodyned_freq[..., -asds.shape[-1] :]
+        # then concat the real, imag, and inv asd for the frequency domain view
+        X_heterodyned_freq = torch.cat(
+            (X_heterodyned_freq.real, X_heterodyned_freq.imag, inv_asds), dim=1
+        )
         # optionally, for time array, restrict to last n_seconds
         if self.hparams.keep_last_n_seconds > 0:
-            n_samples_to_keep = int(self.hparams.keep_last_n_seconds * self.hparams.strain_sample_rate)
+            n_samples_to_keep = int(
+                self.hparams.keep_last_n_seconds
+                * self.hparams.strain_sample_rate
+            )
             X_heterodyned_time = X_heterodyned_time[..., -n_samples_to_keep:]
 
         # reshape to (B, C*M, T/F) for ResNet input
@@ -121,7 +132,9 @@ class HeterodynedEmbedding(Embedding):
 
         # pass through separate ResNets and concatenate
         time_domain_embedded = self.time_domain_resnet(X_heterodyned_time)
-        frequency_domain_embedded = self.frequency_domain_resnet(X_heterodyned_freq)
+        frequency_domain_embedded = self.frequency_domain_resnet(
+            X_heterodyned_freq
+        )
         embedding = torch.concat(
             (time_domain_embedded, frequency_domain_embedded),
             dim=1,
