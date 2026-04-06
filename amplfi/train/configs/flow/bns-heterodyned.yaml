@@ -10,7 +10,7 @@ trainer:
     - class_path: lightning.pytorch.loggers.TensorBoardLogger
       init_args:
         save_dir: ${oc.env:AMPLFI_OUTDIR}/train_logs
-        # uncomment if you WandB logging
+        # uncomment if using WandB logging
         # project: amplfi
         name: heterodyned_bns 
         version: kernel_30
@@ -29,7 +29,6 @@ model:
     train_outdir: ${oc.env:AMPLFI_OUTDIR}
     test_outdir: ${oc.env:AMPLFI_OUTDIR}/test_results/heterodyned_bns/kernel_30
     weight_decay: 0.00001
-    verbose: true
     # FlowModel specific parameters
     arch:
       class_path: amplfi.train.architectures.NSF
@@ -92,8 +91,8 @@ data:
     kernel_length: 30
     fduration: 2
     psd_length: 10
-    batches_per_epoch: 300
-    batch_size: 1400
+    batches_per_epoch: 100
+    batch_size: 180
     ifos: ["H1", "L1", "V1"]
     waveform_sampler: 
       class_path: amplfi.train.data.waveforms.generator.cbc.CBCGenerator
