@@ -7,6 +7,7 @@ from amplfi.train.architectures.embeddings import (
     MultiModal,
     ResNet,
     MultiModalPsdEmbeddingWithDecimator,
+    HeterodynedEmbedding,
 )
 from amplfi.train.architectures.embeddings.dense import DenseEmbedding
 
@@ -115,3 +116,49 @@ def test_multimodal_with_decimator(
         x = (torch.randn(100, n_ifos, length), psds)
         y = embedding(x)
         assert y.shape == (100, embedding.context_dim)
+    psds = torch.randn(100, n_ifos, sample_rate)
+    x = (torch.randn(100, n_ifos, length), psds)
+
+    y = embedding(x)
+    assert y.shape == (100, embedding.context_dim)
+
+
+@pytest.mark.parametrize(
+    "chirp_mass_low,chirp_mass_high,num_chirp_masses,chirp_mass_spacing",
+    [
+        (1, 2.5, 10, "log"),
+        (2, 3, 10, "linear"),
+    ],
+)
+def test_heterodyned_embedding(
+    chirp_mass_low,
+    chirp_mass_high,
+    num_chirp_masses,
+    chirp_mass_spacing,
+    n_ifos,
+    kernel_size,
+):
+    sample_rate = 2048
+    timeseries_length = 10
+    time_context_dim = 8
+    freq_context_dim = 12
+
+    embedding = HeterodynedEmbedding(
+        num_ifos=n_ifos,
+        strain_sample_rate=sample_rate,
+        strain_kernel_length=timeseries_length,
+        time_context_dim=time_context_dim,
+        freq_context_dim=freq_context_dim,
+        time_layers=[3, 3],
+        freq_layers=[3, 3],
+        chirp_mass_low=chirp_mass_low,
+        chirp_mass_high=chirp_mass_high,
+        num_chirp_masses=num_chirp_masses,
+        chirp_mass_spacing=chirp_mass_spacing,
+        time_kernel_size=kernel_size,
+        freq_kernel_size=kernel_size,
+    )
+    psds = torch.randn(100, n_ifos, sample_rate)
+    x = (torch.randn(100, n_ifos, timeseries_length * sample_rate), psds)
+    y = embedding(x)
+    assert y.shape == (100, embedding.context_dim)
