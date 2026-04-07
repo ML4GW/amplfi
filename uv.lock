@@ -208,7 +208,7 @@ requires-dist = [
     { name = "lightning", specifier = ">=2.5.0" },
     { name = "lightray", specifier = ">=0.2.4" },
     { name = "ligo-skymap", specifier = ">=2.2.2" },
-    { name = "ml4gw", specifier = ">=0.7.8" },
+    { name = "ml4gw", specifier = ">=0.7.13" },
     { name = "numpy", specifier = "<2.0.0" },
     { name = "omegaconf", specifier = ">=2.3.0,<3" },
     { name = "pandas", extras = ["hdf5"], specifier = ">=2.3.1" },
@@ -620,6 +620,8 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/8b/c5/ad5ca082b2610defc488679690df8137300c6bb396b24f783e3d74873fa4/bilby.cython-0.5.3-cp312-cp312-macosx_12_0_x86_64.whl", hash = "sha256:264ccd8ca1adabc794931ed6deb5082ad0ed4b52694be8158cb421a80a752bca", size = 351851, upload-time = "2024-08-23T15:22:07.895Z" },
     { url = "https://files.pythonhosted.org/packages/13/26/f0b46d56d278665b484ec421dc571fb28bdd81635137d00e0edc2c8fddc9/bilby.cython-0.5.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:44e5e381c2861e26a4e1fd5c591ea0c3c9a0e2f0d8c78f28f8704abf2945cd8d", size = 1014120, upload-time = "2024-08-23T15:22:09.942Z" },
     { url = "https://files.pythonhosted.org/packages/11/de/02429d598ec5ed4c70113a2c3e8b76a5b113885f85eacdcdaf19cbb6d23d/bilby.cython-0.5.3-cp312-cp312-win_amd64.whl", hash = "sha256:2758256339d7c3703014b265d3a77e0299d5c6264f962bc311c989ac453cbd60", size = 357801, upload-time = "2024-08-23T15:54:20.941Z" },
+    { url = "https://files.pythonhosted.org/packages/73/b9/e8a78c082d8708ea4cc9c65b53dfed9d1d6bc9b3a44d712811b9e55022ee/bilby_cython-0.5.3-cp311-cp311-win_amd64.whl", hash = "sha256:d39ad43c8962a32b7c561ee07f0f9fb9e656a7847b30176695007b31426d2474", size = 363731, upload-time = "2026-02-23T16:52:49.722Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/a2/6a8e2a8a0721b758745e2a35f91c5ff380cf0f795408bc74b9aa8c589f0a/bilby_cython-0.5.3-cp312-cp312-win_amd64.whl", hash = "sha256:9aabbcce359c63c78cf1c1bf4d714c438a2936ddd4e061fe90b3320415dd12f6", size = 361366, upload-time = "2026-02-23T16:52:50.964Z" },
 ]
 
 [[package]]
@@ -2944,7 +2946,7 @@ wheels = [
 
 [[package]]
 name = "ml4gw"
-version = "0.7.8"
+version = "0.7.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jaxtyping" },
@@ -2953,9 +2955,9 @@ dependencies = [
     { name = "torch" },
     { name = "torchaudio" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/05/cf/76629bfe5b515c354cb6c45968a9780e86fa731a691856a29670a416f706/ml4gw-0.7.8.tar.gz", hash = "sha256:1aa3cd1e0137613817465269d32a3183d33f0e0d89f301394215dea0bc089586", size = 118257, upload-time = "2025-10-03T13:48:14.953Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/af/bab88ca4f54386735a64502a990f1bc4edb6a0353aa2b910efd9aa244919/ml4gw-0.7.13.tar.gz", hash = "sha256:4e6264fcdb9cbf5ed6a83910a231a946770687bbc6c576f8e6dc811af7102f24", size = 121893, upload-time = "2026-04-07T00:22:25.566Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/10/a7e1e074dc08eaf0ff39a085316f14d8754e7b9cef77a922eaabe9348068/ml4gw-0.7.8-py3-none-any.whl", hash = "sha256:9871464276f460cadbdaba8d7e74c9671b333b705661e1386e72e7413d128fb7", size = 128386, upload-time = "2025-10-03T13:48:13.718Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/7e/1499d3835e9fb9adeeb8b5b5107dcdee79c37d6a61cd9db912fe59100efa/ml4gw-0.7.13-py3-none-any.whl", hash = "sha256:53132028674bb079759f97b664ba8d1ab1e53ecb21a50660b9015ae7c518bde0", size = 132944, upload-time = "2026-04-07T00:22:24.325Z" },
 ]
 
 [[package]]

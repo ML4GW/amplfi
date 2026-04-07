@@ -1,3 +1,5 @@
+from contextlib import nullcontext
+
 import pytest
 import torch
 
@@ -39,11 +41,6 @@ def time_out_features(request):
     return request.param
 
 
-@pytest.fixture(params=[True, False])
-def split_by_schedule(request):
-    return request.param
-
-
 @pytest.fixture(params=[32, 64, 128])
 def freq_out_features(request):
     return request.param
@@ -81,30 +78,40 @@ def test_multimodal(
     assert y.shape == (100, time_out_features + freq_out_features)
 
 
-def test_multimodal_with_decimator(n_ifos, kernel_size, split_by_schedule):
+@pytest.mark.parametrize(
+    "decimator_schedule,overlapping_schedule",
+    [
+        [[[0, 40, 256], [40, 60, 512]], False],
+        [[[0, 30, 256], [30, 50, 512], [50, 60, 2048]], False],
+        [[[0, 40, 256], [20, 60, 512]], True],
+    ],
+)
+def test_multimodal_with_decimator(
+    decimator_schedule, overlapping_schedule, n_ifos, kernel_size
+):
     sample_rate = 2048
     length = sample_rate * 60
-    decimator_schedule = torch.tensor(
-        [[0, 40, 256], [40, 58, 512], [58, 60, 2048]],
-        dtype=torch.int,
-    )
     time_context_dim = 8
     freq_context_dim = 12
 
-    embedding = MultiModalPsdEmbeddingWithDecimator(
-        n_ifos,
-        sample_rate,
-        decimator_schedule,
-        time_context_dim,
-        freq_context_dim,
-        [3, 3],
-        [3, 3],
-        split_by_schedule=split_by_schedule,
-        time_kernel_size=kernel_size,
-        freq_kernel_size=kernel_size,
+    ctx = (
+        nullcontext()
+        if not overlapping_schedule
+        else pytest.raises(RuntimeError)
     )
-    psds = torch.randn(100, n_ifos, sample_rate)
-    x = (torch.randn(100, n_ifos, length), psds)
-
-    y = embedding(x)
-    assert y.shape == (100, embedding.context_dim)
+    with ctx:
+        embedding = MultiModalPsdEmbeddingWithDecimator(
+            n_ifos,
+            sample_rate,
+            decimator_schedule,
+            time_context_dim,
+            freq_context_dim,
+            [3, 3],
+            [3, 3],
+            time_kernel_size=kernel_size,
+            freq_kernel_size=kernel_size,
+        )
+        psds = torch.randn(100, n_ifos, sample_rate)
+        x = (torch.randn(100, n_ifos, length), psds)
+        y = embedding(x)
+        assert y.shape == (100, embedding.context_dim)
