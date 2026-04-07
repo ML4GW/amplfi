@@ -116,11 +116,11 @@ def test_multimodal_with_decimator(
         x = (torch.randn(100, n_ifos, length), psds)
         y = embedding(x)
         assert y.shape == (100, embedding.context_dim)
-    psds = torch.randn(100, n_ifos, sample_rate)
-    x = (torch.randn(100, n_ifos, length), psds)
+        psds = torch.randn(100, n_ifos, sample_rate)
+        x = (torch.randn(100, n_ifos, length), psds)
 
-    y = embedding(x)
-    assert y.shape == (100, embedding.context_dim)
+        y = embedding(x)
+        assert y.shape == (100, embedding.context_dim)
 
 
 @pytest.mark.parametrize(
