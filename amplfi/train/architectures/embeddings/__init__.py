@@ -1,4 +1,5 @@
 from .dense import CoherentDenseEmbedding, NChannelDenseEmbedding
+from .heterodyned import HeterodynedEmbedding
 from .multimodal import (
     FrequencyPsd,
     MultiModal,
