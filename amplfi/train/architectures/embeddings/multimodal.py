@@ -143,6 +143,16 @@ class MultiModalPsd(Embedding):
         return embedding
 
 
+def _nonoverlapping_decimator_schedule(decimator_schedule):
+    """Check that decimator schedule is non-overlapping"""
+    for i in range(len(decimator_schedule) - 1):
+        current_end = decimator_schedule[i, 1]
+        next_start = decimator_schedule[i + 1, 0]
+        if current_end > next_start:
+            return False
+    return True
+
+
 class MultiModalPsdEmbeddingWithDecimator(Embedding):
     """A variant of :class:`MultiModalPsd` where the
     strain timeseries is decimated according to a schedule
@@ -160,7 +170,6 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
         freq_context_dim: int,
         time_layers: list[int],
         freq_layers: list[int],
-        split_by_schedule: bool = True,
         time_kernel_size: int = 3,
         freq_kernel_size: int = 3,
         zero_init_residual: bool = False,
@@ -176,13 +185,15 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
             if isinstance(decimator_schedule, torch.Tensor)
             else torch.tensor(decimator_schedule)
         )
+        if not _nonoverlapping_decimator_schedule(decimator_schedule):
+            raise RuntimeError("Decimator schedule must be non-overlapping")
+
         self.register_buffer("decimator_schedule", decimator_schedule)
         self.decimator = Decimator(
-            strain_sample_rate, schedule=self.decimator_schedule
+            strain_sample_rate, schedule=self.decimator_schedule, split=True
         )
-        self.split_by_schedule = split_by_schedule
-        self.context_dim = time_context_dim + freq_context_dim * (
-            len(self.decimator_schedule) if split_by_schedule else 1
+        self.context_dim = time_context_dim + freq_context_dim * len(
+            self.decimator_schedule
         )
 
         self.time_domain_resnet = ResNet1D(
@@ -197,7 +208,7 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
             norm_layer=norm_layer,
         )
         freq_psd_resnets = []
-        for _ in range(len(decimator_schedule) if split_by_schedule else 1):
+        for _ in range(len(decimator_schedule)):
             freq_psd_resnets.append(
                 ResNet1D(
                     # the number 3 is for real and imag parts of fft,
@@ -222,15 +233,13 @@ class MultiModalPsdEmbeddingWithDecimator(Embedding):
         asds = asds.float()
         inv_asds = 1 / asds
 
-        strain = self.decimator(strain, split=False)
-        strain_split = (
-            self.decimator.split_by_schedule(strain)
-            if self.split_by_schedule
-            else [strain]
-        )
-
+        # the strain comes out split
+        strain_split = self.decimator(strain)
+        # concatenate the pieces
+        strain = torch.cat(strain_split, dim=-1)
+        # pass merged strain through time domain resnet
         time_domain_embedded = self.time_domain_resnet(strain)
-
+        # pass each split through its own freq domain resnet
         freq_domain_embedded = []
         for _split, _resnet in zip(
             strain_split, self.freq_psd_resnets, strict=False
