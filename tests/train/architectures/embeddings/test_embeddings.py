@@ -8,7 +8,7 @@ from amplfi.train.architectures.embeddings import (
     ResNet,
     MultiModalPsdEmbeddingWithDecimator,
     HeterodynedEmbedding,
-    HeterodynedEmbeddingWithDecimator
+    HeterodynedEmbeddingWithDecimator,
 )
 from amplfi.train.architectures.embeddings.dense import DenseEmbedding
 
