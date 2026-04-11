@@ -163,6 +163,7 @@ class HeterodynedEmbeddingWithDecimator(HeterodynedEmbedding):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        strain_sample_rate = kwargs["strain_sample_rate"]
         decimator_schedule = (
             decimator_schedule
             if isinstance(decimator_schedule, torch.Tensor)
