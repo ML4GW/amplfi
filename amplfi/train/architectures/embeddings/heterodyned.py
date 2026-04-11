@@ -5,6 +5,7 @@ import torch
 from ml4gw.transforms import Heterodyne
 from ml4gw.nn.norm import NormLayer
 from ml4gw.nn.resnet.resnet_1d import ResNet1D
+from ml4gw.transforms.decimator import Decimator
 
 from .base import Embedding
 
