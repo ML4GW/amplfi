@@ -24,6 +24,18 @@ class SaveConfigCallback(SaveConfigCallback):
                 config.pop("trainer")
                 trainer.logger.experiment.config.update(self.config.as_dict())
 
+    def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+        """
+        Embed the full training config in every checkpoint.
+
+        This enables checkpoints to be loaded without a separate
+        config file.
+        """
+        if trainer.is_global_zero:
+            checkpoint["amplfi_config"] = self.parser.dump(
+                self.config, skip_none=False
+            )
+
 
 class SaveAugmentedBatch(pl.Callback):
     def on_train_start(self, trainer, pl_module):
