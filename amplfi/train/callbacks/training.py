@@ -32,9 +32,12 @@ class SaveConfigCallback(SaveConfigCallback):
         config file.
         """
         if trainer.is_global_zero:
+            import amplfi
+
             checkpoint["amplfi_config"] = self.parser.dump(
                 self.config, skip_none=False
             )
+            checkpoint["amplfi_version"] = amplfi.__version__
 
 
 class SaveAugmentedBatch(pl.Callback):

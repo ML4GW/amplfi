@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import torch
@@ -5,6 +6,7 @@ import yaml
 from jsonargparse import ArgumentParser
 from ml4gw.transforms import ChannelWiseScaler
 
+import amplfi
 from amplfi.train.architectures.flows import FlowArchitecture
 
 
@@ -39,9 +41,20 @@ def from_checkpoint(
             "were supported."
         )
 
+    checkpoint_version = checkpoint["amplfi_version"]
+    current_version = amplfi.__version__
+
+    if checkpoint_version != current_version:
+        warnings.warn(
+            f"Checkpoint was saved with AMPLFI v{checkpoint_version} "
+            f"but you are loading with v{current_version}. "
+            "If loading fails, retry using matching versions.",
+            stacklevel=2,
+        )
+
     full_config = yaml.safe_load(checkpoint["amplfi_config"])
     model_init_args = full_config["model"]["init_args"]
-    inference_params = model_init_args["inference_params"]
+    inference_params = full_config["data"]["init_args"]["inference_params"]
     arch_config = model_init_args["arch"]
 
     arch_config["init_args"]["num_params"] = len(inference_params)
@@ -55,7 +68,7 @@ def from_checkpoint(
     arch: FlowArchitecture = args.arch
 
     arch_state_dict = {
-        k.removeprefix("model.") : v
+        k.removeprefix("model."): v
         for k, v in checkpoint["state_dict"].items()
         if k.startswith("model.")
     }
@@ -64,7 +77,7 @@ def from_checkpoint(
     arch = arch.to(device)
 
     scaler_state_dict = {
-        k.removeprefix("scaler.") : v
+        k.removeprefix("scaler."): v
         for k, v in checkpoint["state_dict"].items()
         if k.startswith("scaler.")
     }
