@@ -5,6 +5,7 @@ import torch
 from ml4gw.transforms import Heterodyne
 from ml4gw.nn.norm import NormLayer
 from ml4gw.nn.resnet.resnet_1d import ResNet1D
+from ml4gw.transforms.decimator import Decimator
 
 from .base import Embedding
 
@@ -106,7 +107,7 @@ class HeterodynedEmbedding(Embedding):
                 f"Invalid chirp mass spacing: {chirp_mass_spacing}"
             )
 
-    def forward(self, x):
+    def forward_impl(self, x):
         strain, asds = x
         asds *= 1e23
         asds = asds.float()
@@ -135,8 +136,51 @@ class HeterodynedEmbedding(Embedding):
             (X_heterodyned_freq.real, X_heterodyned_freq.imag, inv_asds), dim=1
         )
 
+        return X_heterodyned_time, X_heterodyned_freq
+
+    def forward(self, x):
+        X_heterodyned_time, X_heterodyned_freq = self.forward_impl(x)
         # pass through separate ResNets and concatenate
         time_domain_embedded = self.time_domain_resnet(X_heterodyned_time)
+        frequency_domain_embedded = self.frequency_domain_resnet(
+            X_heterodyned_freq
+        )
+        embedding = torch.concat(
+            (time_domain_embedded, frequency_domain_embedded),
+            dim=1,
+        )
+        return embedding
+
+
+class HeterodynedEmbeddingWithDecimator(HeterodynedEmbedding):
+    """Same as HeterodynedEmbedding but with an additional decimation step
+    before the passing to the time domain resnet.
+    """
+
+    def __init__(
+        self,
+        decimator_schedule: list,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        strain_sample_rate = kwargs["strain_sample_rate"]
+        decimator_schedule = (
+            decimator_schedule
+            if isinstance(decimator_schedule, torch.Tensor)
+            else torch.tensor(decimator_schedule)
+        )
+        self.register_buffer("decimator_schedule", decimator_schedule)
+        self.decimator = Decimator(
+            strain_sample_rate, schedule=self.decimator_schedule, split=False
+        )
+        # TODO: handle keep_last_n_seconds properly with decimation
+
+    def forward(self, x):
+        X_heterodyned_time, X_heterodyned_freq = self.forward_impl(x)
+        # decimate the time and frequency domain embeddings separately
+        X_decimated_time = self.decimator(X_heterodyned_time)
+        # pass through separate ResNets and concatenate
+        time_domain_embedded = self.time_domain_resnet(X_decimated_time)
         frequency_domain_embedded = self.frequency_domain_resnet(
             X_heterodyned_freq
         )
