@@ -6,15 +6,9 @@ import torch
 from amplfi.train.architectures.embeddings import (
     MultiModal,
     ResNet,
-<<<<<<< Updated upstream
-    MultiModalPsdEmbeddingWithDecimator,
-    HeterodynedEmbedding,
-    HeterodynedEmbeddingWithDecimator,
-=======
     TimeDomainHeterodynedEmbedding,
     MultiModalHeterodynedEmbedding,
     FrequencyDomainHeterodynedEmbedding,
->>>>>>> Stashed changes
 )
 from amplfi.train.architectures.embeddings.dense import DenseEmbedding
 
