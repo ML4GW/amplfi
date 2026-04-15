@@ -1,4 +1,5 @@
 import math
+from abc import ABC
 from typing import Literal, List
 import torch
 
@@ -10,7 +11,202 @@ from ml4gw.transforms.decimator import Decimator
 from .base import Embedding
 
 
-class HeterodynedEmbedding(Embedding):
+class _HeterodyneTransformMixin(ABC):
+    """Heterodyne transform setup."""
+
+    def _setup_heterodyne_transform(
+        self,
+        strain_sample_rate: int,
+        strain_kernel_length: int,
+        chirp_mass_low: float,
+        chirp_mass_high: float,
+        num_chirp_masses: int,
+        chirp_mass_spacing: Literal["linear", "log"],
+    ) -> None:
+        _chirp_mass_grid = self._create_chirp_mass_grid(
+            chirp_mass_low,
+            chirp_mass_high,
+            num_chirp_masses,
+            chirp_mass_spacing,
+        )
+        self.register_buffer("chirp_mass_grid", _chirp_mass_grid)
+
+        self.heterodyne_transform = Heterodyne(
+            sample_rate=strain_sample_rate,
+            kernel_length=strain_kernel_length,
+            chirp_mass=self.chirp_mass_grid,
+            return_type="both",
+        )
+
+    def _create_chirp_mass_grid(
+        self,
+        chirp_mass_low: float,
+        chirp_mass_high: float,
+        num_chirp_masses: int,
+        chirp_mass_spacing: Literal["linear", "log"],
+    ) -> torch.Tensor:
+        if chirp_mass_spacing == "linear":
+            return torch.linspace(
+                chirp_mass_low, chirp_mass_high, num_chirp_masses
+            )
+        elif chirp_mass_spacing == "log":
+            return torch.logspace(
+                math.log10(chirp_mass_low),
+                math.log10(chirp_mass_high),
+                num_chirp_masses,
+            )
+        else:
+            raise ValueError(
+                f"Invalid chirp mass spacing: {chirp_mass_spacing}"
+            )
+
+
+class TimeDomainHeterodynedEmbedding(_HeterodyneTransformMixin, Embedding):
+    """An embedding where the signal is heterodyned using
+    several reference chirp mass values and then passed
+    through a ResNet for the time domain representation.
+    """
+
+    def __init__(
+        self,
+        num_ifos: int,
+        strain_sample_rate: int,
+        strain_kernel_length: int,
+        context_dim: int,
+        layers: List[int],
+        chirp_mass_low: float = 1.0,
+        chirp_mass_high: float = 2.5,
+        num_chirp_masses: int = 100,
+        chirp_mass_spacing: Literal["linear", "log"] = "log",
+        keep_last_n_seconds: float = 0.0,
+        kernel_size: int = 3,
+        zero_init_residual: bool = False,
+        groups: int = 1,
+        width_per_group: int = 64,
+        stride_type: list[Literal["stride", "dilation"]] | None = None,
+        norm_layer: NormLayer | None = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+
+        self._setup_heterodyne_transform(
+            strain_sample_rate=strain_sample_rate,
+            strain_kernel_length=strain_kernel_length,
+            chirp_mass_low=chirp_mass_low,
+            chirp_mass_high=chirp_mass_high,
+            num_chirp_masses=num_chirp_masses,
+            chirp_mass_spacing=chirp_mass_spacing,
+        )
+
+        self.time_domain_resnet = ResNet1D(
+            in_channels=num_ifos * num_chirp_masses,
+            layers=layers,
+            classes=context_dim,
+            kernel_size=kernel_size,
+            zero_init_residual=zero_init_residual,
+            groups=groups,
+            width_per_group=width_per_group,
+            stride_type=stride_type,
+            norm_layer=norm_layer,
+        )
+
+        self.keep_last_n_samples = int(
+            keep_last_n_seconds * strain_sample_rate
+        )
+        self.context_dim = context_dim
+
+    def forward(self, x):
+        strain = x[0] if isinstance(x, (tuple, list)) else x
+        X_heterodyned_time, _ = self.heterodyne_transform(strain)
+
+        # reshape to (B, C*M, T) for ResNet input
+        _B, _C_time, _M, _T = X_heterodyned_time.shape
+        X_heterodyned_time = X_heterodyned_time.view(_B, _C_time * _M, _T)
+
+        # optionally restrict to last n_seconds
+        if self.keep_last_n_samples > 0:
+            X_heterodyned_time = X_heterodyned_time[
+                ..., -self.keep_last_n_samples :
+            ]
+
+        return self.time_domain_resnet(X_heterodyned_time)
+
+
+class FrequencyDomainHeterodynedEmbedding(_HeterodyneTransformMixin, Embedding):
+    """An embedding where the signal is heterodyned using several
+    reference chirp mass values and only the frequency-domain view
+    is passed through a ResNet.
+    """
+
+    def __init__(
+        self,
+        num_ifos: int,
+        strain_sample_rate: int,
+        strain_kernel_length: int,
+        context_dim: int,
+        layers: List[int],
+        chirp_mass_low: float = 1.0,
+        chirp_mass_high: float = 2.5,
+        num_chirp_masses: int = 100,
+        chirp_mass_spacing: Literal["linear", "log"] = "linear",
+        kernel_size: int = 3,
+        zero_init_residual: bool = False,
+        groups: int = 1,
+        width_per_group: int = 64,
+        stride_type: list[Literal["stride", "dilation"]] | None = None,
+        norm_layer: NormLayer | None = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self._setup_heterodyne_transform(
+            strain_sample_rate=strain_sample_rate,
+            strain_kernel_length=strain_kernel_length,
+            chirp_mass_low=chirp_mass_low,
+            chirp_mass_high=chirp_mass_high,
+            num_chirp_masses=num_chirp_masses,
+            chirp_mass_spacing=chirp_mass_spacing,
+        )
+
+        self.frequency_domain_resnet = ResNet1D(
+            in_channels=int(
+                num_ifos * 2 * num_chirp_masses + num_ifos
+            ),  # 2 is for real and imag parts of fft, add num_ifos for asd
+            layers=layers,
+            classes=context_dim,
+            kernel_size=kernel_size,
+            zero_init_residual=zero_init_residual,
+            groups=groups,
+            width_per_group=width_per_group,
+            stride_type=stride_type,
+            norm_layer=norm_layer,
+        )
+        self.context_dim = context_dim
+
+    def forward(self, x):
+        strain, asds = x
+        asds *= 1e23
+        asds = asds.float()
+        inv_asds = 1 / asds
+
+        _, X_heterodyned_freq = self.heterodyne_transform(strain)
+
+        # restrict last dimension to ASD length
+        X_heterodyned_freq = X_heterodyned_freq[..., -asds.shape[-1] :]
+
+        # reshape to (B, C*M, F) for ResNet input
+        _B, _C_freq, _M, _F_freq = X_heterodyned_freq.shape
+        X_heterodyned_freq = X_heterodyned_freq.view(_B, _C_freq * _M, _F_freq)
+
+        # concat real, imag, and inv asd channels
+        X_heterodyned_freq = torch.cat(
+            (X_heterodyned_freq.real, X_heterodyned_freq.imag, inv_asds), dim=1
+        )
+
+        return self.frequency_domain_resnet(X_heterodyned_freq)
+
+
+class MultiModalHeterodynedEmbedding(_HeterodyneTransformMixin, Embedding):
     """An embedding where the signal is heterodyned using
     several reference chirp mass values and then passed
     through separate ResNets for the time and frequency
@@ -41,19 +237,14 @@ class HeterodynedEmbedding(Embedding):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        _chirp_mass_grid = self._create_chirp_mass_grid(
-            chirp_mass_low,
-            chirp_mass_high,
-            num_chirp_masses,
-            chirp_mass_spacing,
-        )
-        self.register_buffer("chirp_mass_grid", _chirp_mass_grid)
 
-        self.heterodyne_transform = Heterodyne(
-            sample_rate=strain_sample_rate,
-            kernel_length=strain_kernel_length,
-            chirp_mass=self.chirp_mass_grid,
-            return_type="both",
+        self._setup_heterodyne_transform(
+            strain_sample_rate=strain_sample_rate,
+            strain_kernel_length=strain_kernel_length,
+            chirp_mass_low=chirp_mass_low,
+            chirp_mass_high=chirp_mass_high,
+            num_chirp_masses=num_chirp_masses,
+            chirp_mass_spacing=chirp_mass_spacing,
         )
 
         self.time_domain_resnet = ResNet1D(
@@ -84,28 +275,6 @@ class HeterodynedEmbedding(Embedding):
             keep_last_n_seconds * strain_sample_rate
         )
         self.context_dim = time_context_dim + freq_context_dim
-
-    def _create_chirp_mass_grid(
-        self,
-        chirp_mass_low: float,
-        chirp_mass_high: float,
-        num_chirp_masses: int,
-        chirp_mass_spacing: Literal["linear", "log"],
-    ) -> torch.Tensor:
-        if chirp_mass_spacing == "linear":
-            return torch.linspace(
-                chirp_mass_low, chirp_mass_high, num_chirp_masses
-            )
-        elif chirp_mass_spacing == "log":
-            return torch.logspace(
-                math.log10(chirp_mass_low),
-                math.log10(chirp_mass_high),
-                num_chirp_masses,
-            )
-        else:
-            raise ValueError(
-                f"Invalid chirp mass spacing: {chirp_mass_spacing}"
-            )
 
     def forward_impl(self, x):
         strain, asds = x
@@ -152,9 +321,9 @@ class HeterodynedEmbedding(Embedding):
         return embedding
 
 
-class HeterodynedEmbeddingWithDecimator(HeterodynedEmbedding):
-    """Same as HeterodynedEmbedding but with an additional decimation step
-    before the passing to the time domain resnet.
+class HeterodynedEmbeddingWithDecimator(MultiModalHeterodynedEmbedding):
+    """Same as MultiModalHeterodynedEmbedding but with an additional decimation
+    step before passing to the time domain resnet.
     """
 
     def __init__(
