@@ -7,7 +7,9 @@ from amplfi.train.architectures.embeddings import (
     MultiModal,
     ResNet,
     TimeDomainHeterodynedEmbedding,
+    MultiModalPsdEmbeddingWithDecimator,
     MultiModalHeterodynedEmbedding,
+    HeterodynedEmbeddingWithDecimator,
     FrequencyDomainHeterodynedEmbedding,
 )
 from amplfi.train.architectures.embeddings.dense import DenseEmbedding
@@ -140,7 +142,7 @@ def test_heterodyned_embedding(
     freq_context_dim = 12
     batch_size = 10
 
-    common_kwargs = dict(
+    common_kwargs = dict(  # noqa C408
         num_ifos=n_ifos,
         strain_sample_rate=sample_rate,
         strain_kernel_length=timeseries_length,
@@ -152,7 +154,9 @@ def test_heterodyned_embedding(
 
     def make_inputs():
         psds = torch.randn(batch_size, n_ifos, sample_rate)
-        strain = torch.randn(batch_size, n_ifos, timeseries_length * sample_rate)
+        strain = torch.randn(
+            batch_size, n_ifos, timeseries_length * sample_rate
+        )
         return (strain, psds)
 
     # test all embeddings sequentially

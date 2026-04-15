@@ -1,5 +1,4 @@
 import math
-from abc import ABC
 from typing import Literal, List
 import torch
 
@@ -11,7 +10,7 @@ from ml4gw.transforms.decimator import Decimator
 from .base import Embedding
 
 
-class _HeterodyneTransformMixin(ABC):
+class _HeterodyneTransformMixin:
     """Heterodyne transform setup."""
 
     def _setup_heterodyne_transform(
@@ -132,7 +131,9 @@ class TimeDomainHeterodynedEmbedding(_HeterodyneTransformMixin, Embedding):
         return self.time_domain_resnet(X_heterodyned_time)
 
 
-class FrequencyDomainHeterodynedEmbedding(_HeterodyneTransformMixin, Embedding):
+class FrequencyDomainHeterodynedEmbedding(
+    _HeterodyneTransformMixin, Embedding
+):
     """An embedding where the signal is heterodyned using several
     reference chirp mass values and only the frequency-domain view
     is passed through a ResNet.

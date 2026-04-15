@@ -1,6 +1,8 @@
 from .dense import CoherentDenseEmbedding, NChannelDenseEmbedding
 from .heterodyned import (
-    HeterodynedEmbedding,
+    TimeDomainHeterodynedEmbedding,
+    FrequencyDomainHeterodynedEmbedding,
+    MultiModalHeterodynedEmbedding,
     HeterodynedEmbeddingWithDecimator,
 )
 from .multimodal import (
