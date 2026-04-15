@@ -77,6 +77,7 @@ build-backend = "setuptools.build_meta"
 [tool.ruff]
 line-length = 79
 extend-exclude = ["docs"]
+extend-include = ["T201"]
 
 
 [tool.ruff.lint]
