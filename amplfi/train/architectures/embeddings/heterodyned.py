@@ -115,7 +115,7 @@ class TimeDomainHeterodynedEmbedding(_HeterodyneTransformMixin, Embedding):
         self.context_dim = context_dim
 
     def forward(self, x):
-        strain = x[0] if isinstance(x, (tuple, list)) else x
+        strain, _ = x  # ignore asd
         X_heterodyned_time, _ = self.heterodyne_transform(strain)
 
         # reshape to (B, C*M, T) for ResNet input
