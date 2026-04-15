@@ -6,9 +6,11 @@ import torch
 from amplfi.train.architectures.embeddings import (
     MultiModal,
     ResNet,
+    TimeDomainHeterodynedEmbedding,
     MultiModalPsdEmbeddingWithDecimator,
-    HeterodynedEmbedding,
+    MultiModalHeterodynedEmbedding,
     HeterodynedEmbeddingWithDecimator,
+    FrequencyDomainHeterodynedEmbedding,
 )
 from amplfi.train.architectures.embeddings.dense import DenseEmbedding
 
@@ -138,46 +140,71 @@ def test_heterodyned_embedding(
     timeseries_length = 10
     time_context_dim = 8
     freq_context_dim = 12
+    batch_size = 10
 
-    embedding = HeterodynedEmbedding(
+    common_kwargs = dict(  # noqa C408
         num_ifos=n_ifos,
         strain_sample_rate=sample_rate,
         strain_kernel_length=timeseries_length,
-        time_context_dim=time_context_dim,
-        freq_context_dim=freq_context_dim,
-        time_layers=[3, 3],
-        freq_layers=[3, 3],
         chirp_mass_low=chirp_mass_low,
         chirp_mass_high=chirp_mass_high,
         num_chirp_masses=num_chirp_masses,
         chirp_mass_spacing=chirp_mass_spacing,
-        time_kernel_size=kernel_size,
-        freq_kernel_size=kernel_size,
     )
-    psds = torch.randn(100, n_ifos, sample_rate)
-    x = (torch.randn(100, n_ifos, timeseries_length * sample_rate), psds)
-    y = embedding(x)
-    assert y.shape == (100, embedding.context_dim)
 
-    # now test with a decimator schedule
-    decimator_schedule = [[0, 6, 256], [6, 10, 1024]]
-    embedding = HeterodynedEmbeddingWithDecimator(
-        decimator_schedule=decimator_schedule,
-        num_ifos=n_ifos,
-        strain_sample_rate=sample_rate,
-        strain_kernel_length=timeseries_length,
-        time_context_dim=time_context_dim,
-        freq_context_dim=freq_context_dim,
-        time_layers=[3, 3],
-        freq_layers=[3, 3],
-        chirp_mass_low=chirp_mass_low,
-        chirp_mass_high=chirp_mass_high,
-        num_chirp_masses=num_chirp_masses,
-        chirp_mass_spacing=chirp_mass_spacing,
-        time_kernel_size=kernel_size,
-        freq_kernel_size=kernel_size,
-    )
-    psds = torch.randn(100, n_ifos, sample_rate)
-    x = (torch.randn(100, n_ifos, timeseries_length * sample_rate), psds)
-    y = embedding(x)
-    assert y.shape == (100, embedding.context_dim)
+    def make_inputs():
+        psds = torch.randn(batch_size, n_ifos, sample_rate)
+        strain = torch.randn(
+            batch_size, n_ifos, timeseries_length * sample_rate
+        )
+        return (strain, psds)
+
+    # test all embeddings sequentially
+    with torch.no_grad():
+        # 1) time-domain only
+        embedding = TimeDomainHeterodynedEmbedding(
+            context_dim=time_context_dim,
+            layers=[3, 3],
+            kernel_size=kernel_size,
+            **common_kwargs,
+        )
+        y = embedding(make_inputs())
+        assert y.shape == (batch_size, embedding.context_dim)
+
+        # 2) frequency-domain only
+        embedding = FrequencyDomainHeterodynedEmbedding(
+            context_dim=freq_context_dim,
+            layers=[3, 3],
+            kernel_size=kernel_size,
+            **common_kwargs,
+        )
+        y = embedding(make_inputs())
+        assert y.shape == (batch_size, embedding.context_dim)
+
+        # 3) multimodal
+        embedding = MultiModalHeterodynedEmbedding(
+            time_context_dim=time_context_dim,
+            freq_context_dim=freq_context_dim,
+            time_layers=[3, 3],
+            freq_layers=[3, 3],
+            time_kernel_size=kernel_size,
+            freq_kernel_size=kernel_size,
+            **common_kwargs,
+        )
+        y = embedding(make_inputs())
+        assert y.shape == (batch_size, embedding.context_dim)
+
+        # 4) multimodal + decimator
+        decimator_schedule = [[0, 6, 256], [6, 10, 1024]]
+        embedding = HeterodynedEmbeddingWithDecimator(
+            decimator_schedule=decimator_schedule,
+            time_context_dim=time_context_dim,
+            freq_context_dim=freq_context_dim,
+            time_layers=[3, 3],
+            freq_layers=[3, 3],
+            time_kernel_size=kernel_size,
+            freq_kernel_size=kernel_size,
+            **common_kwargs,
+        )
+        y = embedding(make_inputs())
+        assert y.shape == (batch_size, embedding.context_dim)
