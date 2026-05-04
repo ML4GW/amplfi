@@ -17,10 +17,11 @@ def n_samples(request):
 
 
 def test_histogram_skymap(n_side, n_samples):
+    rng = np.random.default_rng()
     # mock posterior samples
-    ra_samples = np.random.uniform(0, 2 * np.pi, n_samples)
-    dec_samples = np.random.uniform(-0.5 * np.pi, 0.5 * np.pi, n_samples)
-    dist_samples = np.random.uniform(1000, 2000, n_samples)
+    ra_samples = rng.uniform(0, 2 * np.pi, n_samples)
+    dec_samples = rng.uniform(-0.5 * np.pi, 0.5 * np.pi, n_samples)
+    dist_samples = rng.uniform(1000, 2000, n_samples)
     # check skymap format with no extra metadata
     skymap_content = skymap.histogram_skymap(
         ra_samples, dec_samples, dist_samples, nside=n_side

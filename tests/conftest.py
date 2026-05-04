@@ -84,7 +84,7 @@ def create_mock_data():
                 # Create TimeSeries for each IFO and write to HDF5
                 for ifo in ["H1", "L1"]:
                     # Create realistic noise-like strain data
-                    strain_data = np.random.normal(
+                    strain_data = np.random.default_rng().normal(
                         0, 1e-21, sample_rate * duration_per_file
                     )
 
