@@ -208,7 +208,7 @@ def histogram_skymap(
     # create empty map and then fill in non-zero pix with density
     # estimated by fraction of total samples in each pixel
     map = np.zeros(npix)
-    map[np.in1d(range(npix), uniq)] = counts
+    map[np.isin(range(npix), uniq)] = counts
     density = map / num_samples
     density /= hp.nside2pixarea(nside)
     density /= u.sr
@@ -249,9 +249,9 @@ def histogram_skymap(
             dist_sigma.append(_sigma)
             dist_norm.append(_norm)
 
-        mu[np.in1d(range(npix), good_ipix)] = np.array(dist_mu)
-        sigma[np.in1d(range(npix), good_ipix)] = np.array(dist_sigma)
-        norm[np.in1d(range(npix), good_ipix)] = np.array(dist_norm)
+        mu[np.isin(range(npix), good_ipix)] = np.array(dist_mu)
+        sigma[np.isin(range(npix), good_ipix)] = np.array(dist_sigma)
+        norm[np.isin(range(npix), good_ipix)] = np.array(dist_norm)
 
     mu *= u.Mpc
     sigma *= u.Mpc

@@ -9,7 +9,7 @@ authors = [
 requires-python = ">=3.10,<3.13"
 dependencies = [
     "lightray>=0.2.4",
-    "numpy<2.0.0",
+    "numpy>=2.0.0",
     "ml4gw>=0.7.13",
     "lightning>=2.5.0",
     "h5py>=3.10.0,<4",
@@ -17,7 +17,6 @@ dependencies = [
     "bilby>=2.2.3,<3",
     "healpy>=1.16.6,<2",
     "jsonargparse[signatures]>=4.27.1,<5",
-    "urllib3>=1.25.4,<1.27",
     "omegaconf>=2.3.0,<3",
     "gwpy>=3.0.12",
     "wandb>=0.18.5,<0.19",
