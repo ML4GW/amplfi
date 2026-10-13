@@ -1,7 +1,7 @@
 Tuning
 ======
 
-Hyperparameter tuning is powered by [Ray Tune](https://docs.ray.io/en/latest/tune/index.html). We utilize a wrapper library, [lightray](https://github.com/ethanmarx/lightray), that simplifies the use of Ray Tune with PyTorch Lightning `LightningCLI`'s. 
+Hyperparameter tuning is powered by [Ray Tune](https://docs.ray.io/en/latest/tune/index.html). We utilize a wrapper library, [lightray](https://github.com/ML4GW/lightray), that simplifies the use of Ray Tune with PyTorch Lightning `LightningCLI`'s. 
 
 
 ## Initialize a Tune Experiment
@@ -99,7 +99,7 @@ export AMPLFI_OUTDIR=s3://my-bucket/my-first-tune/runs
 First, add the helm repository
 
 ```console
-helm repo add lightray https://ethanmarx.github.io/lightray/
+helm repo add lightray https://ml4gw.github.io/lightray/
 ```
 
 The helm chart comes with some configuration you'll need to set. To pull the "values" configuration template, run

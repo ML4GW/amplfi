@@ -25,7 +25,7 @@ $ pip install -e .
 ```console
 $ uv sync
 ```
-Supported python versions: 3.10-3.12.
+Supported python versions: 3.11-3.14.
 :::
 ::::
 
