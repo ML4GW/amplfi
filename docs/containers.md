@@ -10,14 +10,14 @@ You can pull the container locally with either docker or apptainer
 ```console
 $ apptainer pull ${AMPLFI_CONTAINER_ROOT}/amplfi.sif docker://ghcr.io/ml4gw/amplfi/amplfi:main
 ```
-Supported python versions: 3.10-3.12.
+Supported python versions: 3.11-3.14.
 :::
 
 :::{tab-item} docker
 ```console
 $ docker pull ghcr.io/ml4gw/amplfi/amplfi:main
 ```
-Supported python versions: 3.10-3.12.
+Supported python versions: 3.11-3.14.
 :::
 
 ::::

@@ -40,7 +40,7 @@ $ source ./venv/bin/activate
 :::
 
 ::::
-Supported python versions: 3.10-3.12.
+Supported python versions: 3.11-3.14.
 
 ## Data Generation
 Currently, running the data generation workflow that queries strain data requires utilizing the `AMPLFI` container.
@@ -67,7 +67,7 @@ $ docker pull ghcr.io/ml4gw/amplfi/amplfi:main
 :::
 
 ::::
-Supported python versions: 3.10-3.12.
+Supported python versions: 3.11-3.14.
 
 Or build the container locally
 
