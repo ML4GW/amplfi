@@ -60,6 +60,148 @@ class _HeterodyneTransformMixin:
             )
 
 
+class TimeDomainHeterodynedFrequencyDomainDecimator(_HeterodyneTransformMixin, Embedding):
+    """An embedding where the signal is heterodyned in the time-domain.
+    It is also decimated and the individual parts are used in Frequency-domain
+    resnets.
+    """
+    def __init__(
+        self,
+        num_ifos: int,
+        strain_sample_rate: int,
+        decimator_schedule: list,
+        strain_kernel_length: int,
+        time_context_dim: int,
+        freq_context_dim: int,
+        time_layers: List[int],
+        freq_layers: List[int],
+        chirp_mass_low: float = 1.0,
+        chirp_mass_high: float = 2.5,
+        num_chirp_masses: int = 100,
+        chirp_mass_spacing: Literal["linear", "log"] = "log",
+        keep_last_n_seconds: float = 0.0,
+        time_kernel_size: int = 3,
+        freq_kernel_size: int = 3,
+        zero_init_residual: bool = False,
+        groups: int = 1,
+        width_per_group: int = 64,
+        stride_type: list[Literal["stride", "dilation"]] | None = None,
+        norm_layer: NormLayer | None = None,
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+
+        decimator_schedule = (
+            decimator_schedule
+            if isinstance(decimator_schedule, torch.Tensor)
+            else torch.tensor(decimator_schedule)
+        )
+
+        self.register_buffer("decimator_schedule", decimator_schedule)
+        self.decimator = Decimator(
+            strain_sample_rate, schedule=self.decimator_schedule, split=True
+        )
+        self.context_dim = time_context_dim + freq_context_dim * len(
+            self.decimator_schedule
+        )
+
+        self._setup_heterodyne_transform(
+            strain_sample_rate=strain_sample_rate,
+            strain_kernel_length=strain_kernel_length,
+            chirp_mass_low=chirp_mass_low,
+            chirp_mass_high=chirp_mass_high,
+            num_chirp_masses=num_chirp_masses,
+            chirp_mass_spacing=chirp_mass_spacing,
+        )
+
+        self.time_domain_resnet = ResNet1D(
+            in_channels=num_ifos * num_chirp_masses,
+            layers=time_layers,
+            classes=time_context_dim,
+            kernel_size=time_kernel_size,
+            zero_init_residual=zero_init_residual,
+            groups=groups,
+            width_per_group=width_per_group,
+            stride_type=stride_type,
+            norm_layer=norm_layer,
+        )
+
+        freq_psd_resnets = []
+        for _ in range(len(decimator_schedule)):
+            freq_psd_resnets.append(
+                ResNet1D(
+                    # the number 3 is for real and imag parts of fft,
+                    # and the psd arrays
+                    in_channels=int(num_ifos * 3),
+                    layers=freq_layers,
+                    classes=freq_context_dim,
+                    kernel_size=freq_kernel_size,
+                    zero_init_residual=zero_init_residual,
+                    groups=groups,
+                    width_per_group=width_per_group,
+                    stride_type=stride_type,
+                    norm_layer=norm_layer,
+                )
+            )
+        self.freq_psd_resnets = torch.nn.ModuleList(freq_psd_resnets)
+        self.keep_last_n_samples = int(
+            keep_last_n_seconds * strain_sample_rate
+        )
+        self.context_dim = time_context_dim + freq_context_dim * len(
+            self.decimator_schedule
+        )
+
+    def forward(self, x):
+        strain, asds = x
+        asds *= 1e23
+        asds = asds.float()
+        inv_asds = 1 / asds
+
+        # Handle the time domain first
+        # heterodyned time, frequency arrays have shapes (B, C, M, [T, F])
+        X_heterodyned_time, _ = self.heterodyne_transform(
+            strain
+        )
+        # for time array, reshape to (B, C*M, T) for ResNet input
+        _B, _C_time, _M, _T = X_heterodyned_time.shape
+        X_heterodyned_time = X_heterodyned_time.view(_B, _C_time * _M, _T)
+        # optionally, for time array, restrict to last n_seconds
+        if self.keep_last_n_samples > 0:
+            X_heterodyned_time = X_heterodyned_time[
+                ..., -self.keep_last_n_samples :
+            ]
+        time_domain_embedded = self.time_domain_resnet(X_heterodyned_time)
+
+        # Now handle the frequency domain
+        strain_split = self.decimator(strain)
+        # pass each split through its own freq domain resnet
+        freq_domain_embedded = []
+        for _split, _resnet in zip(
+            strain_split, self.freq_psd_resnets, strict=False
+        ):
+            _split_fft = torch.fft.rfft(_split)
+            # limit to minimum of asd/fft size
+            _idx = min(_split_fft.shape[-1], inv_asds.shape[-1])
+            _split_fft = _split_fft[..., :_idx]
+            _inv_asd = inv_asds[..., :_idx]
+
+            _split_fft = torch.cat(
+                (_split_fft.real, _split_fft.imag, _inv_asd), dim=1
+            )
+
+            _split_embedded = _resnet(_split_fft)
+            freq_domain_embedded.append(_split_embedded)
+
+        freq_domain_embedded = torch.hstack(freq_domain_embedded)
+
+        embedding = torch.concat(
+            (time_domain_embedded, freq_domain_embedded),
+            dim=1,
+        )
+
+        return embedding
+
+
 class TimeDomainHeterodynedEmbedding(_HeterodyneTransformMixin, Embedding):
     """An embedding where the signal is heterodyned using
     several reference chirp mass values and then passed
