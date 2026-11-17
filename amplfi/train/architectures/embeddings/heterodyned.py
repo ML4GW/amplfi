@@ -60,11 +60,14 @@ class _HeterodyneTransformMixin:
             )
 
 
-class TimeDomainHeterodynedFrequencyDomainDecimator(_HeterodyneTransformMixin, Embedding):
+class TimeDomainHeterodynedFrequencyDomainDecimator(
+    _HeterodyneTransformMixin, Embedding
+):
     """An embedding where the signal is heterodyned in the time-domain.
     It is also decimated and the individual parts are used in Frequency-domain
     resnets.
     """
+
     def __init__(
         self,
         num_ifos: int,
@@ -159,9 +162,7 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(_HeterodyneTransformMixin, E
 
         # Handle the time domain first
         # heterodyned time, frequency arrays have shapes (B, C, M, [T, F])
-        X_heterodyned_time, _ = self.heterodyne_transform(
-            strain
-        )
+        X_heterodyned_time, _ = self.heterodyne_transform(strain)
         # for time array, reshape to (B, C*M, T) for ResNet input
         _B, _C_time, _M, _T = X_heterodyned_time.shape
         X_heterodyned_time = X_heterodyned_time.view(_B, _C_time * _M, _T)
