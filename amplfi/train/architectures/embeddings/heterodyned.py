@@ -6,6 +6,7 @@ from ml4gw.transforms import Heterodyne
 from ml4gw.nn.norm import NormLayer
 from ml4gw.nn.resnet.resnet_1d import ResNet1D
 from ml4gw.transforms.decimator import Decimator
+import torch.nn.functional as F
 
 from .base import Embedding
 
@@ -59,6 +60,70 @@ class _HeterodyneTransformMixin:
                 f"Invalid chirp mass spacing: {chirp_mass_spacing}"
             )
 
+def select_top_k(
+    X: torch.Tensor,
+    top_k: int,
+    kernel_size: int = 31,
+    stride: int = 1,
+    padding: int = 15,
+    keep_last_n_samples: int | None = None,
+) -> torch.Tensor:
+    """
+    Select top `k` chirp mass channels from `M` heterodyned timeseries.
+
+    Args:
+        X (Tensor):
+            Input tensor of shape (B, C, M, T) where B is the batch
+            size, C is the number of channels, M is the number of chirp
+            mass channels, and T is the number of time samples.
+        top_k (int):
+            Number of chirp mass channels to retain.
+        kernel_size (int):
+            Size of the running average (average pooling) window used to
+            smooth the absolute value of the input before computing the
+            selection statistic.
+        stride (int):
+            Stride of the average pooling operation.
+        padding (int):
+            Zero-padding applied to both sides of the timeseries before
+            the average pooling operation.
+        keep_last_n_samples (int, optional):
+            If provided, only the final `n` samples are used when
+            computing the statistic used to select the top k chirp mass
+            channels. If `None`, all samples are used.
+
+    Returns:
+        Tensor:
+            Output tensor of shape (B, C * top_k, T) containing the
+            selected top k chirp mass channels for each batch and channel.
+    """
+
+    B, C, M, T = X.shape
+
+    avgpool = torch.stack(
+        [
+            F.avg_pool1d(
+                torch.abs(x.reshape(C * M, T)),
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+            )
+            for x in X
+        ]
+    ).reshape(B, C, M, T)
+
+    if keep_last_n_samples is not None:
+        avgpool_snr = torch.sqrt(
+            (avgpool[..., -keep_last_n_samples:] ** 2).sum(dim=1)
+        )
+    else:
+        avgpool_snr = torch.sqrt((avgpool**2).sum(dim=1))
+
+    vals = avgpool_snr.max(dim=-1).values
+    idx = torch.topk(vals, k=top_k, dim=-1).indices
+    idx = idx[:, None, :, None].expand(B, C, top_k, T)
+    return torch.gather(X, dim=2, index=idx).reshape(B, C * top_k, T)
+
 
 class TimeDomainHeterodynedFrequencyDomainDecimator(
     _HeterodyneTransformMixin, Embedding
@@ -83,6 +148,7 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(
         num_chirp_masses: int = 100,
         chirp_mass_spacing: Literal["linear", "log"] = "log",
         keep_last_n_seconds: float = 0.0,
+        top_k: int = None,
         time_kernel_size: int = 3,
         freq_kernel_size: int = 3,
         zero_init_residual: bool = False,
@@ -107,6 +173,8 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(
         self.context_dim = time_context_dim + freq_context_dim * len(
             self.decimator_schedule
         )
+        
+        self.top_k = top_k
 
         self._setup_heterodyne_transform(
             strain_sample_rate=strain_sample_rate,
@@ -117,8 +185,10 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(
             chirp_mass_spacing=chirp_mass_spacing,
         )
 
+        num_time_channels = self.top_k if self.top_k is not None else num_chirp_masses
+
         self.time_domain_resnet = ResNet1D(
-            in_channels=num_ifos * num_chirp_masses,
+            in_channels=num_ifos * num_time_channels,
             layers=time_layers,
             classes=time_context_dim,
             kernel_size=time_kernel_size,
@@ -163,9 +233,14 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(
         # Handle the time domain first
         # heterodyned time, frequency arrays have shapes (B, C, M, [T, F])
         X_heterodyned_time, _ = self.heterodyne_transform(strain)
-        # for time array, reshape to (B, C*M, T) for ResNet input
-        _B, _C_time, _M, _T = X_heterodyned_time.shape
-        X_heterodyned_time = X_heterodyned_time.view(_B, _C_time * _M, _T)
+        if self.top_k is not None:
+            X_heterodyned_time = select_top_k(
+                X_heterodyned_time, self.top_k, keep_last_n_samples=self.keep_last_n_samples
+            )
+        else:
+            # for time array, reshape to (B, C*M, T) for ResNet input
+            _B, _C_time, _M, _T = X_heterodyned_time.shape
+            X_heterodyned_time = X_heterodyned_time.view(_B, _C_time * _M, _T)
         # optionally, for time array, restrict to last n_seconds
         if self.keep_last_n_samples > 0:
             X_heterodyned_time = X_heterodyned_time[
