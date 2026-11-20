@@ -4,6 +4,7 @@ from .heterodyned import (
     FrequencyDomainHeterodynedEmbedding,
     MultiModalHeterodynedEmbedding,
     HeterodynedEmbeddingWithDecimator,
+    TimeDomainHeterodynedFrequencyDomainDecimator,
 )
 from .multimodal import (
     FrequencyPsd,
