@@ -60,6 +60,7 @@ class _HeterodyneTransformMixin:
                 f"Invalid chirp mass spacing: {chirp_mass_spacing}"
             )
 
+
 def select_top_k(
     X: torch.Tensor,
     top_k: int,
@@ -173,7 +174,7 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(
         self.context_dim = time_context_dim + freq_context_dim * len(
             self.decimator_schedule
         )
-        
+
         self.top_k = top_k
 
         self._setup_heterodyne_transform(
@@ -185,7 +186,9 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(
             chirp_mass_spacing=chirp_mass_spacing,
         )
 
-        num_time_channels = self.top_k if self.top_k is not None else num_chirp_masses
+        num_time_channels = (
+            self.top_k if self.top_k is not None else num_chirp_masses
+        )
 
         self.time_domain_resnet = ResNet1D(
             in_channels=num_ifos * num_time_channels,
@@ -235,7 +238,9 @@ class TimeDomainHeterodynedFrequencyDomainDecimator(
         X_heterodyned_time, _ = self.heterodyne_transform(strain)
         if self.top_k is not None:
             X_heterodyned_time = select_top_k(
-                X_heterodyned_time, self.top_k, keep_last_n_samples=self.keep_last_n_samples
+                X_heterodyned_time,
+                self.top_k,
+                keep_last_n_samples=self.keep_last_n_samples,
             )
         else:
             # for time array, reshape to (B, C*M, T) for ResNet input
